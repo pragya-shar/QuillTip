@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuillTip - Transform Content Monetization with 1¢ Tips on Stellar</title>
+    <meta name="description" content="The world's first platform where readers can tip writers as little as 1 cent for specific highlighted text. Built exclusively on Stellar blockchain.">
+    <meta name="keywords" content="micro-tipping, stellar blockchain, content monetization, micropayments, writers, readers">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://quilltip.me/">
+    <meta property="og:title" content="QuillTip - 1¢ Micro-tips on Stellar">
+    <meta property="og:description" content="Tip writers 1 cent for specific text. Only possible on Stellar blockchain.">
+    <meta property="og:image" content="https://quilltip.me/og-image.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://quilltip.me/">
+    <meta property="twitter:title" content="QuillTip - 1¢ Micro-tips on Stellar">
+    <meta property="twitter:description" content="Tip writers 1 cent for specific text. Only possible on Stellar blockchain.">
+    <meta property="twitter:image" content="https://quilltip.me/og-image.jpg">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        stellar: '#FF5722',
+                        stellarLight: '#FFE0B2',
+                        dark: '#1a1a1a'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .stellar-gradient {
+            background: linear-gradient(135deg, #FF5722 0%, #FF9800 100%);
+        }
+        .fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .hover-lift {
+            transition: transform 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+    <!-- Navigation -->
+    <nav class="fixed w-full bg-white/90 backdrop-blur-sm z-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-stellar">QuillTip</span>
+                </div>
+                <div class="hidden md:block">
+                    <a href="#waitlist" class="bg-stellar text-white px-6 py-2 rounded-full hover:bg-orange-600 transition-colors">
+                        Join Waitlist
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-20 pb-16 gradient-bg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center fade-in">
+                <h1 class="text-5xl md:text-7xl font-bold mb-6">
+                    Transform Content Monetization with
+                    <span class="text-stellarLight">1¢ Tips</span>
+                </h1>
+                <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
+                    The world's first platform where readers can tip writers as little as 1 cent for specific highlighted text. 
+                    <span class="font-semibold">Only possible on Stellar blockchain.</span>
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#waitlist" class="bg-stellar text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-orange-600 transition-colors hover-lift">
+                        Join Early Access
+                    </a>
+                    <a href="#how-it-works" class="border-2 border-white text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-white hover:text-gray-900 transition-colors hover-lift">
+                        See How It Works
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">The Problem</h2>
+                <p class="text-xl text-gray-600">Current content platforms fail both writers and readers</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg hover-lift">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <span class="text-2xl">💰</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Writers Lose 30-50%</h3>
+                    <p class="text-gray-600">Platform fees eat into earnings, with 30+ day payment delays</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg hover-lift">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <span class="text-2xl">🚫</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">$5+ Minimums</h3>
+                    <p class="text-gray-600">Readers forced to pay large amounts when they just want to show small appreciation</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-lg hover-lift">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                        <span class="text-2xl">🌍</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Global Barriers</h3>
+                    <p class="text-gray-600">Millions of talented writers can't monetize due to payment barriers</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Stellar Section -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">Why Only Stellar Makes This Possible</h2>
+                <p class="text-xl text-gray-600">Transaction fees that make 1¢ tips sustainable</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-8">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-300">
+                                <th class="py-3 px-4 font-semibold">Blockchain</th>
+                                <th class="py-3 px-4 font-semibold">Transaction Fee</th>
+                                <th class="py-3 px-4 font-semibold">% of 1¢ Tip</th>
+                                <th class="py-3 px-4 font-semibold">Viable?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3 px-4">Base</td>
+                                <td class="py-3 px-4">$0.0994</td>
+                                <td class="py-3 px-4">9.9x</td>
+                                <td class="py-3 px-4 text-red-500">❌</td>
+                            </tr>
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3 px-4">Ethereum</td>
+                                <td class="py-3 px-4">$1.30</td>
+                                <td class="py-3 px-4">130x</td>
+                                <td class="py-3 px-4 text-red-500">❌</td>
+                            </tr>
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3 px-4">Solana</td>
+                                <td class="py-3 px-4">$0.004</td>
+                                <td class="py-3 px-4">40%</td>
+                                <td class="py-3 px-4 text-red-500">❌</td>
+                            </tr>
+                            <tr class="bg-stellarLight">
+                                <td class="py-3 px-4 font-semibold">Stellar</td>
+                                <td class="py-3 px-4 font-semibold">$0.0014</td>
+                                <td class="py-3 px-4 font-semibold">14%</td>
+                                <td class="py-3 px-4 text-green-600 font-semibold">✅</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-center mt-6 text-lg font-semibold text-stellar">
+                    Only Stellar enables sustainable 1-cent micro-tips
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-16 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">How Highlight-to-Tip Works</h2>
+                <p class="text-xl text-gray-600">Transform reading into an interactive experience</p>
+            </div>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-stellar text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                        1
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Highlight Text</h3>
+                    <p class="text-gray-600">Select any word, sentence, or paragraph that resonates</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-stellar text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                        2
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Tip Instantly</h3>
+                    <p class="text-gray-600">Two clicks to tip starting at just 1¢</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-stellar text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                        3
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Writer Gets 97.5%</h3>
+                    <p class="text-gray-600">Minimal platform fee, maximum creator benefit</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-stellar text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                        4
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Heat Maps Show Impact</h3>
+                    <p class="text-gray-600">Visual feedback on which content earns most</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">Revolutionary Features</h2>
+                <p class="text-xl text-gray-600">Built for the future of content monetization</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-6 rounded-xl hover-lift">
+                    <div class="w-10 h-10 bg-stellar text-white rounded-lg flex items-center justify-center mb-4">
+                        🔥
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Heat Maps</h3>
+                    <p class="text-gray-600">Visual feedback showing which content resonates most with readers</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl hover-lift">
+                    <div class="w-10 h-10 bg-stellar text-white rounded-lg flex items-center justify-center mb-4">
+                        ⚡
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Instant Payouts</h3>
+                    <p class="text-gray-600">Writers receive payments in 5 seconds, not 30+ days</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl hover-lift">
+                    <div class="w-10 h-10 bg-stellar text-white rounded-lg flex items-center justify-center mb-4">
+                        🌍
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Global Access</h3>
+                    <p class="text-gray-600">MoneyGram integration for cash-out in 200+ countries</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl hover-lift">
+                    <div class="w-10 h-10 bg-stellar text-white rounded-lg flex items-center justify-center mb-4">
+                        🏆
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Leaderboards</h3>
+                    <p class="text-gray-600">Gamification for both readers and writers</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl hover-lift">
+                    <div class="w-10 h-10 bg-stellar text-white rounded-lg flex items-center justify-center mb-4">
+                        🔗
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">True Ownership</h3>
+                    <p class="text-gray-600">Articles stored as NFTs on-chain with permanent storage</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl hover-lift">
+                    <div class="w-10 h-10 bg-stellar text-white rounded-lg flex items-center justify-center mb-4">
+                        📱
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Progressive Wallet</h3>
+                    <p class="text-gray-600">Start tipping without crypto knowledge</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Waitlist Section -->
+    <section id="waitlist" class="py-16 stellar-gradient text-white">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl font-bold mb-4">Be Among the First</h2>
+            <p class="text-xl mb-8">Join our waitlist for early access to the future of content monetization</p>
+            
+            <form id="waitlist-form" class="max-w-md mx-auto">
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="Enter your email address" 
+                        required
+                        class="flex-1 px-6 py-3 rounded-full text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
+                    >
+                    <button 
+                        type="submit" 
+                        class="bg-white text-stellar px-8 py-3 rounded-full font-semibold hover:bg-gray-100 transition-colors"
+                    >
+                        Join Waitlist
+                    </button>
+                </div>
+                <p class="text-sm mt-4 opacity-90">We'll notify you when QuillTip launches. No spam, ever.</p>
+            </form>
+            
+            <div id="success-message" class="hidden mt-6 p-4 bg-green-600 rounded-lg">
+                <p class="font-semibold">🎉 Thanks for joining! We'll be in touch soon.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold text-stellar mb-4">QuillTip</h3>
+                <p class="text-gray-400 mb-6">
+                    The world's first platform enabling 1-cent micro-tips for specific text selections.<br>
+                    Built exclusively on Stellar blockchain.
+                </p>
+                <div class="flex justify-center space-x-6 text-gray-400">
+                    <a href="#" class="hover:text-stellar transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-stellar transition-colors">Terms</a>
+                    <a href="#" class="hover:text-stellar transition-colors">Contact</a>
+                </div>
+                <p class="text-gray-500 mt-8 text-sm">
+                    © 2024 QuillTip. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple form handling
+        document.getElementById('waitlist-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const successMessage = document.getElementById('success-message');
+            
+            // Here you would typically send the email to your backend
+            // For now, we'll just show a success message
+            console.log('Email submitted:', email);
+            
+            // Show success message
+            successMessage.classList.remove('hidden');
+            
+            // Clear form
+            document.getElementById('email').value = '';
+            
+            // Hide success message after 5 seconds
+            setTimeout(() => {
+                successMessage.classList.add('hidden');
+            }, 5000);
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

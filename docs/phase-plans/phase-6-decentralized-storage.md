@@ -980,5 +980,4 @@ class BundlrService {
 While building Phase 6, prepare for Phase 7 by:
 - Planning collaborative editing features
 - Researching AI integration options
-- Designing mobile app architecture
 - Preparing API documentation

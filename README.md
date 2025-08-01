@@ -5,7 +5,7 @@ A modern, responsive landing page for QuillTip - the world's first platform enab
 ## Features
 
 - **Modern Design**: Clean, professional landing page with Stellar branding
-- **Responsive**: Works perfectly on desktop, tablet, and mobile
+- **Responsive**: Optimized for desktop and tablet with progressive web app capabilities
 - **SEO Optimized**: Meta tags, Open Graph, and Twitter cards included
 - **Waitlist Signup**: Simple email collection form
 - **Fast Loading**: Uses CDN-hosted Tailwind CSS for optimal performance

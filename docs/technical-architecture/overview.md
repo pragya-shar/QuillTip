@@ -7,12 +7,12 @@ QuillTip is a decentralized publishing platform built with a hybrid Web2/Web3 ar
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Frontend Layer                          │
-├─────────────────────┬─────────────────────┬───────────────────┤
-│   Next.js Web App   │  React Native Apps  │   Public APIs     │
-│    (TypeScript)     │   (iOS & Android)   │  (REST/GraphQL)   │
-└──────────┬──────────┴──────────┬──────────┴────────┬──────────┘
-           │                     │                     │
-┌──────────▼──────────────────────▼────────────────────▼──────────┐
+├─────────────────────────────────┬───────────────────────────────┤
+│        Next.js Web App          │         Public APIs           │
+│        (TypeScript)             │      (REST/GraphQL)           │
+└──────────────┬──────────────────┴────────────┬──────────────────┘
+               │                               │
+┌──────────────▼──────────────────────────────▼──────────────────┐
 │                         Backend Layer                           │
 ├─────────────────────┬─────────────────────┬───────────────────┤
 │   API Gateway       │   WebSocket Server  │  Queue Workers    │
@@ -49,12 +49,6 @@ QuillTip is a decentralized publishing platform built with a hybrid Web2/Web3 ar
 - **Editor**: TipTap v2 with custom extensions
 - **Web3**: Stellar SDK + Freighter/xBull integration
 
-#### Mobile Applications (React Native)
-- **Framework**: React Native 0.72+
-- **Navigation**: React Navigation v6
-- **State**: Redux Toolkit + RTK Query
-- **Offline**: Realm Database
-- **Native Modules**: Custom Stellar wallet integration
 
 ### 2. Backend Architecture
 
@@ -284,7 +278,6 @@ resource "aws_eks_cluster" "quilltip" {
 quilltip/
 ├── apps/
 │   ├── web/          # Next.js web app
-│   ├── mobile/       # React Native app
 │   └── api/          # GraphQL API
 ├── packages/
 │   ├── ui/           # Shared UI components
@@ -310,8 +303,7 @@ quilltip/
 3. **Redis**: Performance, pub/sub, proven at scale
 4. **Stellar**: Low fees, fast finality, built for payments
 5. **Arweave**: Permanent storage, censorship resistance
-6. **React Native**: Code reuse, native performance
-7. **TypeScript**: Type safety, better DX, fewer bugs
+6. **TypeScript**: Type safety, better DX, fewer bugs
 
 ### Trade-offs Considered
 

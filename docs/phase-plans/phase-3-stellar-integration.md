@@ -1,6 +1,6 @@
 # Phase 3: Stellar Integration & Crypto Wallet Foundation (Weeks 8-10)
 
-> **📝 Implementation Note**: This phase builds on the fresh Next.js 14 application with highlight system from Phase 2. All Stellar integration is built as modern React components and API routes.
+> **📝 Implementation Note**: This phase builds on the fresh Next.js 15 application with highlight system from Phase 2. All Stellar integration is built as modern React components and API routes.
 
 ## Overview
 Establish Web3 foundation by integrating Stellar network, enabling wallet connections, and creating a user-friendly crypto onboarding experience for both crypto-native and traditional users.

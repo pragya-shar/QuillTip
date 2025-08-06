@@ -15,7 +15,7 @@ export interface Article {
   id: string
   slug: string
   title: string
-  content: any // TipTap JSON content
+  content: Record<string, unknown> // TipTap JSON content
   excerpt?: string
   coverImage?: string
   published: boolean

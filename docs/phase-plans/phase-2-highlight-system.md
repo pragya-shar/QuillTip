@@ -1,6 +1,6 @@
 # Phase 2: Highlight System & Micro-Interaction Foundation (Weeks 5-7)
 
-> **📝 Implementation Note**: This phase builds on the fresh Next.js 14 application created in Phase 1. All code examples assume a modern Next.js app directory structure, not the existing static HTML landing page.
+> **📝 Implementation Note**: This phase builds on the fresh Next.js 15 application created in Phase 1. All code examples assume a modern Next.js app directory structure, not the existing static HTML landing page.
 
 ## Overview
 Implement QuillTip's unique highlight and selection system, enabling readers to interact with specific portions of text. This phase builds the foundation for the micro-tipping feature without payment integration.

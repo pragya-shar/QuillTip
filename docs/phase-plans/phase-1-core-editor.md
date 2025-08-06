@@ -13,7 +13,7 @@ Build a functional publishing platform with an advanced TipTap editor, enabling 
 ## Technical Requirements
 
 ### Frontend Stack
-- **Framework**: Next.js 14 with TypeScript
+- **Framework**: Next.js 15 with TypeScript
 - **Editor**: TipTap v2 with custom extensions
 - **Styling**: Tailwind CSS v3
 - **State Management**: Zustand for client state
@@ -253,7 +253,7 @@ While building Phase 1, prepare for Phase 2 by:
 ### Week 1: Fresh Next.js Foundation & Authentication  
 
 #### Day 1-2: Complete Fresh Project Setup
-1. **Initialize Brand New Next.js 14 Project** 
+1. **Initialize Brand New Next.js 15 Project** 
    ```bash
    # Start completely fresh - ignore existing index.html
    npx create-next-app@latest quilltip-app --typescript --tailwind --eslint --app
@@ -746,7 +746,7 @@ jobs:
 ### Week 1: Fresh Next.js Foundation & Authentication
 
 #### Day 1-2: Complete Fresh Project Setup
-- [ ] Initialize new Next.js 14 project with TypeScript, Tailwind, ESLint
+- [ ] Initialize new Next.js 15 project with TypeScript, Tailwind, ESLint
 - [ ] Configure Tailwind with QuillTip brand colors (blue, cream, accent)
 - [ ] Set up fresh project structure (app, components, lib, types directories)
 - [ ] Install core dependencies (Prisma, NextAuth, TipTap, Radix UI, Zustand)

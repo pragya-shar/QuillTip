@@ -1,6 +1,6 @@
 # Phase 4: Micro-Tipping Smart Contracts & True Micro-Payments (Weeks 11-14)
 
-> **📝 Implementation Note**: This phase builds on the complete Next.js 14 application with Stellar integration from Phase 3. Smart contracts and tipping UI are integrated into the modern app architecture.
+> **📝 Implementation Note**: This phase builds on the complete Next.js 15 application with Stellar integration from Phase 3. Smart contracts and tipping UI are integrated into the modern app architecture.
 
 ## Overview
 Implement QuillTip's core value proposition - the 1¢ micro-tipping system using Soroban smart contracts on Stellar. Enable granular tipping at word, sentence, and paragraph levels with real-time heat map visualization.

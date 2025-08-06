@@ -41,7 +41,7 @@ QuillTip is a decentralized publishing platform built with a hybrid Web2/Web3 ar
 
 ### 1. Frontend Architecture
 
-#### Web Application (Next.js 14)
+#### Web Application (Next.js 15)
 - **Framework**: Next.js with App Router
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS + CSS Modules

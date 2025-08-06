@@ -1,6 +1,6 @@
 # Phase 7: Advanced Features & Platform Scaling (Weeks 21-24)
 
-> **📝 Implementation Note**: This phase builds on the fully decentralized Next.js 14 application from Phase 6. All advanced features integrate with the existing modern architecture and Stellar/Arweave infrastructure.
+> **📝 Implementation Note**: This phase builds on the fully decentralized Next.js 15 application from Phase 6. All advanced features integrate with the existing modern architecture and Stellar/Arweave infrastructure.
 
 ## Overview
 Add advanced features to differentiate QuillTip from traditional publishing platforms, including collaborative editing, AI-powered discovery, and comprehensive APIs for third-party integrations.

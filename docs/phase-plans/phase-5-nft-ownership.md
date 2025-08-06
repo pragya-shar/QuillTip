@@ -1,6 +1,6 @@
 # Phase 5: NFT Ownership & Content Tokenization (Weeks 15-17)
 
-> **📝 Implementation Note**: This phase builds on the complete Next.js 14 application with micro-tipping from Phase 4. NFT features are integrated as modern React components with proper TypeScript types.
+> **📝 Implementation Note**: This phase builds on the complete Next.js 15 application with micro-tipping from Phase 4. NFT features are integrated as modern React components with proper TypeScript types.
 
 ## Overview
 Implement true content ownership through NFTs on Stellar, enabling writers to mint their articles as NFTs, transfer ownership, and earn royalties from secondary sales.

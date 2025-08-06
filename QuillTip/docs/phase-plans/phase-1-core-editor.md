@@ -13,7 +13,7 @@ Build a functional publishing platform with an advanced TipTap editor, enabling 
 ## Technical Requirements
 
 ### Frontend Stack
-- **Framework**: Next.js 15 with TypeScript
+- **Framework**: Next.js 14 with TypeScript
 - **Editor**: TipTap v2 with custom extensions
 - **Styling**: Tailwind CSS v3
 - **State Management**: Zustand for client state
@@ -253,7 +253,7 @@ While building Phase 1, prepare for Phase 2 by:
 ### Week 1: Fresh Next.js Foundation & Authentication  
 
 #### Day 1-2: Complete Fresh Project Setup
-1. **Initialize Brand New Next.js 15 Project** 
+1. **Initialize Brand New Next.js 14 Project** 
    ```bash
    # Start completely fresh - ignore existing index.html
    npx create-next-app@latest quilltip-app --typescript --tailwind --eslint --app
@@ -298,7 +298,7 @@ While building Phase 1, prepare for Phase 2 by:
    ```
    quilltip-app/
    ├── src/
-   │   ├── app/                    # Next.js 15 app directory
+   │   ├── app/                    # Next.js 14 app directory
    │   │   ├── (auth)/            # Auth route group
    │   │   ├── (dashboard)/       # Protected routes
    │   │   ├── api/               # API routes
@@ -445,7 +445,7 @@ While building Phase 1, prepare for Phase 2 by:
    ```
 
 ### Week 1 Summary: Fresh Foundation Complete
-- ✅ Brand new Next.js 15 application
+- ✅ Brand new Next.js 14 application
 - ✅ QuillTip brand colors and design system
 - ✅ Fresh landing page with modern components
 - ✅ Database and authentication foundation
@@ -746,11 +746,13 @@ jobs:
 ### Week 1: Fresh Next.js Foundation & Authentication
 
 #### Day 1-2: Complete Fresh Project Setup
-- [x] Initialize new Next.js 15 project with TypeScript, Tailwind, ESLint
+- [x] Initialize new Next.js 14 project with TypeScript, Tailwind, ESLint
 - [x] Configure Tailwind with QuillTip brand colors (blue, cream, accent)
 - [x] Set up fresh project structure (app, components, lib, types directories)
 - [x] Install core dependencies (Prisma, NextAuth, TipTap, Radix UI, Zustand)
 - [x] Configure environment variables (.env.local)
+- [x] Consolidate project structure into single QuillTip directory
+- [x] Verify all consolidation steps were performed correctly
 - [x] Configure TypeScript with strict mode settings
 - [x] Install and configure development tools (ESLint, Prettier, Husky)
 

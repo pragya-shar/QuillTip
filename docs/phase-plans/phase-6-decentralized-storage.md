@@ -1,6 +1,6 @@
 # Phase 6: Decentralized Storage & Censorship Resistance (Weeks 18-20)
 
-> **📝 Implementation Note**: This phase builds on the complete Next.js 14 application with NFT ownership from Phase 5. Arweave integration is implemented as modern API routes and React components.
+> **📝 Implementation Note**: This phase builds on the complete Next.js 15 application with NFT ownership from Phase 5. Arweave integration is implemented as modern API routes and React components.
 
 ## Overview
 Achieve full decentralization by integrating Arweave for permanent, censorship-resistant content storage. Migrate all article content to Arweave while maintaining seamless user experience and linking storage with Stellar NFTs.

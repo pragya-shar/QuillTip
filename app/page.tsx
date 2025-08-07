@@ -2,6 +2,7 @@ import Navigation from '@/components/landing/Navigation';
 import HeroSection from '@/components/landing/HeroSection';
 import ProblemSection from '@/components/landing/ProblemSection';
 import StellarBenefitsSection from '@/components/landing/StellarBenefitsSection';
+import HowItWorksSection from '@/components/landing/HowItWorksSection';
 
 export default function HomePage() {
   return (
@@ -10,6 +11,7 @@ export default function HomePage() {
       <HeroSection />
       <ProblemSection />
       <StellarBenefitsSection />
+      <HowItWorksSection />
     </div>
   );
 }

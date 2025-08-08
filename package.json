@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"No tests yet\" && exit 0",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -25,7 +30,6 @@
     "lucide-react": "^0.536.0",
     "next": "^15.4.5",
     "next-auth": "^4.24.11",
-    "prisma": "^6.13.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.62.0",
@@ -46,6 +50,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.4",
     "prettier": "^3.6.2",
+    "prisma": "^6.13.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

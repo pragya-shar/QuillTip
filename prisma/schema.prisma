@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  username        String    @unique
+  name            String?
+  bio             String?
+  avatar          String?
+  hashedPassword  String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  articles        Article[]
+
+  @@map("users")
+}
+
+model Article {
+  id              String    @id @default(cuid())
+  slug            String    @unique
+  title           String
+  content         Json      // TipTap JSON content
+  excerpt         String?
+  coverImage      String?
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  tags            Tag[]
+  author          User      @relation(fields: [authorId], references: [id])
+  authorId        String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([authorId])
+  @@index([published, publishedAt])
+  @@map("articles")
+}
+
+model Tag {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  slug            String    @unique
+  articles        Article[]
+
+  @@map("tags")
+}

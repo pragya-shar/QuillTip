@@ -23,9 +23,6 @@ export default function Navigation() {
             <Link href="#how-it-works" className="text-quill-600 hover:text-brand-blue transition">
               How It Works
             </Link>
-            <Link href="#benefits" className="text-quill-600 hover:text-brand-blue transition">
-              Benefits
-            </Link>
             <Link href="/login" className="text-quill-600 hover:text-brand-blue transition">
               Sign In
             </Link>
@@ -53,9 +50,6 @@ export default function Navigation() {
               </Link>
               <Link href="#how-it-works" className="block text-quill-600 hover:text-brand-blue transition">
                 How It Works
-              </Link>
-              <Link href="#benefits" className="block text-quill-600 hover:text-brand-blue transition">
-                Benefits
               </Link>
               <Link href="/login" className="block text-quill-600 hover:text-brand-blue transition">
                 Sign In

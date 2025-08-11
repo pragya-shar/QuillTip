@@ -1,243 +1,173 @@
 'use client';
 
-import { Edit3, Highlighter, Zap, Heart } from 'lucide-react';
+import { 
+  UserPlus,
+  Edit3,
+  Globe,
+  Coins,
+  ArrowRight
+} from 'lucide-react';
 
 export default function HowItWorksSection() {
+  const steps = [
+    {
+      number: "01",
+      icon: UserPlus,
+      title: "Create Your Account",
+      description: "Sign up in seconds and set up your writer profile",
+      color: "from-blue-500 to-cyan-500"
+    },
+    {
+      number: "02", 
+      icon: Edit3,
+      title: "Write & Publish",
+      description: "Use our powerful editor to create and publish your content",
+      color: "from-purple-500 to-pink-500"
+    },
+    {
+      number: "03",
+      icon: Globe,
+      title: "Share Your Work",
+      description: "Your content gets a unique URL to share with your audience",
+      color: "from-orange-500 to-red-500"
+    },
+    {
+      number: "04",
+      icon: Coins,
+      title: "Earn Instantly",
+      description: "Readers tip and highlight, you get paid in real-time",
+      color: "from-green-500 to-emerald-500"
+    }
+  ];
+
   return (
-    <section className="py-20 px-4 bg-quill-50">
-      <div className="container mx-auto max-w-6xl">
+    <section id="how-it-works" className="py-24 px-8 bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto max-w-7xl">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-quill-900 mb-4">
-            How QuillTip Works
+          <h2 className="text-5xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              How QuillTip Works
+            </span>
           </h2>
-          <p className="text-xl text-quill-600 max-w-3xl mx-auto">
-            A simple, powerful workflow that transforms how writers connect with readers
-            through meaningful engagement and instant support.
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            From idea to income in four simple steps
           </p>
         </div>
 
         {/* Steps */}
-        <div className="space-y-16">
-          {/* Step 1 */}
-          <div className="flex flex-col lg:flex-row items-center gap-8">
-            <div className="lg:w-1/2">
-              <div className="flex items-center mb-6">
-                <div className="bg-brand-blue text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl mr-4">
-                  1
+        <div className="relative">
+          {/* Connection Line */}
+          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-200 via-purple-200 to-green-200 transform -translate-y-1/2 hidden lg:block" />
+          
+          <div className="grid grid-cols-4 gap-8 relative">
+            {steps.map((step, index) => (
+              <div key={index} className="relative group">
+                {/* Step Card */}
+                <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-2 relative z-10">
+                  {/* Step Number */}
+                  <div className="text-5xl font-bold text-gray-100 mb-4">
+                    {step.number}
+                  </div>
+                  
+                  {/* Icon */}
+                  <div className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <step.icon className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  {/* Content */}
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {step.title}
+                  </h3>
+                  <p className="text-gray-600">
+                    {step.description}
+                  </p>
                 </div>
-                <div className="bg-brand-blue/10 rounded-full w-16 h-16 flex items-center justify-center">
-                  <Edit3 className="w-8 h-8 text-brand-blue" />
-                </div>
+                
+                {/* Arrow (except for last item) */}
+                {index < steps.length - 1 && (
+                  <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-20 hidden lg:block">
+                    <ArrowRight className="w-8 h-8 text-gray-300" />
+                  </div>
+                )}
               </div>
-              <h3 className="text-3xl font-bold text-quill-900 mb-4">
-                Write & Publish
-              </h3>
-              <p className="text-lg text-quill-600 mb-4">
-                Create compelling content using our advanced rich-text editor. 
-                Format your articles with precision, add images, and craft stories that resonate.
-              </p>
-              <ul className="text-quill-600 space-y-2">
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-brand-blue rounded-full mr-3"></div>
-                  Rich text editor with advanced formatting
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-brand-blue rounded-full mr-3"></div>
-                  Image uploads and media embedding
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-brand-blue rounded-full mr-3"></div>
-                  SEO optimization and metadata control
-                </li>
-              </ul>
-            </div>
-            <div className="lg:w-1/2">
-              <div className="bg-white rounded-xl p-8 shadow-lg border border-quill-200">
-                <div className="bg-quill-100 rounded-lg p-4 mb-4">
-                  <div className="h-4 bg-quill-300 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-quill-200 rounded w-full mb-2"></div>
-                  <div className="h-3 bg-quill-200 rounded w-5/6"></div>
-                </div>
-                <div className="flex space-x-2 mb-4">
-                  <div className="bg-brand-blue/20 rounded px-3 py-1 text-sm text-brand-blue font-medium">B</div>
-                  <div className="bg-brand-blue/20 rounded px-3 py-1 text-sm text-brand-blue font-medium">I</div>
-                  <div className="bg-brand-blue/20 rounded px-3 py-1 text-sm text-brand-blue font-medium">Link</div>
-                </div>
-                <div className="text-sm text-quill-500">Professional editor experience</div>
-              </div>
-            </div>
+            ))}
           </div>
+        </div>
 
-          {/* Step 2 */}
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-8">
-            <div className="lg:w-1/2">
-              <div className="flex items-center mb-6">
-                <div className="bg-brand-accent text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl mr-4">
-                  2
-                </div>
-                <div className="bg-brand-accent/10 rounded-full w-16 h-16 flex items-center justify-center">
-                  <Highlighter className="w-8 h-8 text-brand-accent" />
-                </div>
-              </div>
-              <h3 className="text-3xl font-bold text-quill-900 mb-4">
-                Readers Highlight
+        {/* Visual Demo */}
+        <div className="mt-20 bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-12 border border-blue-100">
+          <div className="grid grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-3xl font-bold mb-4">
+                <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  See It In Action
+                </span>
               </h3>
-              <p className="text-lg text-quill-600 mb-4">
-                Readers discover your content and highlight the passages that resonate most. 
-                Each highlight captures their genuine reaction and creates engagement opportunities.
+              <p className="text-lg text-gray-600 mb-6">
+                Watch how writers are already earning sustainable income through direct reader support. 
+                No algorithms, no middlemen, just pure creator-reader connection.
               </p>
-              <ul className="text-quill-600 space-y-2">
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-brand-accent rounded-full mr-3"></div>
-                  Precise text selection and highlighting
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  Average tip: $0.50 - $5.00
                 </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-brand-accent rounded-full mr-3"></div>
-                  Public or private highlight options
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  Settlement time: 3-5 seconds
                 </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-brand-accent rounded-full mr-3"></div>
-                  Comments and thoughts on specific passages
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  Platform fee: Less than 1%
                 </li>
               </ul>
             </div>
-            <div className="lg:w-1/2">
-              <div className="bg-white rounded-xl p-8 shadow-lg border border-quill-200">
-                <div className="space-y-3">
-                  <div className="h-3 bg-quill-200 rounded w-full"></div>
-                  <div className="h-3 bg-yellow-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-quill-200 rounded w-full"></div>
-                  <div className="h-3 bg-blue-200 rounded w-5/6"></div>
-                  <div className="h-3 bg-quill-200 rounded w-full"></div>
-                </div>
-                <div className="mt-4 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                  <div className="text-sm text-yellow-700 font-medium">Reader highlight</div>
-                  <div className="text-xs text-yellow-600 mt-1">&ldquo;This insight changed my perspective!&rdquo;</div>
-                </div>
+            
+            {/* Mock Transaction Feed */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-semibold text-gray-700">Live Tips</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               </div>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div className="flex flex-col lg:flex-row items-center gap-8">
-            <div className="lg:w-1/2">
-              <div className="flex items-center mb-6">
-                <div className="bg-green-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl mr-4">
-                  3
-                </div>
-                <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center">
-                  <Zap className="w-8 h-8 text-green-600" />
-                </div>
-              </div>
-              <h3 className="text-3xl font-bold text-quill-900 mb-4">
-                Instant Micro-Tips
-              </h3>
-              <p className="text-lg text-quill-600 mb-4">
-                When readers find value, they can instantly tip you with blockchain-powered 
-                micro-payments. No subscriptions, no minimums – just direct support.
-              </p>
-              <ul className="text-quill-600 space-y-2">
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mr-3"></div>
-                  Tips as low as $0.01 with minimal fees
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mr-3"></div>
-                  3-5 second settlement on Stellar network
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-green-600 rounded-full mr-3"></div>
-                  Direct wallet-to-wallet transfers
-                </li>
-              </ul>
-            </div>
-            <div className="lg:w-1/2">
-              <div className="bg-white rounded-xl p-8 shadow-lg border border-quill-200">
-                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-medium text-green-700">Tip this highlight</div>
-                    <Zap className="w-4 h-4 text-green-600" />
+              <div className="space-y-3">
+                {[
+                  { amount: "+2.50 XLM", user: "Reader123", time: "2 sec ago" },
+                  { amount: "+5.00 XLM", user: "BookLover", time: "15 sec ago" },
+                  { amount: "+1.00 XLM", user: "Anonymous", time: "1 min ago" },
+                  { amount: "+10.00 XLM", user: "SuperFan", time: "2 min ago" }
+                ].map((transaction, index) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{transaction.user}</div>
+                        <div className="text-xs text-gray-500">{transaction.time}</div>
+                      </div>
+                    </div>
+                    <span className="text-green-600 font-semibold">{transaction.amount}</span>
                   </div>
-                  <div className="flex space-x-2 mb-3">
-                    <button className="bg-green-100 hover:bg-green-200 rounded px-3 py-1 text-sm text-green-700 font-medium">$0.25</button>
-                    <button className="bg-green-100 hover:bg-green-200 rounded px-3 py-1 text-sm text-green-700 font-medium">$1.00</button>
-                    <button className="bg-green-100 hover:bg-green-200 rounded px-3 py-1 text-sm text-green-700 font-medium">$5.00</button>
-                  </div>
-                  <div className="text-xs text-green-600">Instant settlement • &lt;$0.01 fee</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 4 */}
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-8">
-            <div className="lg:w-1/2">
-              <div className="flex items-center mb-6">
-                <div className="bg-purple-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl mr-4">
-                  4
-                </div>
-                <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center">
-                  <Heart className="w-8 h-8 text-purple-600" />
-                </div>
-              </div>
-              <h3 className="text-3xl font-bold text-quill-900 mb-4">
-                Build Community
-              </h3>
-              <p className="text-lg text-quill-600 mb-4">
-                See which parts of your content resonate most, engage with reader insights, 
-                and build a community around shared ideas and meaningful conversations.
-              </p>
-              <ul className="text-quill-600 space-y-2">
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full mr-3"></div>
-                  Analytics on most-highlighted passages
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full mr-3"></div>
-                  Direct engagement with reader feedback
-                </li>
-                <li className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-600 rounded-full mr-3"></div>
-                  Community of readers who support your work
-                </li>
-              </ul>
-            </div>
-            <div className="lg:w-1/2">
-              <div className="bg-white rounded-xl p-8 shadow-lg border border-quill-200">
-                <div className="mb-4">
-                  <div className="text-sm font-medium text-quill-700 mb-2">Most Highlighted</div>
-                  <div className="bg-purple-50 rounded p-3 border border-purple-200">
-                    <div className="text-sm text-purple-800">&ldquo;The key insight that changed everything...&rdquo;</div>
-                    <div className="text-xs text-purple-600 mt-1">142 highlights • $47.50 in tips</div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center">
-                    <Heart className="w-4 h-4 text-red-500 mr-2" />
-                    <div className="text-sm text-quill-600">Sarah: &ldquo;This helped me so much!&rdquo;</div>
-                  </div>
-                  <div className="flex items-center">
-                    <Heart className="w-4 h-4 text-red-500 mr-2" />
-                    <div className="text-sm text-quill-600">Mike: &ldquo;Exactly what I needed to hear&rdquo;</div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Call to Action */}
-        <div className="mt-20 text-center bg-gradient-to-r from-brand-blue to-brand-accent p-8 rounded-xl text-white">
-          <h3 className="text-3xl font-bold mb-4">
-            Ready to Transform Your Writing?
-          </h3>
-          <p className="text-xl mb-6 opacity-90">
-            Join the future of publishing where every word matters and every reader can make a difference
-          </p>
-          <button className="bg-white text-brand-blue font-bold px-8 py-3 rounded-lg hover:bg-quill-50 transition-colors">
-            Start Writing Today
-          </button>
+        {/* CTA */}
+        <div className="mt-16 text-center">
+          <a 
+            href="/register"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-5 rounded-xl text-xl font-semibold hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+          >
+            Start Writing & Earning Today
+            <ArrowRight className="w-6 h-6" />
+          </a>
         </div>
       </div>
     </section>

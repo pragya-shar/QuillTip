@@ -2,299 +2,125 @@
 
 import { 
   Edit3, 
-  Save, 
-  Eye, 
-  Share2, 
   DollarSign, 
-  Users, 
-  Search,
-  Lock,
-  Globe,
-  Palette,
-  Code,
-  Image,
-  Link2,
-  FileText,
   Sparkles,
-  TrendingUp,
   Shield,
   Zap,
-  Clock,
-  Cloud
+  MessageSquare,
+  TrendingUp
 } from 'lucide-react';
 
 export default function FeaturesSection() {
-  const featureCategories = [
+  const features = [
     {
-      title: "Advanced Editor",
-      description: "Professional writing tools powered by TipTap",
       icon: Edit3,
-      iconBg: "bg-brand-blue/10",
-      iconColor: "text-brand-blue",
-      features: [
-        {
-          icon: Palette,
-          title: "Rich Text Formatting",
-          description: "Headers, bold, italic, underline, lists, and more formatting options"
-        },
-        {
-          icon: Code,
-          title: "Code Blocks",
-          description: "Syntax highlighting for over 100 programming languages"
-        },
-        {
-          icon: Image,
-          title: "Media Embedding",
-          description: "Drag-and-drop images, YouTube videos, and tweet embeds"
-        },
-        {
-          icon: Link2,
-          title: "Smart Links",
-          description: "Auto-preview for links with metadata extraction"
-        }
-      ]
+      title: "Professional Editor",
+      description: "Rich text editing with code blocks, media embeds, and markdown support. Everything you need to create stunning content.",
+      gradient: "from-blue-500 to-cyan-500"
     },
     {
-      title: "Writing Experience",
-      description: "Focus on your content, we handle the rest",
-      icon: FileText,
-      iconBg: "bg-brand-accent/10",
-      iconColor: "text-brand-accent",
-      features: [
-        {
-          icon: Save,
-          title: "Auto-Save",
-          description: "Never lose your work with automatic saving every 30 seconds"
-        },
-        {
-          icon: Clock,
-          title: "Draft Versioning",
-          description: "Track changes and restore previous versions anytime"
-        },
-        {
-          icon: Cloud,
-          title: "Cloud Sync",
-          description: "Access your drafts from any device, anywhere"
-        },
-        {
-          icon: Sparkles,
-          title: "Distraction-Free",
-          description: "Clean, focused writing environment with zen mode"
-        }
-      ]
-    },
-    {
-      title: "Publishing Power",
-      description: "Reach your audience with optimized content",
-      icon: Globe,
-      iconBg: "bg-green-100",
-      iconColor: "text-green-600",
-      features: [
-        {
-          icon: Search,
-          title: "SEO Optimization",
-          description: "Built-in SEO tools with meta tags and custom URLs"
-        },
-        {
-          icon: Share2,
-          title: "Instant Publishing",
-          description: "One-click publish with scheduled posting options"
-        },
-        {
-          icon: TrendingUp,
-          title: "Analytics Dashboard",
-          description: "Track views, engagement, and reader behavior"
-        },
-        {
-          icon: Users,
-          title: "Audience Insights",
-          description: "Understand what resonates with your readers"
-        }
-      ]
-    },
-    {
-      title: "Monetization",
-      description: "Earn directly from your most engaged readers",
       icon: DollarSign,
-      iconBg: "bg-purple-100",
-      iconColor: "text-purple-600",
-      features: [
-        {
-          icon: Zap,
-          title: "Instant Micro-Tips",
-          description: "Receive tips as low as $0.01 with minimal fees"
-        },
-        {
-          icon: Shield,
-          title: "Blockchain Security",
-          description: "Stellar-powered payments with 3-5 second settlement"
-        },
-        {
-          icon: Eye,
-          title: "Transparent Earnings",
-          description: "Real-time dashboard showing all tips and highlights"
-        },
-        {
-          icon: Lock,
-          title: "No Platform Lock-in",
-          description: "Direct wallet-to-wallet transfers, you own your earnings"
-        }
-      ]
+      title: "Instant Micropayments",
+      description: "Readers can tip as little as $0.01 using Stellar blockchain. Get paid instantly with minimal fees.",
+      gradient: "from-green-500 to-emerald-500"
+    },
+    {
+      icon: MessageSquare,
+      title: "Highlight & Discuss",
+      description: "Readers highlight text and leave contextual comments. Turn your content into a conversation.",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      icon: Shield,
+      title: "Own Your Content",
+      description: "100% ownership of your work. No platform lock-in. Export anytime. Your content, your rules.",
+      gradient: "from-orange-500 to-red-500"
+    },
+    {
+      icon: TrendingUp,
+      title: "Analytics That Matter",
+      description: "See which parts resonate most. Track tips, highlights, and engagement in real-time.",
+      gradient: "from-indigo-500 to-purple-500"
+    },
+    {
+      icon: Zap,
+      title: "Lightning Fast",
+      description: "3-5 second payment settlement. No waiting weeks for payouts. Money flows as fast as ideas.",
+      gradient: "from-yellow-500 to-orange-500"
     }
   ];
 
   return (
-    <section className="py-20 px-4 bg-white">
-      <div className="container mx-auto max-w-6xl">
+    <section id="features" className="py-24 px-8 bg-white">
+      <div className="container mx-auto max-w-7xl">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-quill-900 mb-4">
-            Everything You Need to Succeed
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full border border-blue-200 mb-6">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Core Features
+            </span>
+          </div>
+          <h2 className="text-5xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              Everything You Need to
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Create, Publish & Earn
+            </span>
           </h2>
-          <p className="text-xl text-quill-600 max-w-3xl mx-auto">
-            Professional tools, seamless publishing, and direct monetization – 
-            all in one platform designed for modern creators.
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            A complete platform designed for the modern creator economy
           </p>
         </div>
 
-        {/* Feature Categories */}
-        <div className="space-y-20">
-          {featureCategories.map((category, categoryIndex) => (
-            <div key={categoryIndex} className="relative">
-              {/* Category Header */}
-              <div className="flex items-center mb-8">
-                <div className={`${category.iconBg} rounded-full w-16 h-16 flex items-center justify-center mr-4`}>
-                  <category.icon className={`w-8 h-8 ${category.iconColor}`} />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold text-quill-900">
-                    {category.title}
-                  </h3>
-                  <p className="text-lg text-quill-600">
-                    {category.description}
-                  </p>
-                </div>
+        {/* Features Grid */}
+        <div className="grid grid-cols-3 gap-8">
+          {features.map((feature, index) => (
+            <div 
+              key={index}
+              className="group relative bg-white rounded-2xl p-8 border border-gray-200 hover:border-transparent hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+            >
+              {/* Gradient background on hover */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`} />
+              
+              {/* Icon */}
+              <div className={`relative w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                <feature.icon className="w-7 h-7 text-white" />
               </div>
-
-              {/* Feature Grid */}
-              <div className="grid md:grid-cols-2 gap-6">
-                {category.features.map((feature, featureIndex) => (
-                  <div 
-                    key={featureIndex}
-                    className="bg-quill-50 rounded-xl p-6 hover:bg-quill-100 transition-colors group"
-                  >
-                    <div className="flex items-start">
-                      <div className="bg-white rounded-lg w-12 h-12 flex items-center justify-center mr-4 group-hover:shadow-md transition-shadow">
-                        <feature.icon className="w-6 h-6 text-quill-700" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-semibold text-quill-900 mb-1">
-                          {feature.title}
-                        </h4>
-                        <p className="text-quill-600">
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              
+              {/* Content */}
+              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>
 
-        {/* Additional Features Grid */}
-        <div className="mt-20">
-          <h3 className="text-2xl font-bold text-quill-900 mb-8 text-center">
-            Plus Many More Features
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              "Custom themes",
-              "Mobile responsive",
-              "Comment system",
-              "Email notifications",
-              "RSS feeds",
-              "API access",
-              "Export options",
-              "Team collaboration",
-              "Content backup",
-              "Reading time",
-              "Table of contents",
-              "Citation tools",
-              "Markdown support",
-              "Keyboard shortcuts",
-              "Full-text search",
-              "Tag management"
-            ].map((feature, index) => (
-              <div 
-                key={index}
-                className="bg-quill-50 rounded-lg px-4 py-3 text-center hover:bg-quill-100 transition-colors"
+        {/* Bottom CTA */}
+        <div className="mt-20 text-center">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-12 border border-blue-100">
+            <h3 className="text-3xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Ready to Transform Your Writing Career?
+              </span>
+            </h3>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              Join the next generation of writers who are building sustainable careers on their own terms.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <a 
+                href="/register"
+                className="group inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
               >
-                <span className="text-sm text-quill-700 font-medium">{feature}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Platform Comparison */}
-        <div className="mt-20 bg-gradient-to-br from-quill-50 to-quill-100 rounded-2xl p-8">
-          <h3 className="text-2xl font-bold text-quill-900 mb-6 text-center">
-            Why QuillTip Beats Traditional Platforms
-          </h3>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6">
-              <div className="text-red-500 font-bold mb-2">❌ Traditional Platforms</div>
-              <ul className="space-y-2 text-sm text-quill-600">
-                <li>• High platform fees (15-30%)</li>
-                <li>• Monthly subscriptions required</li>
-                <li>• Limited reader engagement</li>
-                <li>• Delayed payouts (30-60 days)</li>
-                <li>• Platform owns the relationship</li>
-              </ul>
+                Start Your Journey
+                <Zap className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+              </a>
             </div>
-            <div className="bg-gradient-to-br from-brand-blue to-brand-accent text-white rounded-xl p-6 md:scale-105 shadow-xl">
-              <div className="font-bold mb-2">✨ QuillTip</div>
-              <ul className="space-y-2 text-sm">
-                <li>• Minimal fees (&lt;1%)</li>
-                <li>• Pay-per-value model</li>
-                <li>• Direct reader interaction</li>
-                <li>• Instant payments (3-5 seconds)</li>
-                <li>• You own everything</li>
-              </ul>
-            </div>
-            <div className="bg-white rounded-xl p-6">
-              <div className="text-gray-500 font-bold mb-2">💤 Status Quo</div>
-              <ul className="space-y-2 text-sm text-quill-600">
-                <li>• Ad-supported content</li>
-                <li>• Paywall friction</li>
-                <li>• Email list dependency</li>
-                <li>• Complex monetization</li>
-                <li>• Fragmented tools</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        <div className="mt-16 text-center">
-          <div className="inline-flex items-center space-x-2 bg-yellow-50 text-yellow-800 px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Limited Early Access</span>
-          </div>
-          <h3 className="text-3xl font-bold text-quill-900 mb-4">
-            Ready to Experience the Future of Publishing?
-          </h3>
-          <p className="text-lg text-quill-600 mb-8 max-w-2xl mx-auto">
-            Join forward-thinking writers who are building sustainable careers with QuillTip&apos;s revolutionary platform.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-brand-blue text-white font-bold px-8 py-3 rounded-lg hover:bg-brand-blue/90 transition-colors">
-              Get Early Access
-            </button>
-            <button className="bg-white text-brand-blue font-bold px-8 py-3 rounded-lg border-2 border-brand-blue hover:bg-quill-50 transition-colors">
-              View Live Demo
-            </button>
           </div>
         </div>
       </div>

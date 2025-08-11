@@ -32,7 +32,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const value: AuthContextType = {
-    user: session?.user || null,
+    user: session?.user ? {
+      id: session.user.id,
+      username: session.user.username,
+      email: session.user.email!,
+      name: session.user.name || null,
+      image: session.user.image || null
+    } : null,
     isLoading: status === 'loading',
     isAuthenticated: !!session?.user,
     signOut

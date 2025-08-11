@@ -1,15 +1,5 @@
 {
-  "env": {
-    "NEXTAUTH_URL": "https://your-actual-domain.vercel.app"
-  },
-  "build": {
-    "env": {
-      "NEXTAUTH_URL": "https://your-actual-domain.vercel.app"
-    }
-  },
-  "functions": {
-    "app/api/**": {
-      "maxDuration": 10
-    }
-  }
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm ci"
 }

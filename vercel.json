@@ -1,0 +1,15 @@
+{
+  "env": {
+    "NEXTAUTH_URL": "https://your-app-domain.vercel.app"
+  },
+  "build": {
+    "env": {
+      "NEXTAUTH_URL": "https://your-app-domain.vercel.app"
+    }
+  },
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 10
+    }
+  }
+}

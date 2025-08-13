@@ -38,7 +38,7 @@ Build a functional publishing platform with an advanced TipTap editor, enabling 
 - **API**: Next.js API routes
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js with JWT
-- **File Storage**: AWS S3 for images (temporary, will migrate to Arweave)
+- **File Storage**: Supabase Storage for images (temporary, will migrate to Arweave)
 - **Hosting**: Vercel for deployment
 
 ### Development Tools
@@ -232,7 +232,7 @@ model Tag {
 ## Deployment Checklist
 - [ ] Environment variables configured
 - [ ] Database migrations run
-- [ ] S3 bucket configured for images
+- [ ] Supabase Storage bucket configured for images
 - [ ] SSL certificate active
 - [ ] Monitoring setup (Sentry)
 - [ ] Analytics configured
@@ -248,7 +248,7 @@ model Tag {
 ## Dependencies & Risks
 ### Dependencies
 - TipTap editor stability and performance
-- AWS S3 availability for image storage
+- Supabase Storage availability for image uploads
 - Database performance at scale
 
 ### Risks
@@ -350,9 +350,9 @@ While building Phase 1, prepare for Phase 2 by:
    DATABASE_URL="postgresql://..."
    NEXTAUTH_SECRET="..."
    NEXTAUTH_URL="http://localhost:3000"
-   AWS_ACCESS_KEY_ID="..."
-   AWS_SECRET_ACCESS_KEY="..."
-   AWS_BUCKET_NAME="..."
+   SUPABASE_URL="..."
+   SUPABASE_ANON_KEY="..."
+   SUPABASE_STORAGE_BUCKET="images"
    ```
 
 6. **Configure TypeScript**
@@ -491,11 +491,11 @@ The database schema now perfectly matches Phase 1 requirements with no deviation
 
 ### Week 2: TipTap Editor Implementation
 
-#### Day 1-2: AWS S3 & Upload Infrastructure
-1. **Setup S3 Bucket**
-   - Create bucket with proper CORS configuration
-   - Set up IAM user with limited permissions
-   - Configure environment variables
+#### Day 1-2: Supabase Storage & Upload Infrastructure
+1. **Setup Supabase Storage Bucket**
+   - Create storage bucket in Supabase dashboard
+   - Configure bucket policies for public/private access
+   - Set up RLS (Row Level Security) policies
 
 2. **Create Upload API**
    - `app/api/upload/route.ts`
@@ -748,10 +748,10 @@ export async function POST(request: Request) {
 DATABASE_URL="postgresql://..."
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="..."
-AWS_ACCESS_KEY_ID="..."
-AWS_SECRET_ACCESS_KEY="..."
-AWS_REGION="..."
-AWS_S3_BUCKET="..."
+SUPABASE_URL="..."
+SUPABASE_ANON_KEY="..."
+SUPABASE_SERVICE_ROLE_KEY="..."  # For server-side operations
+SUPABASE_STORAGE_BUCKET="images"
 ```
 
 ### Testing Strategy
@@ -831,11 +831,11 @@ jobs:
 
 ### Week 2: TipTap Editor Implementation
 
-#### Day 1-2: AWS S3 & Upload Infrastructure
-- [ ] Create and configure AWS S3 bucket
-- [ ] Set up bucket CORS configuration
-- [ ] Create IAM user with limited S3 permissions
-- [ ] Add AWS credentials to environment variables
+#### Day 1-2: Supabase Storage & Upload Infrastructure
+- [ ] Create and configure Supabase Storage bucket
+- [ ] Set up bucket policies for public/private access
+- [ ] Configure RLS policies for secure uploads
+- [ ] Add Supabase storage configuration to environment variables
 - [ ] Create upload API endpoint (app/api/upload/route.ts)
 - [ ] Implement presigned URL generation
 - [ ] Add file type validation (images only)

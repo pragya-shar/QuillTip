@@ -16,13 +16,11 @@ Your Supabase PostgreSQL database has been configured with the following:
 
 2. ✅ **Prisma Schema** (`prisma/schema.prisma`)
    - PostgreSQL datasource configured
-   - Models created for:
-     - User (authentication & profile)
-     - Document (rich text documents)
-     - Collaboration (shared access)
-     - Comment (document comments)
-     - Version (document history)
-     - Tag (document organization)
+   - Models created for Phase 1:
+     - User (authentication & profile with username, bio, avatar)
+     - Article (rich text articles with TipTap JSON content)
+     - Tag (article organization)
+   - Note: Advanced features (collaboration, comments, versions) are for future phases
 
 3. ✅ **Prisma Client Generated**
    - Ready to use in your application code
@@ -62,14 +60,30 @@ npx prisma db seed
 
 (You'll need to create a seed script first in `prisma/seed.ts`)
 
-## Database Schema Overview
+## Database Schema Overview (Phase 1)
 
-- **Users**: Store user profiles and authentication data
-- **Documents**: Rich text documents with JSON content
-- **Collaborations**: Share documents with role-based permissions (Owner, Editor, Viewer)
-- **Comments**: Threaded comments on documents
-- **Versions**: Document version history
-- **Tags**: Organize documents with tags
+- **Users**: Store user profiles and authentication data (includes username, bio, avatar, hashedPassword)
+- **Articles**: Rich text articles with TipTap JSON content (includes slug, title, content, excerpt, coverImage, published status)
+- **Tags**: Organize articles with tags
+
+## Supabase Storage Setup
+
+### Storage Bucket Configuration
+1. ✅ **Images Bucket Created**
+   - Bucket name: `images`
+   - Used for article cover images and inline images
+   - Configured for public read access
+
+### Environment Variables for Storage
+Add these to your `.env.local` file:
+```env
+SUPABASE_URL="https://your-project-ref.supabase.co"
+SUPABASE_ANON_KEY="your-anon-key-here"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key-here"  # For server-side operations
+SUPABASE_STORAGE_BUCKET="images"
+```
+
+Get these values from: Supabase Dashboard → Settings → API
 
 ## Troubleshooting
 

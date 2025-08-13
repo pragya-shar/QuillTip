@@ -247,7 +247,7 @@ resource "aws_eks_cluster" "quilltip" {
 ### Backup Strategy
 - **Database**: Daily snapshots, 30-day retention
 - **Blockchain**: State backups every 6 hours
-- **User Content**: Arweave (permanent) + S3 backup
+- **User Content**: Arweave (permanent) + Supabase Storage backup
 - **Configuration**: Git repository
 
 ### Recovery Plans

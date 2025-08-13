@@ -138,10 +138,9 @@ export async function POST(request: NextRequest) {
       console.error('Presigned URL generation error:', error)
       console.error('Error details:', {
         message: error.message,
-        status: error.status,
-        statusCode: error.statusCode,
         bucket: bucketName,
-        path: filePath
+        path: filePath,
+        error: JSON.stringify(error)
       })
       return NextResponse.json(
         { error: `Failed to generate upload URL: ${error.message}` },

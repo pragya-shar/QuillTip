@@ -122,10 +122,11 @@ export async function POST(request: NextRequest) {
     const uniqueFileName = `${timestamp}-${randomString}.${fileExtension}`
     const filePath = `uploads/${session.user.id}/${uniqueFileName}`
 
-    // Get bucket name
+    // Get bucket name with fallback
     const bucketName = process.env.SUPABASE_STORAGE_BUCKET || 'images'
     console.log('Using bucket:', bucketName)
     console.log('File path:', filePath)
+    console.log('Supabase URL:', process.env.SUPABASE_URL)
     
     // Generate presigned URL for client-side upload
     const { data, error } = await supabaseAdmin.storage

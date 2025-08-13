@@ -832,15 +832,15 @@ jobs:
 ### Week 2: TipTap Editor Implementation
 
 #### Day 1-2: Supabase Storage & Upload Infrastructure
-- [ ] Create and configure Supabase Storage bucket
-- [ ] Set up bucket policies for public/private access
-- [ ] Configure RLS policies for secure uploads
-- [ ] Add Supabase storage configuration to environment variables
-- [ ] Create upload API endpoint (app/api/upload/route.ts)
-- [ ] Implement presigned URL generation
-- [ ] Add file type validation (images only)
-- [ ] Add file size validation (max 10MB)
-- [ ] Test image upload functionality
+- [x] Create and configure Supabase Storage bucket
+- [x] Set up bucket policies for public/private access
+- [x] Configure RLS policies for secure uploads
+- [x] Add Supabase storage configuration to environment variables
+- [x] Create upload API endpoint (app/api/upload/route.ts)
+- [x] Implement presigned URL generation
+- [x] Add file type validation (images only)
+- [x] Add file size validation (max 10MB)
+- [x] Test image upload functionality
 
 #### Day 3-4: Basic Editor Setup
 - [ ] Create base Editor component (components/editor/Editor.tsx)

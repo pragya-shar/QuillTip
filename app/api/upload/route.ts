@@ -122,24 +122,36 @@ export async function POST(request: NextRequest) {
     const uniqueFileName = `${timestamp}-${randomString}.${fileExtension}`
     const filePath = `uploads/${session.user.id}/${uniqueFileName}`
 
+    // Get bucket name
+    const bucketName = process.env.SUPABASE_STORAGE_BUCKET || 'images'
+    console.log('Using bucket:', bucketName)
+    console.log('File path:', filePath)
+    
     // Generate presigned URL for client-side upload
     const { data, error } = await supabaseAdmin.storage
-      .from(process.env.SUPABASE_STORAGE_BUCKET!)
+      .from(bucketName)
       .createSignedUploadUrl(filePath, {
         upsert: false
       })
 
     if (error) {
       console.error('Presigned URL generation error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        statusCode: error.statusCode,
+        bucket: bucketName,
+        path: filePath
+      })
       return NextResponse.json(
-        { error: 'Failed to generate upload URL' },
+        { error: `Failed to generate upload URL: ${error.message}` },
         { status: 500 }
       )
     }
 
     // Get future public URL (will be available after client uploads)
     const { data: { publicUrl } } = supabaseAdmin.storage
-      .from(process.env.SUPABASE_STORAGE_BUCKET!)
+      .from(bucketName)
       .getPublicUrl(filePath)
 
     return NextResponse.json({

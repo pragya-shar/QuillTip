@@ -843,21 +843,21 @@ jobs:
 - [x] Test image upload functionality
 
 #### Day 3-4: Basic Editor Setup
-- [ ] Create base Editor component (components/editor/Editor.tsx)
-- [ ] Configure TipTap StarterKit extension
-- [ ] Add heading levels (H1-H6) support
-- [ ] Add text formatting (bold, italic, underline, strike)
-- [ ] Add ordered and unordered lists
-- [ ] Add code blocks with syntax highlighting
-- [ ] Add link extension with preview
-- [ ] Add image extension with upload integration
-- [ ] Create EditorToolbar component
-- [ ] Add format buttons to toolbar
-- [ ] Add heading dropdown selector
-- [ ] Add list toggle buttons
-- [ ] Create link dialog component
-- [ ] Create image upload dialog
-- [ ] Test all editor formatting features
+- [x] Create base Editor component (components/editor/Editor.tsx)
+- [x] Configure TipTap StarterKit extension
+- [x] Add heading levels (H1-H6) support
+- [x] Add text formatting (bold, italic, underline, strike)
+- [x] Add ordered and unordered lists
+- [x] Add code blocks with syntax highlighting
+- [x] Add link extension with preview
+- [x] Add image extension with upload integration
+- [x] Create EditorToolbar component
+- [x] Add format buttons to toolbar
+- [x] Add heading dropdown selector
+- [x] Add list toggle buttons
+- [x] Create link dialog component
+- [x] Create image upload dialog
+- [x] Test all editor formatting features
 
 #### Day 3-4: Auto-save & Draft System
 - [ ] Create useAutoSave hook with 30-second debounce

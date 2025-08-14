@@ -19,7 +19,8 @@ interface UploadProgress {
  */
 export async function uploadFile(
   file: File,
-  onProgress?: (progress: UploadProgress) => void
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResult> {
   try {
     // Validate file type

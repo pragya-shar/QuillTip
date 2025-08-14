@@ -12,9 +12,6 @@ import {
   Code,
   Link2,
   Image,
-  Heading1,
-  Heading2,
-  Heading3,
   Type,
   ChevronDown,
   Undo,
@@ -269,6 +266,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => setShowImageDialog(true)}
         title="Add Image"
       >
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <Image className="w-4 h-4" />
       </ToolbarButton>
       

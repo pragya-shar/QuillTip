@@ -16,7 +16,7 @@ export default function WritePage() {
   const [isPublishing, setIsPublishing] = useState(false)
   
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
 
   if (status === 'loading') {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>

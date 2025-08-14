@@ -860,16 +860,19 @@ jobs:
 - [x] Test all editor formatting features
 
 #### Day 3-4: Auto-save & Draft System
-- [ ] Create useAutoSave hook with 30-second debounce
-- [ ] Create draft save API endpoint (POST /api/articles/draft)
-- [ ] Implement draft versioning system
-- [ ] Add conflict resolution for concurrent edits
-- [ ] Create draft recovery UI component
-- [ ] Add draft version list display
-- [ ] Implement restore from draft functionality
+- [x] Create useAutoSave hook with 30-second debounce
+- [x] Create draft save API endpoint (POST /api/articles/draft)
+- [x] Create draft beacon API endpoint (POST /api/articles/draft/beacon) for page unload saves
+- [x] Create drafts listing API endpoint (GET /api/articles/drafts)
+- [x] Implement draft versioning system with automatic timestamps
+- [x] Add conflict resolution for concurrent edits (last-write-wins)
+- [x] Create drafts page UI component (app/drafts/page.tsx)
+- [x] Add draft list display with metadata (title, excerpt, last saved)
+- [x] Implement restore from draft functionality with editor state management
+- [x] Add navigation to drafts from main menu
+- [x] Test auto-save functionality with 30-second intervals
+- [x] Test draft recovery scenarios including page refresh
 - [ ] Create diff viewer for draft comparisons
-- [ ] Test auto-save functionality
-- [ ] Test draft recovery scenarios
 
 #### Day 5: Advanced Editor Features
 - [ ] Implement drag-and-drop image upload

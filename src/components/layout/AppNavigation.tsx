@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { PenSquare, Home, User, LogOut } from 'lucide-react'
+import { PenSquare, Home, User, LogOut, FileText } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export default function AppNavigation() {
@@ -39,6 +39,15 @@ export default function AppNavigation() {
                 >
                   <PenSquare className="w-4 h-4" />
                   <span>Write</span>
+                </Link>
+                <Link 
+                  href="/drafts" 
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                    isActive('/drafts') ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Drafts</span>
                 </Link>
                 <Link 
                   href={`/${session.user?.email?.split('@')[0] || 'profile'}`} 

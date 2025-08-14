@@ -1,27 +1,13 @@
 'use client'
 
-import { NodeViewWrapper } from '@tiptap/react'
+import { NodeViewWrapper, ReactNodeViewProps } from '@tiptap/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
-
-interface ResizableImageComponentProps {
-  node: {
-    attrs: {
-      src: string
-      alt: string
-      title: string
-      width: number | null
-      height: number | null
-    }
-  }
-  updateAttributes: (attributes: Record<string, any>) => void
-  selected: boolean
-}
 
 export default function ResizableImageComponent({
   node,
   updateAttributes,
   selected,
-}: ResizableImageComponentProps) {
+}: ReactNodeViewProps) {
   const { src, alt, title, width, height } = node.attrs
   const [isResizing, setIsResizing] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
@@ -91,7 +77,6 @@ export default function ResizableImageComponent({
 
   const handleSizeChange = (newSize: 'small' | 'medium' | 'large' | 'original') => {
     let newWidth: number
-    let newHeight: number
 
     switch (newSize) {
       case 'small':
@@ -111,7 +96,7 @@ export default function ResizableImageComponent({
     }
 
     const aspectRatio = originalSize.height / originalSize.width
-    newHeight = newWidth * aspectRatio
+    const newHeight = newWidth * aspectRatio
 
     setCurrentSize({ width: newWidth, height: newHeight })
     updateAttributes({ width: newWidth, height: newHeight })
@@ -123,10 +108,11 @@ export default function ResizableImageComponent({
         className={`relative inline-block group ${selected ? 'ring-2 ring-blue-500' : ''}`}
         style={{ maxWidth: '100%' }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imageRef}
           src={src}
-          alt={alt || ''}
+          alt={alt || 'Uploaded image'}
           title={title || ''}
           onLoad={handleImageLoad}
           style={{

@@ -172,3 +172,6 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// Force dynamic rendering for upload route
+export const dynamic = 'force-dynamic'

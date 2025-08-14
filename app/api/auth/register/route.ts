@@ -86,3 +86,6 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// Force dynamic rendering for register route
+export const dynamic = 'force-dynamic'

@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import { History, GitBranch } from 'lucide-react'
 import AppNavigation from '@/components/layout/AppNavigation'
+import DiffViewer from '@/components/editor/DiffViewer'
 
 interface Draft {
   id: string
@@ -15,9 +17,28 @@ interface Draft {
   published: boolean
 }
 
+interface Version {
+  id: string
+  title: string
+  content: any
+  excerpt?: string
+  version: number | string
+  createdAt: string
+}
+
+interface VersionHistory {
+  current: Version
+  versions: Version[]
+}
+
 export default function DraftsPage() {
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [loading, setLoading] = useState(true)
+  const [showVersions, setShowVersions] = useState<string | null>(null)
+  const [versionHistory, setVersionHistory] = useState<VersionHistory | null>(null)
+  const [loadingVersions, setLoadingVersions] = useState(false)
+  const [showDiffViewer, setShowDiffViewer] = useState(false)
+  const [compareVersions, setCompareVersions] = useState<{ current: Version; compare: Version } | null>(null)
   const router = useRouter()
   const { status } = useSession()
 
@@ -40,6 +61,61 @@ export default function DraftsPage() {
 
     fetchDrafts()
   }, [status])
+
+  const fetchVersions = async (draftId: string) => {
+    setLoadingVersions(true)
+    try {
+      const response = await fetch(`/api/articles/${draftId}/versions`)
+      if (response.ok) {
+        const data = await response.json()
+        setVersionHistory(data)
+        setShowVersions(draftId)
+      }
+    } catch (error) {
+      console.error('Failed to fetch versions:', error)
+    } finally {
+      setLoadingVersions(false)
+    }
+  }
+
+  const handleCompareVersions = (compareVersion: Version) => {
+    if (versionHistory) {
+      setCompareVersions({
+        current: versionHistory.current,
+        compare: compareVersion
+      })
+      setShowDiffViewer(true)
+    }
+  }
+
+  const handleRestoreVersion = async (version: Version) => {
+    try {
+      const response = await fetch('/api/articles/draft', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: showVersions,
+          title: version.title,
+          content: version.content,
+          excerpt: version.excerpt,
+        }),
+      })
+
+      if (response.ok) {
+        // Refresh the draft and version history
+        fetchDrafts()
+        if (showVersions) {
+          fetchVersions(showVersions)
+        }
+        alert('Version restored successfully!')
+      }
+    } catch (error) {
+      console.error('Failed to restore version:', error)
+      alert('Failed to restore version')
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -123,6 +199,14 @@ export default function DraftsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => fetchVersions(draft.id)}
+                      className="px-4 py-2 text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2"
+                      disabled={loadingVersions && showVersions === draft.id}
+                    >
+                      <History className="w-4 h-4" />
+                      {loadingVersions && showVersions === draft.id ? 'Loading...' : 'Versions'}
+                    </button>
                     <Link
                       href={`/write?id=${draft.id}`}
                       className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
@@ -160,11 +244,101 @@ export default function DraftsPage() {
           <ul className="space-y-1">
             <li>• All your unpublished articles are saved here automatically</li>
             <li>• Click &quot;Edit&quot; to continue working on any draft</li>
+            <li>• Click &quot;Versions&quot; to view version history and compare changes</li>
             <li>• Drafts are auto-saved every 30 seconds while you write</li>
             <li>• Delete drafts you no longer need to keep your workspace clean</li>
           </ul>
         </div>
       </div>
+
+      {/* Version History Panel */}
+      {showVersions && versionHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <GitBranch className="w-5 h-5" />
+                <h2 className="text-xl font-semibold">Version History</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowVersions(null)
+                  setVersionHistory(null)
+                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="space-y-4">
+                {/* Current Version */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-medium">
+                          CURRENT
+                        </span>
+                        <span className="font-medium">{versionHistory.current.title}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Last updated: {formatDate(versionHistory.current.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Previous Versions */}
+                {versionHistory.versions.map((version) => (
+                  <div key={version.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-gray-600 text-white px-2 py-1 rounded text-xs font-medium">
+                            V{version.version}
+                          </span>
+                          <span className="font-medium">{version.title}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          Saved: {formatDate(version.createdAt)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCompareVersions(version)}
+                        className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2"
+                      >
+                        <GitBranch className="w-4 h-4" />
+                        Compare
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {versionHistory.versions.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No previous versions available yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diff Viewer */}
+      {showDiffViewer && compareVersions && (
+        <DiffViewer
+          currentVersion={compareVersions.current}
+          compareVersion={compareVersions.compare}
+          onClose={() => {
+            setShowDiffViewer(false)
+            setCompareVersions(null)
+          }}
+          onRestore={handleRestoreVersion}
+        />
+      )}
     </div>
   )
 }

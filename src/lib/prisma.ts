@@ -14,6 +14,9 @@ declare global {
  */
 export const prisma = global.prisma || new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  transactionOptions: {
+    timeout: 10000,
+  },
 })
 
 if (process.env.NODE_ENV !== 'production') {

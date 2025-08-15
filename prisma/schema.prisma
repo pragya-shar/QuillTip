@@ -25,38 +25,23 @@ model User {
 }
 
 model Article {
-  id              String          @id @default(cuid())
-  slug            String          @unique
+  id              String    @id @default(cuid())
+  slug            String    @unique
   title           String
-  content         Json            // TipTap JSON content
+  content         Json      // TipTap JSON content
   excerpt         String?
   coverImage      String?
-  published       Boolean         @default(false)
+  published       Boolean   @default(false)
   publishedAt     DateTime?
   tags            Tag[]
-  author          User            @relation(fields: [authorId], references: [id])
+  author          User      @relation(fields: [authorId], references: [id])
   authorId        String
-  versions        DraftVersion[]  // Version history
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   
   @@index([authorId])
   @@index([published, publishedAt])
   @@map("articles")
-}
-
-model DraftVersion {
-  id              String    @id @default(cuid())
-  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  articleId       String
-  title           String
-  content         Json      // TipTap JSON content at this version
-  excerpt         String?
-  version         Int       // Version number (incremental)
-  createdAt       DateTime  @default(now())
-  
-  @@index([articleId, version])
-  @@map("draft_versions")
 }
 
 model Tag {

@@ -541,7 +541,6 @@ The database schema now perfectly matches Phase 1 requirements with no deviation
 3. **Draft Recovery UI**
    - Show draft versions
    - Restore functionality
-   - Diff viewer
 
 #### Day 5: Advanced Editor Features
 1. **Image Upload Integration**
@@ -872,7 +871,6 @@ jobs:
 - [x] Add navigation to drafts from main menu
 - [x] Test auto-save functionality with 30-second intervals
 - [x] Test draft recovery scenarios including page refresh
-- [ ] Create diff viewer for draft comparisons
 
 #### Day 5: Advanced Editor Features
 - [ ] Implement drag-and-drop image upload

@@ -46,9 +46,14 @@ export function useAutoSave({
   const previousContentRef = useRef<string | undefined>(undefined);
 
   const saveDraft = useCallback(async () => {
-    if (!content || state.isSaving) return;
+    // Check isSaving using setState callback to get latest state
+    setState(prev => {
+      if (!content || prev.isSaving) return prev;
+      return { ...prev, isSaving: true, error: null };
+    });
 
-    setState(prev => ({ ...prev, isSaving: true, error: null }));
+    // Early return if no content
+    if (!content) return;
 
     try {
       const response = await fetch('/api/articles/draft', {
@@ -89,7 +94,7 @@ export function useAutoSave({
 
       onSaveError?.(err);
     }
-  }, [content, articleId, title, excerpt, state.isSaving, onSaveSuccess, onSaveError]);
+  }, [content, articleId, title, excerpt, onSaveSuccess, onSaveError]);
 
   const debouncedSave = useCallback(() => {
     if (timeoutRef.current) {

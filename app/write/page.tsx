@@ -25,6 +25,7 @@ export default function WritePage() {
   const [isPublishing, setIsPublishing] = useState(false)
   const [articleId, setArticleId] = useState<string | undefined>()
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -67,23 +68,30 @@ export default function WritePage() {
         class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] px-8 py-4'
       }
     },
+    onCreate: ({ editor }) => {
+      // Set initial content state when editor is created
+      const json = editor.getJSON()
+      setEditorContent(json)
+    },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON()
       setEditorContent(json)
+      setHasUnsavedChanges(true)
     }
   })
 
-  // Auto-save hook
+  // Auto-save hook - enable when we have a session and any content
   const { isSaving, lastSavedAt, error, saveNow } = useAutoSave({
     content: editorContent,
     articleId,
     title: title || 'Untitled',
     excerpt,
-    enabled: !!session && (!!title || !!editorContent),
+    enabled: !!session && (hasUnsavedChanges || !!title),
     onSaveSuccess: (response) => {
       if (!articleId && response.id) {
         setArticleId(response.id)
       }
+      setHasUnsavedChanges(false)
     },
     onSaveError: (error) => {
       console.error('Auto-save error:', error)
@@ -106,7 +114,10 @@ export default function WritePage() {
             setExcerpt(draft.excerpt || '')
             if (editor && draft.content) {
               editor.commands.setContent(draft.content)
+              setEditorContent(draft.content)
             }
+            // Reset unsaved changes flag after loading draft
+            setHasUnsavedChanges(false)
           }
         } catch (error) {
           console.error('Failed to load draft:', error)
@@ -205,12 +216,15 @@ export default function WritePage() {
             
             {/* Manual save button */}
             <button
-              onClick={saveNow}
-              disabled={isSaving || (!title && !editorContent)}
+              onClick={() => {
+                saveNow()
+                setHasUnsavedChanges(false)
+              }}
+              disabled={isSaving || !hasUnsavedChanges}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               title="Save now (auto-saves every 30 seconds)"
             >
-              Save Now
+              {isSaving ? 'Saving...' : 'Save Now'}
             </button>
             
             {/* Publish button */}
@@ -230,7 +244,10 @@ export default function WritePage() {
             type="text"
             placeholder="Article Title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             className="w-full text-3xl font-bold border-0 border-b-2 border-gray-200 focus:border-blue-500 outline-none pb-2 bg-transparent placeholder-gray-400"
           />
         </div>
@@ -276,7 +293,10 @@ export default function WritePage() {
           <textarea
             placeholder="Brief description of your article (optional)"
             value={excerpt}
-            onChange={(e) => setExcerpt(e.target.value)}
+            onChange={(e) => {
+              setExcerpt(e.target.value)
+              setHasUnsavedChanges(true)
+            }}
             rows={3}
             className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 outline-none resize-none placeholder-gray-400"
           />

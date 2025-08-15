@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     }
 
     let article;
+    let shouldCreateVersion = false;
 
     if (validatedData.id) {
       // Update existing draft
@@ -46,6 +47,12 @@ export async function POST(request: Request) {
           id: validatedData.id,
           authorId: user.id,
         },
+        include: {
+          versions: {
+            orderBy: { version: 'desc' },
+            take: 1
+          }
+        }
       });
 
       if (!article) {
@@ -53,6 +60,31 @@ export async function POST(request: Request) {
           { error: 'Article not found or unauthorized' },
           { status: 404 }
         );
+      }
+
+      // Check if we should create a new version (every significant change or every hour)
+      const lastVersion = article.versions[0];
+      const hasSignificantChange = !lastVersion || 
+        JSON.stringify(lastVersion.content) !== JSON.stringify(validatedData.content) ||
+        lastVersion.title !== validatedData.title;
+      
+      const hoursSinceLastVersion = lastVersion ? 
+        (new Date().getTime() - new Date(lastVersion.createdAt).getTime()) / (1000 * 60 * 60) : 999;
+
+      shouldCreateVersion = hasSignificantChange && (hoursSinceLastVersion > 1 || !lastVersion);
+
+      // Create version snapshot before updating if needed
+      if (shouldCreateVersion) {
+        const nextVersion = lastVersion ? lastVersion.version + 1 : 1;
+        await prisma.draftVersion.create({
+          data: {
+            articleId: article.id,
+            title: article.title,
+            content: article.content,
+            excerpt: article.excerpt,
+            version: nextVersion
+          }
+        });
       }
 
       article = await prisma.article.update({
@@ -75,6 +107,17 @@ export async function POST(request: Request) {
           published: false,
           authorId: user.id,
         },
+      });
+      
+      // Create initial version
+      await prisma.draftVersion.create({
+        data: {
+          articleId: article.id,
+          title: validatedData.title,
+          content: validatedData.content,
+          excerpt: validatedData.excerpt,
+          version: 1
+        }
       });
     }
 

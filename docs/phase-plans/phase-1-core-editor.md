@@ -7,7 +7,7 @@
 
 ### Key Accomplishments:
 - ✅ Next.js 15.4.5 project initialized with TypeScript
-- ✅ All 8 landing page components created in src/components/landing/
+- ✅ All 8 landing page components created in app/components/landing/
 - ✅ Database connected to Supabase PostgreSQL
 - ✅ Prisma schema updated to Phase 1 specifications (Article, User, Tag models)
 - ✅ All required dependencies installed
@@ -793,14 +793,14 @@ jobs:
 
 #### Day 3-4: Fresh Landing Page & Database Setup
 - [x] Build new landing page root component (app/page.tsx)
-- [x] Create Navigation component with brand styling (src/components/landing/Navigation.tsx)
-- [x] Create HeroSection component (src/components/landing/HeroSection.tsx)
-- [x] Create ProblemSection component (src/components/landing/ProblemSection.tsx)
-- [x] Create StellarBenefitsSection component (src/components/landing/StellarBenefitsSection.tsx)
-- [x] Create HowItWorksSection component (src/components/landing/HowItWorksSection.tsx)
-- [x] Create FeaturesSection component (src/components/landing/FeaturesSection.tsx)
-- [x] Create WaitlistSection component with email capture (src/components/landing/WaitlistSection.tsx)
-- [x] Create Footer component (src/components/landing/Footer.tsx)
+- [x] Create Navigation component with brand styling (app/components/landing/Navigation.tsx)
+- [x] Create HeroSection component (app/components/landing/HeroSection.tsx)
+- [x] Create ProblemSection component (app/components/landing/ProblemSection.tsx)
+- [x] Create StellarBenefitsSection component (app/components/landing/StellarBenefitsSection.tsx)
+- [x] Create HowItWorksSection component (app/components/landing/HowItWorksSection.tsx)
+- [x] Create FeaturesSection component (app/components/landing/FeaturesSection.tsx)
+- [x] Create WaitlistSection component with email capture (app/components/landing/WaitlistSection.tsx)
+- [x] Create Footer component (app/components/landing/Footer.tsx)
 - [x] Configure Google Fonts (Inter, Caveat) - *Pending in layout.tsx*
 - [x] Initialize Prisma and configure PostgreSQL connection (Supabase)
 - [x] Create database schema (Article, User, Tag models per Phase 1 spec)

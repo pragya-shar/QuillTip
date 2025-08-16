@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Import resizable image styles */
-@import '../src/components/editor/extensions/ResizableImageStyles.css';
+@import './components/editor/extensions/ResizableImageStyles.css';
 
 :root {
   --font-sans: 'Inter', sans-serif;

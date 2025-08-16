@@ -7,8 +7,9 @@ import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ResizableImage } from './extensions/ResizableImage'
+import { uploadFile, compressImage } from '@/lib/upload'
 
 const lowlight = createLowlight(common)
 
@@ -27,6 +28,9 @@ export function Editor({
   editable = true,
   className = ''
 }: EditorProps) {
+  const [isDragging, setIsDragging] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -83,8 +87,90 @@ export function Editor({
     }
   }, [editable, editor])
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only set dragging to false if we're leaving the editor container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+
+    if (!editor || !editable) return
+
+    const files = Array.from(e.dataTransfer.files)
+    const imageFiles = files.filter(file => file.type.startsWith('image/'))
+
+    if (imageFiles.length === 0) {
+      return // No image files dropped
+    }
+
+    setIsUploading(true)
+
+    try {
+      // Upload the first image file
+      const file = imageFiles[0]
+      if (!file) return
+
+      // Compress image before upload for better performance
+      const compressedFile = await compressImage(file, 1200, 0.8)
+      const result = await uploadFile(compressedFile)
+
+      if (result.success && result.url) {
+        // Insert the image at the current cursor position
+        editor.chain().focus().setResizableImage({ src: result.url }).run()
+      }
+    } catch (error) {
+      console.error('Error uploading dropped image:', error)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
-    <div className={`editor-wrapper bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
+    <div 
+      className={`editor-wrapper bg-white rounded-lg shadow-sm border border-gray-200 relative ${className} ${
+        isDragging ? 'border-blue-400 bg-blue-50' : ''
+      } ${isUploading ? 'pointer-events-none' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-50 bg-opacity-90 flex items-center justify-center z-10 rounded-lg border-2 border-dashed border-blue-400">
+          <div className="text-center">
+            <div className="text-blue-600 text-lg font-medium mb-2">
+              Drop image here
+            </div>
+            <div className="text-blue-500 text-sm">
+              Release to upload
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {isUploading && (
+        <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <div className="text-gray-600 text-sm">
+              Optimizing and uploading image...
+            </div>
+          </div>
+        </div>
+      )}
+      
       <EditorContent 
         editor={editor} 
         className="editor-content"

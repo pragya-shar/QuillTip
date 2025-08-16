@@ -17,6 +17,11 @@ export const prisma = global.prisma || new PrismaClient({
   transactionOptions: {
     timeout: 10000,
   },
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
 })
 
 if (process.env.NODE_ENV !== 'production') {

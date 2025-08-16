@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, Link2, X, Image as ImageIcon } from 'lucide-react'
-import { uploadFile } from '@/lib/upload'
+import { uploadFile, compressImage } from '@/lib/upload'
 
 interface ImageUploadDialogProps {
   onImageSelect: (url: string) => void
@@ -27,7 +27,9 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
     setUploadProgress(0)
 
     try {
-      const result = await uploadFile(file)
+      // Compress image before upload for better performance
+      const compressedFile = await compressImage(file, 1200, 0.8)
+      const result = await uploadFile(compressedFile)
       
       if (result.success && result.url) {
         onImageSelect(result.url)
@@ -154,7 +156,7 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
                       <Upload className="w-6 h-6 text-blue-600 animate-pulse" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-600">Uploading...</p>
+                      <p className="text-sm text-gray-600">Optimizing and uploading...</p>
                       {uploadProgress > 0 && (
                         <div className="mt-2 bg-gray-200 rounded-full h-2">
                           <div

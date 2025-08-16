@@ -159,7 +159,7 @@ export default function DraftsPage() {
           <p className="font-semibold mb-2">ℹ️ About Drafts</p>
           <ul className="space-y-1">
             <li>• All your unpublished articles are saved here automatically</li>
-            <li>• Click "Edit" to continue working on any draft</li>
+            <li>• Click &quot;Edit&quot; to continue working on any draft</li>
             <li>• Drafts are auto-saved every 30 seconds while you write</li>
             <li>• Delete drafts you no longer need to keep your workspace clean</li>
           </ul>

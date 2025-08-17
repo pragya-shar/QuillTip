@@ -876,7 +876,7 @@ jobs:
 - [x] Implement drag-and-drop image upload
 - [x] Add upload progress indicators
 - [x] Implement client-side image optimization
-- [ ] Create YouTube embed extension
+- [?] Create YouTube embed extension **(Partial - setYoutubeVideo available: false)**
 - [ ] Create Tweet embed extension
 - [ ] Configure code syntax highlighting themes
 - [ ] Add block quote styling

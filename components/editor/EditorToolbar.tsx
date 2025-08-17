@@ -15,11 +15,13 @@ import {
   Type,
   ChevronDown,
   Undo,
-  Redo
+  Redo,
+  Youtube
 } from 'lucide-react'
 import { useState } from 'react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { ImageUploadDialog } from './ImageUploadDialog'
+import { YouTubeEmbedDialog } from './YouTubeEmbedDialog'
 
 interface EditorToolbarProps {
   editor: Editor | null
@@ -58,6 +60,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
   const [linkUrl, setLinkUrl] = useState('')
   const [showLinkInput, setShowLinkInput] = useState(false)
   const [showImageDialog, setShowImageDialog] = useState(false)
+  const [showYouTubeDialog, setShowYouTubeDialog] = useState(false)
 
   if (!editor) {
     return null
@@ -77,6 +80,19 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
   const handleImageSelect = (url: string) => {
     editor.chain().focus().setResizableImage({ src: url }).run()
+  }
+
+  const handleVideoEmbed = (url: string, width?: number, height?: number) => {
+    if ('setYoutubeVideo' in editor.commands) {
+      editor.commands.setYoutubeVideo({ 
+        src: url,
+        width: width || 640,
+        height: height || 480
+      })
+    } else {
+      console.error('setYoutubeVideo command not available')
+      alert('YouTube extension not properly loaded. Please refresh the page.')
+    }
   }
 
   const headingOptions = [
@@ -269,11 +285,25 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <Image className="w-4 h-4" />
       </ToolbarButton>
+
+      {/* YouTube Video */}
+      <ToolbarButton
+        onClick={() => setShowYouTubeDialog(true)}
+        title="Embed YouTube Video"
+      >
+        <Youtube className="w-4 h-4" />
+      </ToolbarButton>
       
       <ImageUploadDialog
         isOpen={showImageDialog}
         onClose={() => setShowImageDialog(false)}
         onImageSelect={handleImageSelect}
+      />
+
+      <YouTubeEmbedDialog
+        isOpen={showYouTubeDialog}
+        onClose={() => setShowYouTubeDialog(false)}
+        onVideoEmbed={handleVideoEmbed}
       />
     </div>
   )

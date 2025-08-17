@@ -6,10 +6,12 @@ import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import Youtube from '@tiptap/extension-youtube'
 import { common, createLowlight } from 'lowlight'
 import { useEffect } from 'react'
 import { EditorToolbar } from './EditorToolbar'
 import { ResizableImage } from './extensions/ResizableImage'
+
 
 const lowlight = createLowlight(common)
 
@@ -37,13 +39,28 @@ export function EditorWithToolbar({
         heading: {
           levels: [1, 2, 3, 4, 5, 6]
         },
-        codeBlock: false
+        codeBlock: false,
+        // Disable Link from StarterKit since we're adding it separately
+        link: false
       }),
-      Underline,
+      // Add Link separately with our configuration
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
           class: 'text-blue-600 underline cursor-pointer hover:text-blue-800'
+        }
+      }),
+      // Add Underline extension
+      Underline,
+      // YouTube extension
+      Youtube.configure({
+        width: 640,
+        height: 480,
+        controls: true,
+        nocookie: true,
+        allowFullscreen: true,
+        HTMLAttributes: {
+          class: 'youtube-embed rounded-lg my-4'
         }
       }),
       ResizableImage.configure({

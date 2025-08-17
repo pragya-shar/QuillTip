@@ -28,6 +28,7 @@
     "@tiptap/extension-link": "^3.2.0",
     "@tiptap/extension-placeholder": "^3.2.0",
     "@tiptap/extension-underline": "^3.2.0",
+    "@tiptap/extension-youtube": "^3.2.0",
     "@tiptap/pm": "^3.0.9",
     "@tiptap/react": "^3.0.9",
     "@tiptap/starter-kit": "^3.0.9",

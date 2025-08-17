@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 // Maximum file size: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024
@@ -25,6 +25,30 @@ const ALLOWED_EXTENSIONS = [
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase environment variables are configured
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables:', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+        hasBucket: !!process.env.SUPABASE_STORAGE_BUCKET
+      })
+      return NextResponse.json(
+        { error: 'Storage service is not configured. Please check environment variables.' },
+        { status: 503 }
+      )
+    }
+    
+    // Create Supabase client inline to avoid initialization issues
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user?.email || !session?.user?.id) {
@@ -141,8 +165,24 @@ export async function POST(request: NextRequest) {
         message: error.message,
         bucket: bucketName,
         path: filePath,
-        error: JSON.stringify(error)
+        errorDetails: JSON.stringify(error)
       })
+      
+      // Check for common Supabase errors
+      if (error.message?.includes('Bucket not found')) {
+        return NextResponse.json(
+          { error: 'Storage bucket not configured. Please ensure the bucket exists in Supabase.' },
+          { status: 500 }
+        )
+      }
+      
+      if (error.message?.includes('Invalid API key') || error.message?.includes('JWT')) {
+        return NextResponse.json(
+          { error: 'Storage authentication failed. Please check Supabase credentials.' },
+          { status: 500 }
+        )
+      }
+      
       return NextResponse.json(
         { error: `Failed to generate upload URL: ${error.message}` },
         { status: 500 }
@@ -150,7 +190,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get future public URL (will be available after client uploads)
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = supabaseAdmin!.storage
       .from(bucketName)
       .getPublicUrl(filePath)
 
@@ -166,8 +206,21 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Upload API error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    
+    // More detailed error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    
+    // Check for specific error types
+    if (errorMessage.includes('SUPABASE_URL') || errorMessage.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+      return NextResponse.json(
+        { error: 'Storage service configuration error. Environment variables may be missing.' },
+        { status: 503 }
+      )
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error during upload' },
       { status: 500 }
     )
   }

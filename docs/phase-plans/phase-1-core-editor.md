@@ -873,9 +873,9 @@ jobs:
 - [x] Test draft recovery scenarios including page refresh
 
 #### Day 5: Advanced Editor Features
-- [ ] Implement drag-and-drop image upload
-- [ ] Add upload progress indicators
-- [ ] Implement client-side image optimization
+- [x] Implement drag-and-drop image upload
+- [x] Add upload progress indicators
+- [x] Implement client-side image optimization
 - [ ] Create YouTube embed extension
 - [ ] Create Tweet embed extension
 - [ ] Configure code syntax highlighting themes

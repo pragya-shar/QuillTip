@@ -1,7 +1,7 @@
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { AuthProvider } from './AuthContext'
 
 /**
  * Providers Component

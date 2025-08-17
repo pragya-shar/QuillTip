@@ -19,8 +19,7 @@ interface UploadProgress {
  */
 export async function uploadFile(
   file: File,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _onProgress?: (progress: UploadProgress) => void
+  onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResult> {
   try {
     // Validate file type
@@ -63,26 +62,50 @@ export async function uploadFile(
 
     const { uploadUrl, publicUrl } = await metadataResponse.json()
 
-    // Step 2: Upload directly to Supabase Storage using presigned URL
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-      },
+    // Step 2: Upload directly to Supabase Storage using XMLHttpRequest for progress tracking
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest()
+      
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress: UploadProgress = {
+            loaded: event.loaded,
+            total: event.total,
+            percentage: Math.round((event.loaded / event.total) * 100)
+          }
+          onProgress(progress)
+        }
+      })
+      
+      // Handle completion
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({
+            success: true,
+            url: publicUrl
+          })
+        } else {
+          resolve({
+            success: false,
+            error: 'Failed to upload file to storage'
+          })
+        }
+      })
+      
+      // Handle errors
+      xhr.addEventListener('error', () => {
+        resolve({
+          success: false,
+          error: 'Network error occurred during upload'
+        })
+      })
+      
+      // Start upload
+      xhr.open('PUT', uploadUrl)
+      xhr.setRequestHeader('Content-Type', file.type)
+      xhr.send(file)
     })
-
-    if (!uploadResponse.ok) {
-      return {
-        success: false,
-        error: 'Failed to upload file to storage'
-      }
-    }
-
-    return {
-      success: true,
-      url: publicUrl
-    }
   } catch (error) {
     console.error('Upload error:', error)
     return {

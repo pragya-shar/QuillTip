@@ -877,10 +877,10 @@ jobs:
 - [x] Add upload progress indicators
 - [x] Implement client-side image optimization
 - [?] Create YouTube embed extension **(Partial - setYoutubeVideo available: false)**
-- [ ] Create Tweet embed extension
-- [ ] Configure code syntax highlighting themes
-- [ ] Add block quote styling
-- [ ] Test all advanced editor features
+- [?] Create Tweet embed extension
+- [x] Configure code syntax highlighting themes
+- [x] Add block quote styling
+- [x] Test all advanced editor features
 
 ### Week 3: Core Features & UI
 

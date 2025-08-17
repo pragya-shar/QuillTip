@@ -29,7 +29,9 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
     try {
       // Compress image before upload for better performance
       const compressedFile = await compressImage(file, 1200, 0.8)
-      const result = await uploadFile(compressedFile)
+      const result = await uploadFile(compressedFile, (progress) => {
+        setUploadProgress(progress.percentage)
+      })
       
       if (result.success && result.url) {
         onImageSelect(result.url)
@@ -157,14 +159,15 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Optimizing and uploading...</p>
-                      {uploadProgress > 0 && (
-                        <div className="mt-2 bg-gray-200 rounded-full h-2">
+                      <div className="mt-2">
+                        <div className="bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${uploadProgress}%` }}
                           />
                         </div>
-                      )}
+                        <p className="text-xs text-gray-500 mt-1">{uploadProgress}%</p>
+                      </div>
                     </div>
                   </div>
                 ) : (

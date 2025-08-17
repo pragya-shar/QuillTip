@@ -28,3 +28,38 @@
   --font-sans: 'Inter', sans-serif;
   --font-handwritten: 'Caveat', cursive;
 }
+
+/* Custom blockquote styling for the editor */
+.prose blockquote {
+  position: relative;
+  padding-left: 1.5rem;
+  padding-right: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  margin: 1.5rem 0;
+  background-color: #f8f9fa;
+  border-left: 4px solid #2d5a87;
+  font-style: italic;
+  color: #4a5568;
+  border-radius: 0.25rem;
+}
+
+.prose blockquote p {
+  margin: 0;
+}
+
+.prose blockquote p:first-child::before {
+  content: '"';
+  font-size: 1.5rem;
+  color: #2d5a87;
+  font-weight: bold;
+  margin-right: 0.25rem;
+}
+
+.prose blockquote p:last-child::after {
+  content: '"';
+  font-size: 1.5rem;
+  color: #2d5a87;
+  font-weight: bold;
+  margin-left: 0.25rem;
+}

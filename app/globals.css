@@ -1,6 +1,25 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Tailwind v4 Theme Configuration */
+@theme {
+  --font-sans: Inter, sans-serif;
+  --font-handwritten: Caveat, cursive;
+  
+  --color-brand-blue: #1a365d;
+  --color-brand-cream: #fefefe;
+  --color-brand-accent: #2d5a87;
+  
+  --color-quill-50: #f8f9fa;
+  --color-quill-100: #f1f3f4;
+  --color-quill-200: #e8eaed;
+  --color-quill-300: #dadce0;
+  --color-quill-400: #bdc1c6;
+  --color-quill-500: #9aa0a6;
+  --color-quill-600: #80868b;
+  --color-quill-700: #5f6368;
+  --color-quill-800: #3c4043;
+  --color-quill-900: #202124;
+}
 
 /* Import resizable image styles */
 @import '../components/editor/extensions/ResizableImageStyles.css';

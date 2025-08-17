@@ -1,36 +1,11 @@
 import type { Config } from "tailwindcss";
 
+// Tailwind v4 minimal config - theme configuration is now in CSS
 const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  theme: {
-    extend: {
-      colors: {
-        'brand-blue': '#1a365d',
-        'brand-cream': '#fefefe',
-        'brand-accent': '#2d5a87',
-        quill: {
-          50: '#f8f9fa',
-          100: '#f1f3f4', 
-          200: '#e8eaed',
-          300: '#dadce0',
-          400: '#bdc1c6',
-          500: '#9aa0a6',
-          600: '#80868b',
-          700: '#5f6368',
-          800: '#3c4043',
-          900: '#202124',
-        }
-      },
-      fontFamily: {
-        'handwritten': ['Caveat', 'cursive'],
-        'sans': ['Inter', 'sans-serif']
-      }
-    }
-  },
-  plugins: [],
 };
 
 export default config;

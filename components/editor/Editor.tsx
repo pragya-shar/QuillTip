@@ -31,6 +31,7 @@ export function Editor({
 }: EditorProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   
   const editor = useEditor({
     immediatelyRender: false,
@@ -133,6 +134,7 @@ export function Editor({
     }
 
     setIsUploading(true)
+    setUploadProgress(0)
 
     try {
       // Upload the first image file
@@ -141,7 +143,9 @@ export function Editor({
 
       // Compress image before upload for better performance
       const compressedFile = await compressImage(file, 1200, 0.8)
-      const result = await uploadFile(compressedFile)
+      const result = await uploadFile(compressedFile, (progress) => {
+        setUploadProgress(progress.percentage)
+      })
 
       if (result.success && result.url) {
         // Insert the image at the current cursor position
@@ -182,6 +186,15 @@ export function Editor({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
             <div className="text-gray-600 text-sm">
               Optimizing and uploading image...
+            </div>
+            <div className="mt-2 w-48 bg-gray-200 rounded-full h-2 mx-auto">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <div className="text-gray-500 text-xs mt-1">
+              {uploadProgress}%
             </div>
           </div>
         </div>

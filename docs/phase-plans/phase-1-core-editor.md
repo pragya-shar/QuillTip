@@ -933,10 +933,10 @@ jobs:
 
 #### Day 5: Advanced Editor Features
 
-- [-] Implement drag-and-drop image upload -- W --
+- [ ] Implement drag-and-drop image upload -- W --
 - [x] Add upload progress indicators -- W --
 - [x] Implement client-side image optimization -- W --
-- [-] Create YouTube embed extension **(Partial - setYoutubeVideo available: false)** -- W --
+- [ ] Create YouTube embed extension **(Partial - setYoutubeVideo available: false)** -- W --
 - [ ] Create Tweet embed extension -- W --
 - [x] Configure code syntax highlighting themes -- C --
 - [x] Add block quote styling -- S --

@@ -3,9 +3,11 @@
 > **📝 Implementation Note**: This phase builds on the fresh Next.js 15 application created in Phase 1. All code examples assume a modern Next.js app directory structure, not the existing static HTML landing page.
 
 ## Overview
+
 Implement QuillTip's unique highlight and selection system, enabling readers to interact with specific portions of text. This phase builds the foundation for the micro-tipping feature without payment integration.
 
 ## Goals
+
 - Build precise text selection and highlighting system
 - Implement highlight persistence and display
 - Create comment/note system on highlights
@@ -15,6 +17,7 @@ Implement QuillTip's unique highlight and selection system, enabling readers to 
 ## Technical Requirements
 
 ### Frontend Enhancements
+
 - **Selection Library**: Custom implementation using Selection API
 - **Visualization**: D3.js for heat map rendering
 - **Real-time Updates**: Socket.io for live highlight updates
@@ -22,6 +25,7 @@ Implement QuillTip's unique highlight and selection system, enabling readers to 
 - **State Management**: Expand Zustand for highlight state
 
 ### Backend Extensions
+
 - **WebSocket Server**: Socket.io integration
 - **Database**: New tables for highlights and interactions
 - **Caching**: Redis for real-time highlight data
@@ -30,6 +34,7 @@ Implement QuillTip's unique highlight and selection system, enabling readers to 
 ## User Stories
 
 ### Reader Stories
+
 1. **As a reader**, I want to highlight text that resonates with me
    - Select any text portion (word, sentence, paragraph)
    - See visual feedback during selection
@@ -48,6 +53,7 @@ Implement QuillTip's unique highlight and selection system, enabling readers to 
    - See highlight count per section
 
 ### Writer Stories
+
 1. **As a writer**, I want to see engagement analytics
    - Most highlighted passages
    - Highlight trends over time
@@ -132,6 +138,7 @@ model Article {
 ## API Endpoints
 
 ### Highlights
+
 - `POST /api/highlights` - Create new highlight
 - `GET /api/highlights/article/[id]` - Get highlights for article
 - `PUT /api/highlights/[id]` - Update highlight
@@ -139,15 +146,18 @@ model Article {
 - `GET /api/highlights/user/[id]` - Get user's highlights
 
 ### Highlight Interactions
+
 - `POST /api/highlights/[id]/like` - Like a highlight
 - `POST /api/highlights/[id]/share` - Share a highlight
 - `GET /api/highlights/[id]/stats` - Get highlight statistics
 
 ### Analytics
+
 - `GET /api/analytics/article/[id]/highlights` - Article highlight analytics
 - `GET /api/analytics/user/[id]/highlights` - User highlight patterns
 
 ### WebSocket Events
+
 - `highlight:created` - New highlight added
 - `highlight:deleted` - Highlight removed
 - `highlight:liked` - Highlight liked
@@ -156,6 +166,7 @@ model Article {
 ## Technical Implementation
 
 ### Text Selection System
+
 ```typescript
 interface TextSelection {
   text: string;
@@ -182,6 +193,7 @@ class HighlightManager {
 ```
 
 ### Heat Map Visualization
+
 ```typescript
 interface HeatMapData {
   paragraphId: string;
@@ -205,6 +217,7 @@ class HeatMapRenderer {
 ## UI/UX Components
 
 ### Highlight Interface
+
 ```
 ┌─────────────────────────────────────────────┐
 │  Article Content                            │
@@ -223,6 +236,7 @@ class HeatMapRenderer {
 ```
 
 ### Heat Map View
+
 ```
 ┌─────────────────────────────────────────────┐
 │  [Toggle Heat Map] [Filter: All/Friends/Top]│
@@ -240,6 +254,7 @@ class HeatMapRenderer {
 ```
 
 ### Analytics Dashboard
+
 ```
 ┌─────────────────────────────────────────────┐
 │  Article Engagement Analytics               │
@@ -260,12 +275,14 @@ class HeatMapRenderer {
 ## Performance Optimizations
 
 ### Client-Side
+
 - Debounce selection events (100ms)
 - Virtualize highlight list for articles with many highlights
 - Lazy load heat map data
 - Cache highlight positions
 
 ### Server-Side
+
 - Redis cache for real-time highlight counts
 - Batch WebSocket updates (100ms window)
 - Database indexes on hot paths
@@ -274,28 +291,33 @@ class HeatMapRenderer {
 ## Testing Requirements
 
 ### Unit Tests
+
 - Text selection accuracy
 - Highlight serialization/deserialization
 - Overlap detection and merging
 - Heat map calculations
 
 ### Integration Tests
+
 - WebSocket highlight synchronization
 - Multi-user highlight conflicts
 - Analytics data accuracy
 
 ### E2E Tests
+
 - Complete highlight flow: select → save → view
 - Real-time updates across multiple sessions
 - Heat map interactions
 
 ## Security Considerations
+
 - Validate highlight boundaries to prevent XSS
 - Rate limit highlight creation (10/minute per user)
 - Sanitize highlight notes
 - Privacy controls for highlight visibility
 
 ## Success Metrics
+
 - **Highlight Creation Rate**: Highlights per article
 - **Engagement Depth**: % of article highlighted
 - **Social Interactions**: Likes/shares per highlight
@@ -305,27 +327,33 @@ class HeatMapRenderer {
 ## Dependencies & Risks
 
 ### Dependencies
+
 - Browser Selection API compatibility
 - WebSocket connection stability
 - Real-time synchronization complexity
 
 ### Risks
+
 - **Performance**: Many highlights could slow rendering
 - **UX Complexity**: Feature discovery might be low
 - **Privacy Concerns**: Users worried about tracked reading
 
 ### Mitigation Strategies
+
 - Progressive rendering for large highlight sets
 - Onboarding tutorial for highlight features
 - Clear privacy options and data controls
 
 ## Migration Considerations
+
 - No breaking changes to Phase 1
 - Highlights table can be added without migration
 - WebSocket server runs alongside existing API
 
 ## Next Phase Preparation
+
 While building Phase 2, prepare for Phase 3 by:
+
 - Researching Stellar SDK integration patterns
 - Understanding Freighter wallet API
 - Designing wallet connection UX
@@ -336,12 +364,15 @@ While building Phase 2, prepare for Phase 3 by:
 ### Week 5: Foundation & Text Selection
 
 #### Day 1-2: Database & WebSocket Setup
+
 1. **Update Database Schema**
+
    ```bash
    npx prisma migrate dev --name add-highlights
    ```
 
 2. **Setup Socket.io Server**
+
    ```typescript
    // server/socket.ts
    import { Server } from 'socket.io'
@@ -358,6 +389,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 3. **Redis Configuration**
+
    ```typescript
    // lib/redis.ts
    import { createClient } from 'redis'
@@ -368,6 +400,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 4. **Socket Context for React**
+
    ```typescript
    // contexts/SocketContext.tsx
    const SocketContext = createContext<Socket | null>(null)
@@ -390,7 +423,9 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 #### Day 3-4: Text Selection System
+
 1. **Selection Manager Implementation**
+
    ```typescript
    // lib/highlights/SelectionManager.ts
    export class SelectionManager {
@@ -435,6 +470,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Highlight Serialization**
+
    ```typescript
    // lib/highlights/HighlightSerializer.ts
    export class HighlightSerializer {
@@ -499,7 +535,9 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 #### Day 5: Highlight UI Components
+
 1. **Highlight Popover**
+
    ```typescript
    // components/highlights/HighlightPopover.tsx
    export const HighlightPopover = ({ selection, onAction }) => {
@@ -547,6 +585,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Highlight Renderer**
+
    ```typescript
    // components/highlights/HighlightRenderer.tsx
    export const HighlightRenderer = ({ highlights, articleContent }) => {
@@ -589,7 +628,9 @@ While building Phase 2, prepare for Phase 3 by:
 ### Week 6: Real-time Sync & Heat Map
 
 #### Day 1-2: WebSocket Integration
+
 1. **Highlight Events**
+
    ```typescript
    // hooks/useHighlightSync.ts
    export const useHighlightSync = (articleId: string) => {
@@ -630,6 +671,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Server-side Socket Handlers**
+
    ```typescript
    // server/socketHandlers.ts
    export const setupHighlightHandlers = (io: Server) => {
@@ -665,7 +707,9 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 #### Day 3-4: Heat Map Visualization
+
 1. **Heat Map Calculator**
+
    ```typescript
    // lib/highlights/HeatMapCalculator.ts
    export class HeatMapCalculator {
@@ -706,6 +750,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Heat Map Component**
+
    ```typescript
    // components/highlights/HeatMap.tsx
    export const HeatMap = ({ highlights, onToggle }) => {
@@ -768,7 +813,9 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 #### Day 5: Highlight Interactions
+
 1. **Like/Share System**
+
    ```typescript
    // components/highlights/HighlightInteractions.tsx
    export const HighlightInteractions = ({ highlightId, initialLikes }) => {
@@ -814,6 +861,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Note System**
+
    ```typescript
    // components/highlights/HighlightNote.tsx
    export const HighlightNote = ({ highlightId, onSave }) => {
@@ -868,7 +916,9 @@ While building Phase 2, prepare for Phase 3 by:
 ### Week 7: Analytics & Polish
 
 #### Day 1-2: Analytics Dashboard
+
 1. **Writer Analytics Page**
+
    ```typescript
    // app/dashboard/analytics/page.tsx
    export default function AnalyticsPage() {
@@ -906,6 +956,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Highlight Analytics Component**
+
    ```typescript
    // components/analytics/HighlightAnalytics.tsx
    export const HighlightAnalytics = ({ articleId }) => {
@@ -941,7 +992,9 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 #### Day 3-4: Performance Optimization
+
 1. **Highlight Caching**
+
    ```typescript
    // lib/cache/highlightCache.ts
    export class HighlightCache {
@@ -971,6 +1024,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **Virtualized Highlight List**
+
    ```typescript
    // components/highlights/VirtualizedHighlightList.tsx
    import { FixedSizeList } from 'react-window'
@@ -996,7 +1050,9 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 #### Day 5: Testing & Documentation
+
 1. **E2E Tests**
+
    ```typescript
    // cypress/e2e/highlights.cy.ts
    describe('Highlight System', () => {
@@ -1030,6 +1086,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 2. **API Documentation**
+
    ```typescript
    // docs/api/highlights.md
    /**
@@ -1049,6 +1106,7 @@ While building Phase 2, prepare for Phase 3 by:
    ```
 
 ### Deployment Checklist
+
 - [ ] Redis cluster configured
 - [ ] WebSocket server deployed
 - [ ] Database indexes added
@@ -1059,7 +1117,253 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Rate limiting configured
 
 ### Performance Benchmarks
+
 - Highlight creation: < 100ms
 - Heat map rendering: < 200ms
 - WebSocket latency: < 50ms
 - Analytics query: < 500ms
+
+## Implementation Checklist
+
+### Week 5: Foundation & Text Selection
+
+#### Day 1-2: Database & WebSocket Setup
+
+- [ ] Update Prisma schema with Highlight model -- M --
+- [ ] Update Prisma schema with HighlightNote model -- M --
+- [ ] Update Prisma schema with HighlightInteraction model -- S --
+- [ ] Add InteractionType enum (LIKE, SHARE, REPORT) -- S --
+- [ ] Update Article model with highlights relation -- M --
+- [ ] Add highlightStats JSON field to Article model -- C --
+- [ ] Create and run database migrations -- M --
+- [ ] Test database schema changes -- M --
+- [ ] Install Socket.io dependencies -- M --
+- [ ] Install Redis client dependencies -- M --
+- [ ] Configure Redis connection in lib/redis.ts -- M --
+- [ ] Create Socket.io server setup (server/socket.ts) -- M --
+- [ ] Configure CORS for WebSocket connections -- M --
+- [ ] Set up Redis adapter for Socket.io -- C --
+- [ ] Create Socket context provider for React -- M --
+- [ ] Add WebSocket connection to app layout -- M --
+- [ ] Test WebSocket connection establishment -- M --
+- [ ] Configure environment variables for Redis -- M --
+- [ ] Set up Redis caching strategies -- S --
+- [ ] Create cache invalidation utilities -- S --
+
+#### Day 3-4: Text Selection System
+
+- [ ] Create SelectionManager class -- M --
+- [ ] Implement mouse event handlers for text selection -- M --
+- [ ] Implement touch event handlers for mobile selection -- M --
+- [ ] Create TextSelection interface and types -- M --
+- [ ] Implement selection range capture logic -- M --
+- [ ] Add selection clearing functionality -- M --
+- [ ] Create HighlightSerializer class -- M --
+- [ ] Implement serialize method for selections -- M --
+- [ ] Implement deserialize method for highlights -- M --
+- [ ] Create node path generation utilities -- M --
+- [ ] Create node path resolution utilities -- M --
+- [ ] Handle text node selection edge cases -- S --
+- [ ] Handle partial element selections -- S --
+- [ ] Implement selection validation logic -- M --
+- [ ] Add selection boundary checks -- S --
+- [ ] Create selection debouncing logic -- S --
+- [ ] Test cross-browser selection compatibility -- S --
+- [ ] Add selection visual feedback -- C --
+- [ ] Implement selection size limits -- C --
+- [ ] Create selection persistence utilities -- M --
+
+#### Day 5: Highlight UI Components
+
+- [ ] Create HighlightPopover component -- M --
+- [ ] Implement popover positioning logic -- M --
+- [ ] Add popover animation with Framer Motion -- C --
+- [ ] Create highlight action buttons (highlight, note, share) -- M --
+- [ ] Style popover with Tailwind CSS -- S --
+- [ ] Create HighlightRenderer component -- M --
+- [ ] Implement highlight span creation -- M --
+- [ ] Add highlight color customization -- C --
+- [ ] Handle overlapping highlights rendering -- S --
+- [ ] Implement highlight cleanup on unmount -- M --
+- [ ] Create highlight hover effects -- C --
+- [ ] Add highlight click handlers -- S --
+- [ ] Create highlight tooltip component -- C --
+- [ ] Implement highlight count indicators -- S --
+- [ ] Add highlight selection state management -- M --
+- [ ] Create highlight context menu -- C --
+- [ ] Test highlight rendering performance -- S --
+- [ ] Add accessibility attributes to highlights -- S --
+- [ ] Create highlight loading states -- C --
+- [ ] Implement highlight error handling -- S --
+
+### Week 6: Real-time Sync & Heat Map
+
+#### Day 1-2: WebSocket Integration
+
+- [ ] Create useHighlightSync hook -- M --
+- [ ] Implement article room joining logic -- M --
+- [ ] Add highlight:created event listener -- M --
+- [ ] Add highlight:deleted event listener -- M --
+- [ ] Add highlight:updated event listener -- S --
+- [ ] Create initial highlights fetch logic -- M --
+- [ ] Implement optimistic UI updates -- S --
+- [ ] Add connection error handling -- S --
+- [ ] Create reconnection logic -- S --
+- [ ] Implement event batching for performance -- W --
+- [ ] Create server-side socket handlers -- M --
+- [ ] Implement article:join handler -- M --
+- [ ] Implement highlight:create handler -- M --
+- [ ] Add user authentication to socket events -- M --
+- [ ] Create highlight broadcast logic -- M --
+- [ ] Update cache on highlight changes -- S --
+- [ ] Add rate limiting for socket events -- S --
+- [ ] Create socket event validation -- S --
+- [ ] Test real-time sync across multiple clients -- M --
+- [ ] Add socket connection status indicator -- C --
+
+#### Day 3-4: Heat Map Visualization
+
+- [ ] Create HeatMapCalculator class -- M --
+- [ ] Implement highlight aggregation logic -- M --
+- [ ] Calculate intensity values per paragraph -- M --
+- [ ] Create paragraph identification utilities -- M --
+- [ ] Track unique users per highlight -- S --
+- [ ] Create HeatMap React component -- M --
+- [ ] Implement heat map toggle functionality -- M --
+- [ ] Create heat map overlay rendering -- M --
+- [ ] Add intensity-based coloring -- M --
+- [ ] Implement heat map animations -- C --
+- [ ] Create heat map legend component -- S --
+- [ ] Add heat map filtering options -- S --
+- [ ] Create heat map tooltip with stats -- S --
+- [ ] Implement progressive heat map loading -- C --
+- [ ] Add heat map caching logic -- S --
+- [ ] Create heat map refresh mechanism -- S --
+- [ ] Test heat map performance with many highlights -- S --
+- [ ] Add mobile-responsive heat map -- M --
+- [ ] Create heat map export functionality -- W --
+- [ ] Implement heat map sharing features -- W --
+
+#### Day 5: Highlight Interactions
+
+- [ ] Create HighlightInteractions component -- M --
+- [ ] Implement like functionality -- M --
+- [ ] Create like toggle mutation -- M --
+- [ ] Add optimistic like updates -- C --
+- [ ] Implement share functionality -- M --
+- [ ] Add native share API support -- S --
+- [ ] Create fallback clipboard copy -- S --
+- [ ] Generate shareable highlight URLs -- M --
+- [ ] Create HighlightNote component -- M --
+- [ ] Build note dialog/modal -- M --
+- [ ] Implement note saving mutation -- M --
+- [ ] Add public/private note toggle -- S --
+- [ ] Create note editing functionality -- S --
+- [ ] Add note deletion capability -- S --
+- [ ] Display existing notes -- M --
+- [ ] Create note thread/reply system -- W --
+- [ ] Add note markdown support -- W --
+- [ ] Implement note character limits -- S --
+- [ ] Create note notification system -- W --
+- [ ] Test interaction responsiveness -- S --
+
+### Week 7: Analytics & Polish
+
+#### Day 1-2: Analytics Dashboard
+
+- [ ] Create analytics page layout -- M --
+- [ ] Build MetricCard component -- S --
+- [ ] Implement total highlights metric -- M --
+- [ ] Add unique readers metric -- M --
+- [ ] Calculate engagement rate metric -- M --
+- [ ] Create article highlights list -- M --
+- [ ] Build HighlightAnalytics component -- M --
+- [ ] Display most highlighted passages -- M --
+- [ ] Create highlight timeline chart -- S --
+- [ ] Build highlight word cloud -- W --
+- [ ] Add analytics data export -- S --
+- [ ] Create analytics API endpoints -- M --
+- [ ] Implement analytics caching -- S --
+- [ ] Add date range filtering -- S --
+- [ ] Create comparative analytics -- W --
+- [ ] Build highlight trend analysis -- C --
+- [ ] Add demographic breakdowns -- W --
+- [ ] Create engagement heatmap calendar -- W --
+- [ ] Implement real-time analytics updates -- W --
+- [ ] Add analytics sharing capabilities -- W --
+
+#### Day 3-4: Performance Optimization
+
+- [ ] Create HighlightCache class -- M --
+- [ ] Implement Redis caching for highlights -- M --
+- [ ] Add cache expiration logic -- M --
+- [ ] Create cache invalidation methods -- M --
+- [ ] Implement cache warming strategies -- W --
+- [ ] Build VirtualizedHighlightList component -- S --
+- [ ] Implement react-window for long lists -- S --
+- [ ] Add lazy loading for highlights -- S --
+- [ ] Optimize WebSocket message batching -- S --
+- [ ] Implement debouncing for selection events -- M --
+- [ ] Add request deduplication -- C --
+- [ ] Create database query optimization -- S --
+- [ ] Add database indexes for highlight queries -- M --
+- [ ] Implement connection pooling -- S --
+- [ ] Optimize heat map calculations -- S --
+- [ ] Add CDN caching for static assets -- C --
+- [ ] Implement service worker caching -- W --
+- [ ] Create performance monitoring -- S --
+- [ ] Add performance budgets -- C --
+- [ ] Test and optimize bundle size -- S --
+
+#### Day 5: Testing & Documentation
+
+- [ ] Write unit tests for SelectionManager -- M --
+- [ ] Write unit tests for HighlightSerializer -- M --
+- [ ] Test highlight overlap detection -- S --
+- [ ] Test heat map calculations -- S --
+- [ ] Write integration tests for WebSocket sync -- M --
+- [ ] Test multi-user highlight conflicts -- S --
+- [ ] Test analytics data accuracy -- S --
+- [ ] Create E2E test for highlight creation flow -- M --
+- [ ] Create E2E test for heat map display -- S --
+- [ ] Test real-time sync across sessions -- M --
+- [ ] Write API documentation for highlights -- M --
+- [ ] Document WebSocket event protocols -- S --
+- [ ] Create user guide for highlighting features -- S --
+- [ ] Document performance benchmarks -- C --
+- [ ] Add inline code documentation -- S --
+- [ ] Create troubleshooting guide -- C --
+- [ ] Write deployment documentation -- S --
+- [ ] Create feature flag documentation -- C --
+- [ ] Add accessibility documentation -- S --
+- [ ] Create migration guide from Phase 1 -- S --
+
+### Post-Implementation Tasks
+
+- [ ] Conduct security audit for XSS vulnerabilities -- M --
+- [ ] Implement rate limiting for highlight creation -- M --
+- [ ] Add input sanitization for notes -- M --
+- [ ] Configure privacy controls -- S --
+- [ ] Set up monitoring for WebSocket connections -- S --
+- [ ] Create alert rules for system health -- S --
+- [ ] Implement backup strategy for highlights -- S --
+- [ ] Plan Phase 3 Stellar integration -- M --
+- [ ] Research Freighter wallet API -- S --
+- [ ] Design wallet connection UX -- S --
+- [ ] Set up testnet environment -- C --
+- [ ] Create feature toggles for gradual rollout -- S --
+- [ ] Implement A/B testing framework -- C --
+- [ ] Gather user feedback on highlighting UX -- S --
+- [ ] Create highlight feature onboarding -- S --
+
+## MoSCoW Priority Summary
+
+### Task Distribution
+
+| Priority | Count | Percentage |
+|----------|-------|------------|
+| **M (Must have)** | 87 | 44.6% |
+| **S (Should have)** | 71 | 36.4% |
+| **C (Could have)** | 23 | 11.8% |
+| **W (Won't have)** | 14 | 7.2% |
+| **TOTAL** | **195** | **100%** |

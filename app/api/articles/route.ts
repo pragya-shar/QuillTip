@@ -149,7 +149,7 @@ export async function GET(request: Request) {
     const author = searchParams.get('author');
     
     // Build where clause
-    const where: any = {
+    const where: Record<string, unknown> = {
       published: true,
     };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { 
   Edit3, 
   DollarSign, 
@@ -113,13 +114,13 @@ export default function FeaturesSection() {
               Join the next generation of writers who are building sustainable careers on their own terms.
             </p>
             <div className="flex gap-4 justify-center">
-              <a 
+              <Link 
                 href="/register"
                 className="group inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
               >
                 Start Your Journey
                 <Zap className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -147,6 +147,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const tag = searchParams.get('tag');
     const author = searchParams.get('author');
+    const search = searchParams.get('search');
     
     // Build where clause
     const where: Record<string, unknown> = {
@@ -165,6 +166,23 @@ export async function GET(request: Request) {
       where.author = {
         username: author,
       };
+    }
+
+    if (search) {
+      where.OR = [
+        {
+          title: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          excerpt: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
     }
 
     // Get total count

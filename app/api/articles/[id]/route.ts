@@ -17,10 +17,10 @@ const updateArticleSchema = z.object({
 // GET /api/articles/[id] - Get single article by ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get article with author and tags
     const article = await prisma.article.findUnique({
@@ -94,7 +94,7 @@ export async function GET(
 // PUT /api/articles/[id] - Update article
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -106,7 +106,7 @@ export async function PUT(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const validatedData = updateArticleSchema.parse(body);
 
@@ -270,7 +270,7 @@ export async function PUT(
 // DELETE /api/articles/[id] - Delete article
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -282,7 +282,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Get the user
     const user = await prisma.user.findUnique({
@@ -332,7 +332,7 @@ export async function DELETE(
 // PATCH /api/articles/[id]/publish - Toggle publish status
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -344,7 +344,7 @@ export async function PATCH(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { published } = body;
 

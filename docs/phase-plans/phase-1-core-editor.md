@@ -946,17 +946,18 @@ jobs:
 
 #### Day 1-2: Article Management
 
-- [ ] Create article creation API (POST /api/articles) -- M --
-- [ ] Create article update API (PUT /api/articles/[id]) -- M --
+- [x] Create article creation API (POST /api/articles) -- M --
+- [x] Create article update API (PUT /api/articles/[id]) -- M --
 - [ ] Create article delete API (DELETE /api/articles/[id]) -- S --
-- [ ] Implement publish/unpublish functionality -- M --
-- [ ] Add automatic slug generation -- M --
-- [ ] Create article editor page (app/write/page.tsx) -- M --
+- [x] Implement publish/unpublish functionality (API endpoints) -- M --
+- [x] Add publish/unpublish UI to write page (toggle buttons and status) -- M --
+- [x] Add automatic slug generation -- M --
+- [x] Create article editor page (app/write/page.tsx) -- M --
 - [ ] Add title input with character limit -- S --
 - [ ] Add excerpt field -- S --
 - [ ] Add cover image upload -- S --
 - [ ] Add tag management interface -- S --
-- [ ] Add SEO metadata fields -- M --
+- [x] Add SEO metadata fields -- M --
 - [ ] Add publish date scheduler -- W --
 - [ ] Test complete article CRUD flow -- S --
 

@@ -23,9 +23,14 @@ export default function WritePage() {
   const [coverImage, setCoverImage] = useState('')
   const [tags, setTags] = useState('')
   const [isPublishing, setIsPublishing] = useState(false)
+  const [isUnpublishing, setIsUnpublishing] = useState(false)
   const [articleId, setArticleId] = useState<string | undefined>()
   const [editorContent, setEditorContent] = useState<JSONContent | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [publishStatus, setPublishStatus] = useState<{published: boolean, publishedAt: Date | null}>({
+    published: false,
+    publishedAt: null
+  })
   
   const router = useRouter()
   const { data: session, status } = useSession()
@@ -112,6 +117,10 @@ export default function WritePage() {
             setArticleId(draft.id)
             setTitle(draft.title)
             setExcerpt(draft.excerpt || '')
+            setPublishStatus({
+              published: draft.published,
+              publishedAt: draft.publishedAt ? new Date(draft.publishedAt) : null
+            })
             if (editor && draft.content) {
               editor.commands.setContent(draft.content)
               setEditorContent(draft.content)
@@ -142,26 +151,97 @@ export default function WritePage() {
       // Save one final time before publishing
       await saveNow()
       
-      // TODO: Implement actual publish endpoint
-      console.log('Publishing article:', {
-        id: articleId,
-        title,
-        content: editorContent,
-        excerpt,
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-        coverImage,
-        published: true
+      // Call the actual publish API
+      const response = await fetch('/api/articles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          content: editorContent,
+          excerpt: excerpt || '',
+          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+          coverImage: coverImage || '',
+          published: true, // Publishing immediately
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to publish')
+      }
+
+      const data = await response.json()
+      console.log('Article published:', data)
+      
+      // Update publish status
+      setPublishStatus({
+        published: true,
+        publishedAt: new Date(data.article.publishedAt)
       })
       
       alert('Article published successfully!')
-      router.push('/')
+      // Stay on the same page to show the updated status
+      // router.push('/articles') // Disabled until we create the articles page
     } catch (error) {
       console.error('Publish error:', error)
-      alert('Failed to publish article')
+      alert(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsPublishing(false)
     }
-  }, [title, editorContent, excerpt, tags, coverImage, articleId, saveNow, router])
+  }, [title, editorContent, excerpt, tags, coverImage, saveNow, router])
+
+  // Handle unpublish
+  const handleUnpublish = useCallback(async () => {
+    if (!articleId) {
+      alert('No article to unpublish')
+      return
+    }
+
+    setIsUnpublishing(true)
+    try {
+      const response = await fetch(`/api/articles/${articleId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          published: false,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to unpublish')
+      }
+
+      const data = await response.json()
+      console.log('Article unpublished:', data)
+      
+      // Update publish status
+      setPublishStatus({
+        published: false,
+        publishedAt: null
+      })
+      
+      alert('Article unpublished successfully!')
+    } catch (error) {
+      console.error('Unpublish error:', error)
+      alert(`Failed to unpublish article: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsUnpublishing(false)
+    }
+  }, [articleId])
+
+  // Handle toggle publish status
+  const handleTogglePublish = useCallback(async () => {
+    if (publishStatus.published) {
+      await handleUnpublish()
+    } else {
+      await handlePublish()
+    }
+  }, [publishStatus.published, handleUnpublish, handlePublish])
 
   // Authentication checks
   if (status === 'loading') {
@@ -186,9 +266,30 @@ export default function WritePage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Write Your Story</h1>
             {articleId && (
-              <p className="text-sm text-gray-500 mt-1">
-                Draft ID: {articleId}
-              </p>
+              <div className="text-sm mt-1">
+                <p className="text-gray-500">
+                  Article ID: {articleId}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm font-medium">Status:</span>
+                  {publishStatus.published ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                      Published
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                      <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                      Draft
+                    </span>
+                  )}
+                  {publishStatus.published && publishStatus.publishedAt && (
+                    <span className="text-xs text-gray-500">
+                      • Published {publishStatus.publishedAt.toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </div>
           <div className="flex items-center gap-4">
@@ -227,14 +328,38 @@ export default function WritePage() {
               {isSaving ? 'Saving...' : 'Save Now'}
             </button>
             
-            {/* Publish button */}
-            <button
-              onClick={handlePublish}
-              disabled={isPublishing || !title || !editorContent}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isPublishing ? 'Publishing...' : 'Publish'}
-            </button>
+            {/* Publish/Unpublish buttons */}
+            {publishStatus.published ? (
+              <button
+                onClick={handleUnpublish}
+                disabled={isUnpublishing}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Make this article private (unpublish)"
+              >
+                {isUnpublishing ? 'Unpublishing...' : 'Unpublish'}
+              </button>
+            ) : (
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing || !title || !editorContent}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Make this article public"
+              >
+                {isPublishing ? 'Publishing...' : 'Publish'}
+              </button>
+            )}
+            
+            {/* Toggle button for existing articles */}
+            {articleId && (
+              <button
+                onClick={handleTogglePublish}
+                disabled={isPublishing || isUnpublishing || !title || !editorContent}
+                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                title={publishStatus.published ? "Switch to draft" : "Publish article"}
+              >
+                {publishStatus.published ? '📝 Make Draft' : '🚀 Make Public'}
+              </button>
+            )}
           </div>
         </div>
 

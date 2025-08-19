@@ -963,7 +963,7 @@ jobs:
 
 #### Day 3-4: Reading Experience
 
-- [ ] Create article display page (app/[username]/[slug]/page.tsx) -- M --
+- [x] Create article display page (app/[username]/[slug]/page.tsx) -- M --
 - [ ] Implement clean typography styles -- M --
 - [ ] Add reading progress indicator -- C --
 - [ ] Calculate and display reading time -- S --

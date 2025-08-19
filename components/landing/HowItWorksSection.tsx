@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { 
   UserPlus,
   Edit3,
@@ -161,13 +162,13 @@ export default function HowItWorksSection() {
 
         {/* CTA */}
         <div className="mt-16 text-center">
-          <a 
+          <Link 
             href="/register"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-5 rounded-xl text-xl font-semibold hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
           >
             Start Writing & Earning Today
             <ArrowRight className="w-6 h-6" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

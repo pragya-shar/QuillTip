@@ -9,6 +9,7 @@ import { common, createLowlight } from 'lowlight'
 import { ResizableImage } from '@/components/editor/extensions/ResizableImage'
 import { formatDistanceToNow } from 'date-fns'
 import { JSONContent } from '@tiptap/react'
+import Image from 'next/image'
 
 const lowlight = createLowlight(common)
 
@@ -77,9 +78,11 @@ export default function ArticleDisplay({ article }: ArticleDisplayProps) {
         <div className="flex items-center gap-4 mb-6">
           <div className="flex items-center gap-3">
             {article.author.avatar ? (
-              <img
+              <Image
                 src={article.author.avatar}
                 alt={article.author.name || article.author.username}
+                width={48}
+                height={48}
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
@@ -107,9 +110,11 @@ export default function ArticleDisplay({ article }: ArticleDisplayProps) {
         {/* Cover Image */}
         {article.coverImage && (
           <div className="mb-8">
-            <img
+            <Image
               src={article.coverImage}
               alt={article.title}
+              width={1200}
+              height={384}
               className="w-full h-64 md:h-96 object-cover rounded-lg"
             />
           </div>

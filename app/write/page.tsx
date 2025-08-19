@@ -190,7 +190,7 @@ export default function WritePage() {
     } finally {
       setIsPublishing(false)
     }
-  }, [title, editorContent, excerpt, tags, coverImage, saveNow, router])
+  }, [title, editorContent, excerpt, tags, coverImage, saveNow])
 
   // Handle unpublish
   const handleUnpublish = useCallback(async () => {

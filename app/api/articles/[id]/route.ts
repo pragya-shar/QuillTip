@@ -179,7 +179,7 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (validatedData.title !== undefined) {
       updateData.title = validatedData.title;

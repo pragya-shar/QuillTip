@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "echo \"No tests yet\" && exit 0",
-    "prepare": "husky",
+    "prepare": "husky || exit 0",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

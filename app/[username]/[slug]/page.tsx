@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import ArticleDisplay from '@/components/articles/ArticleDisplay'
 import AppNavigation from '@/components/layout/AppNavigation'
+import { JSONContent } from '@tiptap/react'
 
 interface ArticlePageProps {
   params: Promise<{
@@ -10,16 +11,47 @@ interface ArticlePageProps {
 }
 
 async function getArticle(username: string, slug: string) {
+  // Import prisma directly instead of using fetch during build
+  const { prisma } = await import('@/lib/prisma')
+  
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/articles/by-slug/${username}/${slug}`, {
-      cache: 'no-store', // Always fetch fresh data for articles
+    const article = await prisma.article.findFirst({
+      where: { 
+        slug,
+        author: {
+          username
+        },
+        published: true
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+            bio: true,
+          },
+        },
+        tags: true,
+      },
     })
-    
-    if (!response.ok) {
+
+    if (!article) {
       return null
     }
-    
-    return response.json()
+
+    return {
+      id: article.id,
+      slug: article.slug,
+      title: article.title,
+      content: article.content as JSONContent,
+      excerpt: article.excerpt,
+      coverImage: article.coverImage,
+      publishedAt: article.publishedAt,
+      author: article.author,
+      tags: article.tags,
+    }
   } catch (error) {
     console.error('Failed to fetch article:', error)
     return null
@@ -73,3 +105,6 @@ export async function generateMetadata({ params }: ArticlePageProps) {
     },
   }
 }
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'

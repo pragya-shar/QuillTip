@@ -1,14 +1,21 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "prisma generate && next build",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "regions": ["iad1"],
-  "functions": {
-    "app/api/auth/[...nextauth]/route.ts": {
-      "maxDuration": 10
-    },
-    "app/api/upload/route.ts": {
-      "maxDuration": 30
+  "env": {
+    "NEXTAUTH_URL": "@nextauth_url",
+    "DATABASE_URL": "@database_url",
+    "DIRECT_URL": "@direct_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "SUPABASE_URL": "@supabase_url",
+    "SUPABASE_ANON_KEY": "@supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "SUPABASE_STORAGE_BUCKET": "images"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
     }
   }
 }

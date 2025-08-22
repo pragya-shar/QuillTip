@@ -151,29 +151,51 @@ export default function WritePage() {
       // Save one final time before publishing
       await saveNow()
       
-      // Call the actual publish API
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          content: editorContent,
-          excerpt: excerpt || '',
-          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-          coverImage: coverImage || '',
-          published: true, // Publishing immediately
-        }),
-      })
+      // If we have an existing article ID, update it. Otherwise create new.
+      let response;
+      let data;
+      
+      if (articleId) {
+        // Update existing article to published status
+        response = await fetch(`/api/articles/${articleId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            published: true,
+          }),
+        })
+      } else {
+        // Create new article if no draft exists
+        response = await fetch('/api/articles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            title,
+            content: editorContent,
+            excerpt: excerpt || '',
+            tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+            coverImage: coverImage || '',
+            published: true, // Publishing immediately
+          }),
+        })
+      }
 
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Failed to publish')
       }
 
-      const data = await response.json()
+      data = await response.json()
       console.log('Article published:', data)
+      
+      // If it was a new article, update the articleId
+      if (!articleId && data.article?.id) {
+        setArticleId(data.article.id)
+      }
       
       // Update publish status
       setPublishStatus({

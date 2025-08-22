@@ -153,7 +153,7 @@ export default function WritePage() {
       
       // If we have an existing article ID, update it. Otherwise create new.
       let response;
-      let data;
+      const data = await (async () => {
       
       if (articleId) {
         // Update existing article to published status
@@ -189,7 +189,8 @@ export default function WritePage() {
         throw new Error(error.error || 'Failed to publish')
       }
 
-      data = await response.json()
+      return await response.json()
+    })()
       console.log('Article published:', data)
       
       // If it was a new article, update the articleId
@@ -212,7 +213,7 @@ export default function WritePage() {
     } finally {
       setIsPublishing(false)
     }
-  }, [title, editorContent, excerpt, tags, coverImage, saveNow])
+  }, [title, editorContent, excerpt, tags, coverImage, saveNow, articleId])
 
   // Handle unpublish
   const handleUnpublish = useCallback(async () => {

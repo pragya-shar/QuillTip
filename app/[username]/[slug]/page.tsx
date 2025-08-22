@@ -11,15 +11,21 @@ interface ArticlePageProps {
 }
 
 async function getArticle(username: string, slug: string) {
-  // Import prisma directly instead of using fetch during build
-  const { prisma } = await import('@/lib/prisma')
-  
   try {
+    // Import prisma directly instead of using fetch during build
+    const { prisma } = await import('@/lib/prisma')
+    
     const article = await prisma.article.findFirst({
       where: { 
-        slug,
+        slug: {
+          equals: slug,
+          mode: 'insensitive'
+        },
         author: {
-          username
+          username: {
+            equals: username,
+            mode: 'insensitive'
+          }
         },
         published: true
       },
@@ -38,6 +44,7 @@ async function getArticle(username: string, slug: string) {
     })
 
     if (!article) {
+      console.log(`Article not found: ${username}/${slug}`)
       return null
     }
 
@@ -54,6 +61,11 @@ async function getArticle(username: string, slug: string) {
     }
   } catch (error) {
     console.error('Failed to fetch article:', error)
+    console.error('Error details:', {
+      username,
+      slug,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     return null
   }
 }
@@ -106,5 +118,6 @@ export async function generateMetadata({ params }: ArticlePageProps) {
   }
 }
 
-// Force dynamic rendering for this page
+// Enable dynamic rendering when needed
 export const dynamic = 'force-dynamic'
+export const revalidate = 60 // Revalidate every minute for published content

@@ -183,8 +183,8 @@ export async function PUT(
     
     if (validatedData.title !== undefined) {
       updateData.title = validatedData.title;
-      // Generate new slug if title changed
-      updateData.slug = generateSlug(validatedData.title);
+      // Keep the existing slug - don't regenerate it
+      // This preserves URLs and prevents broken links
     }
     
     if (validatedData.content !== undefined) {
@@ -421,16 +421,4 @@ export async function PATCH(
       { status: 500 }
     );
   }
-}
-
-// Helper function to generate unique slug
-function generateSlug(title: string): string {
-  const timestamp = Date.now();
-  const titleSlug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .substring(0, 50);
-  
-  return `${titleSlug}-${timestamp}`;
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent } from '@tiptap/react'
+import { useEffect, useState } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import Link from '@tiptap/extension-link'
@@ -10,6 +11,7 @@ import { ResizableImage } from '@/components/editor/extensions/ResizableImage'
 import { formatDistanceToNow } from 'date-fns'
 import { JSONContent } from '@tiptap/react'
 import Image from 'next/image'
+import ShareButtons from './ShareButtons'
 
 const lowlight = createLowlight(common)
 
@@ -40,6 +42,13 @@ interface ArticleDisplayProps {
 }
 
 export default function ArticleDisplay({ article }: ArticleDisplayProps) {
+  const [currentUrl, setCurrentUrl] = useState('')
+
+  // Get current URL on client side only
+  useEffect(() => {
+    setCurrentUrl(window.location.href)
+  }, [])
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -139,6 +148,17 @@ export default function ArticleDisplay({ article }: ArticleDisplayProps) {
       <div className="article-content">
         <EditorContent editor={editor} />
       </div>
+
+      {/* Share Buttons */}
+      {currentUrl && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <ShareButtons
+            title={article.title}
+            url={currentUrl}
+            excerpt={article.excerpt}
+          />
+        </div>
+      )}
     </article>
   )
 }

@@ -973,7 +973,7 @@ jobs:
 - [ ] Create tag filter component -- C --
 - [ ] Add sort options (date, popularity) -- S --
 - [ ] Implement infinite scroll option -- W --
-- [ ] Add article sharing buttons -- M --
+- [x] Add article sharing buttons -- M --
 - [ ] Test reading experience across devices -- S --
 
 #### Day 5: User Profiles

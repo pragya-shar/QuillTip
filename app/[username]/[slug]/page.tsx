@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import ArticleDisplay from '@/components/articles/ArticleDisplay'
 import AppNavigation from '@/components/layout/AppNavigation'
 import { JSONContent } from '@tiptap/react'
+import prisma from '@/lib/prisma'
 
 interface ArticlePageProps {
   params: Promise<{
@@ -11,51 +12,66 @@ interface ArticlePageProps {
 }
 
 async function getArticle(username: string, slug: string) {
-  // Import prisma directly to avoid build issues
-  const prisma = (await import('@/lib/prisma')).default
-  
   try {
     console.log(`Fetching article: username=${username}, slug=${slug}`)
     
-    const article = await prisma.article.findFirst({
-      where: { 
-        slug,
-        author: {
-          username
-        },
-        published: true
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
-            avatar: true,
-            bio: true,
+    // Add connection retry logic for production reliability
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const article = await prisma.article.findFirst({
+          where: { 
+            slug,
+            author: {
+              username
+            },
+            published: true
           },
-        },
-        tags: true,
-      },
-    })
+          include: {
+            author: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatar: true,
+                bio: true,
+              },
+            },
+            tags: true,
+          },
+        })
+        
+        if (!article) {
+          console.log(`Article not found: username=${username}, slug=${slug}`)
+          return null
+        }
 
-    if (!article) {
-      console.log(`Article not found: username=${username}, slug=${slug}`)
-      return null
+        console.log(`Article found: ${article.title}`)
+        return {
+          id: article.id,
+          slug: article.slug,
+          title: article.title,
+          content: article.content as JSONContent,
+          excerpt: article.excerpt,
+          coverImage: article.coverImage,
+          publishedAt: article.publishedAt,
+          author: article.author,
+          tags: article.tags,
+        }
+      } catch (dbError) {
+        console.error(`Database error (attempt ${retryCount + 1}):`, dbError)
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw dbError;
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
     }
 
-    console.log(`Article found: ${article.title}`)
-    return {
-      id: article.id,
-      slug: article.slug,
-      title: article.title,
-      content: article.content as JSONContent,
-      excerpt: article.excerpt,
-      coverImage: article.coverImage,
-      publishedAt: article.publishedAt,
-      author: article.author,
-      tags: article.tags,
-    }
+    return null; // This will never be reached due to the retry logic above
   } catch (error) {
     console.error('Failed to fetch article:', error)
     console.error('Username:', username, 'Slug:', slug)
@@ -111,7 +127,8 @@ export async function generateMetadata({ params }: ArticlePageProps) {
   }
 }
 
-// Configure dynamic behavior
+// Configure dynamic behavior for production
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
-export const revalidate = 60 // Revalidate every 60 seconds
+export const revalidate = 0 // Disable revalidation for dynamic routes
+export const runtime = 'nodejs' // Ensure Node.js runtime for database connections

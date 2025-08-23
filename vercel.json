@@ -5,7 +5,10 @@
   "installCommand": "npm ci",
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 10
+      "maxDuration": 15
+    },
+    "app/[username]/[slug]/page.tsx": {
+      "maxDuration": 15
     }
   },
   "env": {
@@ -21,6 +24,17 @@
     {
       "source": "/health",
       "destination": "/api/health"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/((?!api).*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, max-age=0, must-revalidate"
+        }
+      ]
     }
   ]
 }

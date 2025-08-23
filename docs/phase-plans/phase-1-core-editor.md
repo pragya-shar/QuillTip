@@ -964,10 +964,10 @@ jobs:
 #### Day 3-4: Reading Experience
 
 - [x] Create article display page (app/[username]/[slug]/page.tsx) -- M --
-- [ ] Implement clean typography styles -- M --
+- [x] Implement clean typography styles -- M --
 - [ ] Add reading progress indicator -- C --
 - [ ] Calculate and display reading time -- S --
-- [ ] Create article listing page (app/articles/page.tsx) -- M --
+- [x] Create article listing page (app/articles/page.tsx) -- M --
 - [ ] Implement pagination component -- S --
 - [ ] Add search functionality with debounce -- M --
 - [ ] Create tag filter component -- C --

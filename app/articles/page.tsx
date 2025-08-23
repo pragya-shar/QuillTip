@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import AppNavigation from '@/components/layout/AppNavigation'
 import ArticleGrid from '@/components/articles/ArticleGrid'
 import Pagination from '@/components/articles/Pagination'
+import SearchInput from '@/components/articles/SearchInput'
 import { Loader2 } from 'lucide-react'
 
 interface Article {
@@ -48,6 +49,7 @@ export default function ArticlesPage() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
   
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -55,6 +57,7 @@ export default function ArticlesPage() {
   const currentPage = parseInt(searchParams.get('page') || '1')
   const tag = searchParams.get('tag')
   const author = searchParams.get('author')
+  const urlSearch = searchParams.get('search') || ''
 
   const fetchArticles = useCallback(async () => {
     setLoading(true)
@@ -67,6 +70,7 @@ export default function ArticlesPage() {
       
       if (tag) params.set('tag', tag)
       if (author) params.set('author', author)
+      if (urlSearch) params.set('search', urlSearch)
       
       const response = await fetch(`/api/articles?${params.toString()}`)
       
@@ -82,15 +86,31 @@ export default function ArticlesPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, tag, author])
+  }, [currentPage, tag, author, urlSearch])
 
   useEffect(() => {
     fetchArticles()
   }, [fetchArticles])
 
+  // Sync searchTerm with URL parameter
+  useEffect(() => {
+    setSearchTerm(urlSearch)
+  }, [urlSearch])
+
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', page.toString())
+    router.push(`/articles?${params.toString()}`)
+  }
+
+  const handleSearchChange = (search: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (search.trim()) {
+      params.set('search', search.trim())
+    } else {
+      params.delete('search')
+    }
+    params.set('page', '1') // Reset to first page when searching
     router.push(`/articles?${params.toString()}`)
   }
 
@@ -111,8 +131,18 @@ export default function ArticlesPage() {
           </p>
         </div>
 
+        {/* Search Input */}
+        <div className="mb-6">
+          <SearchInput
+            value={searchTerm}
+            onChange={handleSearchChange}
+            placeholder="Search articles by title or excerpt..."
+            className="max-w-md"
+          />
+        </div>
+
         {/* Active Filters */}
-        {(tag || author) && (
+        {(tag || author || urlSearch) && (
           <div className="mb-6 flex items-center gap-2">
             <span className="text-sm text-gray-600">Filtering by:</span>
             {tag && (
@@ -144,6 +174,23 @@ export default function ArticlesPage() {
                   }}
                   className="ml-2 hover:text-gray-200"
                   aria-label="Remove author filter"
+                >
+                  ×
+                </button>
+              </span>
+            )}
+            {urlSearch && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-brand-blue text-white">
+                Search: &ldquo;{urlSearch}&rdquo;
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString())
+                    params.delete('search')
+                    params.set('page', '1')
+                    router.push(`/articles?${params.toString()}`)
+                  }}
+                  className="ml-2 hover:text-gray-200"
+                  aria-label="Remove search filter"
                 >
                   ×
                 </button>

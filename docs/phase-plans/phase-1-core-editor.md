@@ -969,7 +969,7 @@ jobs:
 - [ ] Calculate and display reading time -- S --
 - [x] Create article listing page (app/articles/page.tsx) -- M --
 - [ ] Implement pagination component -- S --
-- [ ] Add search functionality with debounce -- M --
+- [x] Add search functionality with debounce -- M --
 - [ ] Create tag filter component -- C --
 - [ ] Add sort options (date, popularity) -- S --
 - [ ] Implement infinite scroll option -- W --

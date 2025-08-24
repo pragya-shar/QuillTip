@@ -978,9 +978,9 @@ jobs:
 
 #### Day 5: User Profiles
 
-- [ ] Create public profile page (app/[username]/page.tsx) -- M --
+- [x] Create public profile page (app/[username]/page.tsx) -- M --
 - [ ] Display user bio and avatar -- S --
-- [ ] Show user's published articles -- M --
+- [x] Show user's published articles -- M --
 - [ ] Add user statistics (article count, total reads) -- C --
 - [ ] Create profile settings page (app/settings/profile/page.tsx) -- S --
 - [ ] Implement avatar upload functionality -- S --

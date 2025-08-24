@@ -7,8 +7,13 @@
     "app/api/**/*.ts": {
       "maxDuration": 15
     },
+    "app/[username]/page.tsx": {
+      "maxDuration": 15,
+      "runtime": "nodejs20.x"
+    },
     "app/[username]/[slug]/page.tsx": {
-      "maxDuration": 15
+      "maxDuration": 15,
+      "runtime": "nodejs20.x"
     }
   },
   "env": {
@@ -26,13 +31,23 @@
       "destination": "/api/health"
     }
   ],
+  "cleanUrls": true,
   "headers": [
     {
-      "source": "/((?!api).*)",
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "no-cache, no-store, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/((?!api|_next).*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
         }
       ]
     }

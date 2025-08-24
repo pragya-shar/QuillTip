@@ -1,0 +1,28 @@
+# Test files
+__tests__/
+*.test.*
+*.spec.*
+jest.config.*
+jest.setup.*
+
+# Development files
+.env.local
+.env.development
+
+# Documentation
+README.md
+*.md
+
+# Prisma development files
+prisma/dev.db*
+
+# Coverage reports
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

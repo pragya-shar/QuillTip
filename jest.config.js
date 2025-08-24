@@ -7,6 +7,10 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
+  // Ensure Jest config only applies in test environment
+  testEnvironmentOptions: {
+    NODE_ENV: 'test'
+  },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jsdom',
   moduleNameMapper: {
@@ -46,7 +50,7 @@ const customJestConfig = {
     '/prisma/',
   ],
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*\\.mjs$))',
+    '/node_modules/(?!(@testing-library|@jest))',
   ],
   testTimeout: 10000,
 }

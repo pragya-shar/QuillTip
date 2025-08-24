@@ -1,12 +1,16 @@
+'use client'
+
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 interface PaginationProps {
   currentPage: number
   totalPages: number
-  onPageChange: (page: number) => void
+  onPageChange?: (page: number) => void
+  basePath?: string
 }
 
-export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+export default function Pagination({ currentPage, totalPages, onPageChange, basePath }: PaginationProps) {
   const getPageNumbers = () => {
     const pages = []
     const maxVisible = 5
@@ -44,18 +48,70 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
 
   if (totalPages <= 1) return null
 
+  // Helper function to handle page navigation
+  const handlePageChange = (page: number) => {
+    if (onPageChange) {
+      onPageChange(page)
+    }
+  }
+
+  // Helper function to get page URL for server-side navigation
+  const getPageUrl = (page: number) => {
+    if (basePath) {
+      return page === 1 ? basePath : `${basePath}?page=${page}`
+    }
+    return '#'
+  }
+
+  // Render button or link based on whether we have onPageChange or basePath
+  const PaginationButton = ({ 
+    page, 
+    disabled = false, 
+    children, 
+    className, 
+    ariaLabel 
+  }: {
+    page: number
+    disabled?: boolean
+    children: React.ReactNode
+    className: string
+    ariaLabel: string
+  }) => {
+    if (basePath && !disabled) {
+      return (
+        <Link
+          href={getPageUrl(page)}
+          className={className}
+          aria-label={ariaLabel}
+        >
+          {children}
+        </Link>
+      )
+    }
+    return (
+      <button
+        onClick={() => !disabled && handlePageChange(page)}
+        disabled={disabled}
+        className={className}
+        aria-label={ariaLabel}
+      >
+        {children}
+      </button>
+    )
+  }
+
   return (
     <nav className="flex items-center justify-center space-x-1" aria-label="Pagination">
       {/* Previous Button */}
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
+      <PaginationButton
+        page={currentPage - 1}
         disabled={currentPage === 1}
         className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        aria-label="Previous page"
+        ariaLabel="Previous page"
       >
         <ChevronLeft className="h-4 w-4" />
         <span className="ml-1 hidden sm:inline">Previous</span>
-      </button>
+      </PaginationButton>
 
       {/* Page Numbers */}
       <div className="hidden sm:flex space-x-1">
@@ -65,18 +121,18 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
               ...
             </span>
           ) : (
-            <button
+            <PaginationButton
               key={page}
-              onClick={() => onPageChange(page as number)}
+              page={page as number}
               className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 currentPage === page
                   ? 'z-10 bg-brand-blue text-white'
                   : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
               }`}
-              aria-current={currentPage === page ? 'page' : undefined}
+              ariaLabel={`Go to page ${page}`}
             >
               {page}
-            </button>
+            </PaginationButton>
           )
         ))}
       </div>
@@ -87,15 +143,15 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
       </div>
 
       {/* Next Button */}
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
+      <PaginationButton
+        page={currentPage + 1}
         disabled={currentPage === totalPages}
         className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-        aria-label="Next page"
+        ariaLabel="Next page"
       >
         <span className="mr-1 hidden sm:inline">Next</span>
         <ChevronRight className="h-4 w-4" />
-      </button>
+      </PaginationButton>
     </nav>
   )
 }

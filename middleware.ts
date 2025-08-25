@@ -9,7 +9,6 @@ export function middleware(request: NextRequest) {
     
     // Add headers to improve RSC streaming reliability
     response.headers.set('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
-    response.headers.set('X-Accel-Buffering', 'no') // Disable nginx buffering
     
     return response
   }

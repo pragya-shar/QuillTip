@@ -1,30 +1,49 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const errorData = await request.json()
     
-    // Log the error with structured data
-    console.error('Client-side error:', {
-      ...errorData,
-      serverTime: new Date().toISOString(),
-      headers: {
-        'user-agent': request.headers.get('user-agent'),
-        'referer': request.headers.get('referer'),
-      }
+    // Log error details for monitoring
+    console.error('Client Error Report:', {
+      timestamp: new Date().toISOString(),
+      error: errorData.error,
+      stack: errorData.stack,
+      digest: errorData.digest,
+      url: errorData.url,
+      userAgent: errorData.userAgent,
+      serverTimestamp: errorData.timestamp,
     })
-
-    // In production, you would send this to your monitoring service
-    // Examples: Sentry, DataDog, LogRocket, etc.
     
-    return NextResponse.json({ success: true })
+    // In production, you could send this to external monitoring services like:
+    // - Sentry
+    // - DataDog
+    // - LogRocket
+    // - Custom logging service
+    
+    if (process.env.NODE_ENV === 'production') {
+      // TODO: Integrate with external error monitoring service
+      // Example: await sendToSentry(errorData)
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Error logged successfully' 
+    }, { 
+      status: 200 
+    })
   } catch (error) {
     console.error('Failed to log client error:', error)
-    return NextResponse.json(
-      { error: 'Failed to log error' },
-      { status: 500 }
-    )
+    
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Failed to log error' 
+    }, { 
+      status: 500 
+    })
   }
 }
 
+// Export runtime configuration
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'

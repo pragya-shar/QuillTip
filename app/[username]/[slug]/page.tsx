@@ -18,7 +18,8 @@ async function getArticle(username: string, slug: string) {
     
     while (retryCount < maxRetries) {
       try {
-        const article = await prisma.article.findFirst({
+        // Add timeout for database queries in production
+        const queryPromise = prisma.article.findFirst({
           where: { 
             slug,
             author: {
@@ -39,6 +40,12 @@ async function getArticle(username: string, slug: string) {
             tags: true,
           },
         })
+
+        const timeoutPromise = new Promise<null>((_, reject) => {
+          setTimeout(() => reject(new Error('Database query timeout after 10s')), 10000)
+        })
+
+        const article = await Promise.race([queryPromise, timeoutPromise])
         
         if (!article) {
           console.log(`Article not found: username=${username}, slug=${slug}`)
@@ -61,17 +68,27 @@ async function getArticle(username: string, slug: string) {
         console.error(`Database error (attempt ${retryCount + 1}):`, dbError)
         retryCount++;
         if (retryCount >= maxRetries) {
+          // Log error details for monitoring
+          console.error('Final database error after all retries:', {
+            error: dbError instanceof Error ? dbError.message : 'Unknown error',
+            stack: dbError instanceof Error ? dbError.stack : undefined,
+            username,
+            slug,
+            retryCount,
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV,
+          })
           throw dbError;
         }
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
       }
     }
 
     return null; // This will never be reached due to the retry logic above
   } catch (error) {
     console.error('Failed to fetch article:', error)
-    console.error('Username:', username, 'Slug:', slug)
+    console.error('Context:', { username, slug, environment: process.env.NODE_ENV })
     return null
   }
 }

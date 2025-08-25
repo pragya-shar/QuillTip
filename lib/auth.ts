@@ -28,7 +28,7 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 /**
- * NextAuth configuration options
+ * NextAuth configuration options with enhanced production reliability
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -39,38 +39,60 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Invalid credentials')
-        }
-
-        // Find user by email
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error('Invalid credentials')
           }
-        })
 
-        if (!user || !user.hashedPassword) {
-          throw new Error('Invalid credentials')
-        }
+          // Add database connection retry logic
+          let user;
+          let retryCount = 0;
+          const maxRetries = 3;
 
-        // Verify password
-        const isPasswordValid = await verifyPassword(
-          credentials.password,
-          user.hashedPassword
-        )
+          while (retryCount < maxRetries) {
+            try {
+              user = await prisma.user.findUnique({
+                where: {
+                  email: credentials.email
+                }
+              })
+              break;
+            } catch (dbError) {
+              retryCount++;
+              if (retryCount >= maxRetries) {
+                console.error('Database connection failed during auth:', dbError)
+                throw new Error('Authentication service temporarily unavailable')
+              }
+              // Wait before retry
+              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+            }
+          }
 
-        if (!isPasswordValid) {
-          throw new Error('Invalid credentials')
-        }
+          if (!user || !user.hashedPassword) {
+            throw new Error('Invalid credentials')
+          }
 
-        // Return user object for JWT
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          username: user.username,
-          image: user.avatar
+          // Verify password
+          const isPasswordValid = await verifyPassword(
+            credentials.password,
+            user.hashedPassword
+          )
+
+          if (!isPasswordValid) {
+            throw new Error('Invalid credentials')
+          }
+
+          // Return user object for JWT
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            username: user.username,
+            image: user.avatar
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          throw error
         }
       }
     })
@@ -89,6 +111,10 @@ export const authOptions: NextAuthOptions = {
         session.user.username = token.username as string
       }
       return session
+    },
+    // Add error handling callback
+    async signIn({ user }) {
+      return !!user
     }
   },
   pages: {
@@ -100,11 +126,44 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60, // Update session every 24 hours
   },
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
+  
+  // Enhanced error handling
+  events: {
+    async signIn({ user, isNewUser }) {
+      console.log(`User ${user.email} signed in (new user: ${isNewUser})`)
+    },
+    async signOut({ session }) {
+      console.log(`User signed out: ${session?.user?.email}`)
+    },
+    async session({ session }) {
+      // Session keepalive logging in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Session active for: ${session?.user?.email}`)
+      }
+    }
+  },
+  
+  // Production-specific settings
+  ...(process.env.NODE_ENV === 'production' && {
+    useSecureCookies: true,
+    cookies: {
+      sessionToken: {
+        name: 'next-auth.session-token',
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: true, // Require HTTPS in production
+        },
+      },
+    },
+  }),
 }
 

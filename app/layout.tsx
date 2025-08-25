@@ -16,6 +16,9 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "QuillTip - Decentralized Publishing Platform",
   description: "Write, share, and monetize your content with Stellar-powered microtipping",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

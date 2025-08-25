@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare, hash } from 'bcryptjs'
-import { prisma } from './prisma'
+import prisma from './prisma'
 
 /**
  * Authentication Configuration

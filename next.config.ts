@@ -17,6 +17,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Disable PPR for Vercel compatibility (Next.js 15)
+  experimental: {
+    ppr: false, // Disable PPR as it can cause routing issues in Vercel
+  },
+  // Optimize for production deployment
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
+  // Ensure proper handling of Prisma client in serverless environments
+  webpack: (config: any) => {
+    config.externals = config.externals || []
+    config.externals.push({
+      '@prisma/client': 'commonjs @prisma/client'
+    })
+    return config
+  },
 };
 
 export default nextConfig;

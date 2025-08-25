@@ -6,8 +6,8 @@ import Pagination from '@/components/articles/Pagination'
 import prisma from '@/lib/prisma'
 
 interface ProfilePageProps {
-  params: Promise<{ username: string }> | { username: string }
-  searchParams: Promise<{ page?: string }> | { page?: string }
+  params: Promise<{ username: string }>
+  searchParams: Promise<{ page?: string }>
 }
 
 async function getUserProfile(username: string, page: number = 1) {
@@ -96,12 +96,8 @@ async function getUserProfile(username: string, page: number = 1) {
 }
 
 export default async function ProfilePage({ params, searchParams }: ProfilePageProps) {
-  // Handle both async and sync params for Vercel compatibility
-  const resolvedParams = await Promise.resolve(params)
-  const resolvedSearchParams = await Promise.resolve(searchParams)
-  
-  const { username } = resolvedParams
-  const { page = '1' } = resolvedSearchParams
+  const { username } = await params
+  const { page = '1' } = await searchParams
   const currentPage = parseInt(page, 10) || 1
 
   const profileData = await getUserProfile(username, currentPage)
@@ -163,9 +159,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: ProfilePageProps) {
-  // Handle both async and sync params for Vercel compatibility
-  const resolvedParams = await Promise.resolve(params)
-  const { username } = resolvedParams
+  const { username } = await params
   
   const user = await prisma.user.findUnique({
     where: { username },
@@ -204,19 +198,7 @@ export async function generateMetadata({ params }: ProfilePageProps) {
   }
 }
 
-// Configure dynamic behavior for Vercel
+// Configure dynamic behavior
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
 export const revalidate = 0
-export const runtime = 'nodejs'
-
-// Generate static params - return empty for full dynamic routing
-export async function generateStaticParams() {
-  // For Vercel compatibility, we return an empty array
-  // This ensures all username routes are handled dynamically
-  return []
-}
-
-// Force dynamic rendering for this route
-export const fetchCache = 'force-no-store'
-export const maxDuration = 15

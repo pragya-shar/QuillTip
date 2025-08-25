@@ -5,7 +5,7 @@ import { JSONContent } from '@tiptap/react'
 import prisma from '@/lib/prisma'
 
 interface ArticlePageProps {
-  params: Promise<{ username: string; slug: string }> | { username: string; slug: string }
+  params: Promise<{ username: string; slug: string }>
 }
 
 async function getArticle(username: string, slug: string) {
@@ -77,9 +77,7 @@ async function getArticle(username: string, slug: string) {
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
-  // Handle both async and sync params for Vercel compatibility
-  const resolvedParams = await Promise.resolve(params)
-  const { username, slug } = resolvedParams
+  const { username, slug } = await params
   const article = await getArticle(username, slug)
 
   if (!article) {
@@ -98,9 +96,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: ArticlePageProps) {
-  // Handle both async and sync params for Vercel compatibility
-  const resolvedParams = await Promise.resolve(params)
-  const { username, slug } = resolvedParams
+  const { username, slug } = await params
   const article = await getArticle(username, slug)
 
   if (!article) {
@@ -128,19 +124,8 @@ export async function generateMetadata({ params }: ArticlePageProps) {
   }
 }
 
-// Configure dynamic behavior for Vercel
+// Configure dynamic behavior for production
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
-export const revalidate = 0
-export const runtime = 'nodejs'
-
-// Generate static params - return empty for full dynamic routing
-export async function generateStaticParams() {
-  // For Vercel compatibility, we return an empty array
-  // This ensures all username/slug routes are handled dynamically
-  return []
-}
-
-// Force dynamic rendering for this route
-export const fetchCache = 'force-no-store'
-export const maxDuration = 15
+export const revalidate = 0 // Disable revalidation for dynamic routes
+export const runtime = 'nodejs' // Ensure Node.js runtime for database connections

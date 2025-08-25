@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
+// Force Node.js runtime (required for Prisma and NextAuth)
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     // Beacon API doesn't support authentication headers well,

@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma'
 // Enhanced health check for production diagnostics
 export async function GET() {
   const startTime = Date.now()
-  const healthData: any = {
+  const healthData: Record<string, unknown> = {
     status: 'OK',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || 'unknown',
@@ -26,18 +26,20 @@ export async function GET() {
     ])
     const dbResponseTime = Date.now() - dbStartTime
     
-    healthData.database = {
+    const databaseInfo = {
       status: 'Connected',
       responseTime: `${dbResponseTime}ms`,
-    }
+    } as Record<string, unknown>
 
     // Test user table access
     try {
       const userCount = await prisma.user.count()
-      healthData.database.userCount = userCount
-    } catch (dbError) {
-      healthData.database.tableAccess = 'Error accessing user table'
+      databaseInfo.userCount = userCount
+    } catch {
+      databaseInfo.tableAccess = 'Error accessing user table'
     }
+
+    healthData.database = databaseInfo
 
   } catch (error) {
     console.error('Database health check failed:', error)
@@ -55,10 +57,11 @@ export async function GET() {
     'NEXTAUTH_URL'
   ]
 
-  healthData.environment_variables = {}
+  const envVarStatus: Record<string, string> = {}
   requiredEnvVars.forEach(envVar => {
-    healthData.environment_variables[envVar] = process.env[envVar] ? 'Set' : 'Missing'
+    envVarStatus[envVar] = process.env[envVar] ? 'Set' : 'Missing'
   })
+  healthData.environment_variables = envVarStatus
 
   // Check for missing critical env vars
   const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar])

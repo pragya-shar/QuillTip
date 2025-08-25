@@ -20,25 +20,22 @@ const nextConfig: NextConfig = {
   // Disable PPR for Vercel compatibility (Next.js 15)
   experimental: {
     ppr: false, // Disable PPR as it can cause routing issues in Vercel
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
   },
-  // Remove standalone output as it can cause issues with Vercel deployment
-  // Ensure proper handling of Prisma client in serverless environments
-  webpack: (config: any) => {
-    config.externals = config.externals || []
-    config.externals.push({
-      '@prisma/client': 'commonjs @prisma/client'
-    })
-    
-    // Optimize for serverless deployment
-    config.resolve.alias = {
-      ...config.resolve.alias,
-    }
-    
-    return config
-  },
-  // Ensure proper bundling for production
-  transpilePackages: ['@prisma/client'],
+  
+  // Moved from experimental.serverComponentsExternalPackages (Next.js 15+ requirement)
+  serverExternalPackages: ['@prisma/client', 'prisma'],
+  // Conditional webpack config (only when not using Turbopack)
+  ...(process.env.TURBOPACK !== '1' && {
+    webpack: (config: any) => {
+      config.externals = config.externals || []
+      config.externals.push({
+        '@prisma/client': 'commonjs @prisma/client'
+      })
+      
+      return config
+    },
+  }),
+  // Remove transpilePackages to avoid conflict with serverExternalPackages
   
   // Configure logging for better debugging
   logging: {

@@ -226,5 +226,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Force Node.js runtime (Supabase client requires Node.js)
+export const runtime = 'nodejs'
+
 // Force dynamic rendering for upload route
 export const dynamic = 'force-dynamic'

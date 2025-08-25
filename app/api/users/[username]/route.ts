@@ -124,3 +124,5 @@ export async function GET(request: Request, { params }: RouteParams) {
     )
   }
 }
+// Force Node.js runtime (Prisma requires Node.js)
+export const runtime = 'nodejs'

@@ -54,3 +54,5 @@ export async function GET() {
     );
   }
 }
+// Force Node.js runtime (Prisma requires Node.js)
+export const runtime = 'nodejs'

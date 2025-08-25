@@ -87,5 +87,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Force Node.js runtime for authentication (bcryptjs and Prisma require Node.js)
+export const runtime = 'nodejs'
+
 // Force dynamic rendering for register route
 export const dynamic = 'force-dynamic'

@@ -233,3 +233,5 @@ function generateSlug(title: string): string {
   
   return `${titleSlug}-${timestamp}`;
 }
+// Force Node.js runtime (Prisma requires Node.js)
+export const runtime = 'nodejs'

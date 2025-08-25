@@ -994,8 +994,8 @@ jobs:
 #### Day 1-2: Testing
 
 - [ ] Set up Jest testing framework -- S --
-- [ ] Write unit tests for auth flow -- M --
-- [ ] Write unit tests for article CRUD operations -- M --
+- [*Later] Write unit tests for auth flow -- M --
+- [*Later] Write unit tests for article CRUD operations -- M --
 - [ ] Write unit tests for editor functionality -- S --
 - [ ] Write unit tests for API endpoint validation -- S --
 - [ ] Set up Cypress for E2E testing -- C --

@@ -11,45 +11,68 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  username        String    @unique
-  name            String?
-  bio             String?
-  avatar          String?
-  hashedPassword  String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  articles        Article[]
+  id             String      @id @default(cuid())
+  email          String      @unique
+  name           String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  avatar         String?
+  bio            String?
+  hashedPassword String
+  username       String      @unique
+  articles       Article[]
+  highlights     Highlight[]
 
   @@map("users")
 }
 
 model Article {
-  id              String    @id @default(cuid())
-  slug            String    @unique
-  title           String
-  content         Json      // TipTap JSON content
-  excerpt         String?
-  coverImage      String?
-  published       Boolean   @default(false)
-  publishedAt     DateTime?
-  tags            Tag[]
-  author          User      @relation(fields: [authorId], references: [id])
-  authorId        String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  title       String
+  content     Json
+  excerpt     String?
+  coverImage  String?
+  published   Boolean     @default(false)
+  publishedAt DateTime?
+  authorId    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  author      User        @relation(fields: [authorId], references: [id])
+  highlights  Highlight[]
+  tags        Tag[]       @relation("ArticleToTag")
+
   @@index([authorId])
   @@index([published, publishedAt])
   @@map("articles")
 }
 
 model Tag {
-  id              String    @id @default(cuid())
-  name            String    @unique
-  slug            String    @unique
-  articles        Article[]
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  articles Article[] @relation("ArticleToTag")
 
   @@map("tags")
+}
+
+model Highlight {
+  id          String   @id @default(cuid())
+  articleId   String
+  userId      String
+  text        String
+  startOffset Int
+  endOffset   Int
+  startNode   String
+  endNode     String
+  color       String?  @default("#FFE0B2")
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  article     Article  @relation(fields: [articleId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([articleId, userId])
+  @@index([articleId, isPublic])
+  @@map("highlights")
 }

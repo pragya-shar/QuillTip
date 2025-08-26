@@ -1136,7 +1136,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Update Article model with highlights relation -- M --
 - [ ] Add highlightStats JSON field to Article model -- C --
 - [ ] Create and run database migrations -- M --
-- [ ] Test database schema changes -- M --
+- [ ] Test database schema changes -- S --
 - [ ] Install Socket.io dependencies -- M --
 - [ ] Install Redis client dependencies -- M --
 - [ ] Configure Redis connection in lib/redis.ts -- M --
@@ -1145,7 +1145,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Set up Redis adapter for Socket.io -- C --
 - [ ] Create Socket context provider for React -- M --
 - [ ] Add WebSocket connection to app layout -- M --
-- [ ] Test WebSocket connection establishment -- M --
+- [ ] Test WebSocket connection establishment -- S --
 - [ ] Configure environment variables for Redis -- M --
 - [ ] Set up Redis caching strategies -- S --
 - [ ] Create cache invalidation utilities -- S --
@@ -1168,7 +1168,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Implement selection validation logic -- M --
 - [ ] Add selection boundary checks -- S --
 - [ ] Create selection debouncing logic -- S --
-- [ ] Test cross-browser selection compatibility -- S --
+- [ ] Test cross-browser selection compatibility -- C --
 - [ ] Add selection visual feedback -- C --
 - [ ] Implement selection size limits -- C --
 - [ ] Create selection persistence utilities -- M --
@@ -1191,7 +1191,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Implement highlight count indicators -- S --
 - [ ] Add highlight selection state management -- M --
 - [ ] Create highlight context menu -- C --
-- [ ] Test highlight rendering performance -- S --
+- [ ] Test highlight rendering performance -- C --
 - [ ] Add accessibility attributes to highlights -- S --
 - [ ] Create highlight loading states -- C --
 - [ ] Implement highlight error handling -- S --
@@ -1218,7 +1218,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Update cache on highlight changes -- S --
 - [ ] Add rate limiting for socket events -- S --
 - [ ] Create socket event validation -- S --
-- [ ] Test real-time sync across multiple clients -- M --
+- [ ] Test real-time sync across multiple clients -- S --
 - [ ] Add socket connection status indicator -- C --
 
 #### Day 3-4: Heat Map Visualization
@@ -1239,7 +1239,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Implement progressive heat map loading -- C --
 - [ ] Add heat map caching logic -- S --
 - [ ] Create heat map refresh mechanism -- S --
-- [ ] Test heat map performance with many highlights -- S --
+- [ ] Test heat map performance with many highlights -- C --
 - [ ] Add mobile-responsive heat map -- M --
 - [ ] Create heat map export functionality -- W --
 - [ ] Implement heat map sharing features -- W --
@@ -1265,7 +1265,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Add note markdown support -- W --
 - [ ] Implement note character limits -- S --
 - [ ] Create note notification system -- W --
-- [ ] Test interaction responsiveness -- S --
+- [ ] Test interaction responsiveness -- C --
 
 ### Week 7: Analytics & Polish
 
@@ -1313,21 +1313,21 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Implement service worker caching -- W --
 - [ ] Create performance monitoring -- S --
 - [ ] Add performance budgets -- C --
-- [ ] Test and optimize bundle size -- S --
+- [ ] Test and optimize bundle size -- C --
 
 #### Day 5: Testing & Documentation
 
-- [ ] Write unit tests for SelectionManager -- M --
-- [ ] Write unit tests for HighlightSerializer -- M --
-- [ ] Test highlight overlap detection -- S --
-- [ ] Test heat map calculations -- S --
-- [ ] Write integration tests for WebSocket sync -- M --
-- [ ] Test multi-user highlight conflicts -- S --
-- [ ] Test analytics data accuracy -- S --
-- [ ] Create E2E test for highlight creation flow -- M --
-- [ ] Create E2E test for heat map display -- S --
-- [ ] Test real-time sync across sessions -- M --
-- [ ] Write API documentation for highlights -- M --
+- [ ] Write unit tests for SelectionManager -- S --
+- [ ] Write unit tests for HighlightSerializer -- S --
+- [ ] Test highlight overlap detection -- C --
+- [ ] Test heat map calculations -- C --
+- [ ] Write integration tests for WebSocket sync -- S --
+- [ ] Test multi-user highlight conflicts -- C --
+- [ ] Test analytics data accuracy -- C --
+- [ ] Create E2E test for highlight creation flow -- S --
+- [ ] Create E2E test for heat map display -- C --
+- [ ] Test real-time sync across sessions -- S --
+- [ ] Write API documentation for highlights -- S --
 - [ ] Document WebSocket event protocols -- S --
 - [ ] Create user guide for highlighting features -- S --
 - [ ] Document performance benchmarks -- C --
@@ -1340,14 +1340,14 @@ While building Phase 2, prepare for Phase 3 by:
 
 ### Post-Implementation Tasks
 
-- [ ] Conduct security audit for XSS vulnerabilities -- M --
-- [ ] Implement rate limiting for highlight creation -- M --
-- [ ] Add input sanitization for notes -- M --
+- [ ] Conduct security audit for XSS vulnerabilities -- S --
+- [ ] Implement rate limiting for highlight creation -- S --
+- [ ] Add input sanitization for notes -- S --
 - [ ] Configure privacy controls -- S --
 - [ ] Set up monitoring for WebSocket connections -- S --
 - [ ] Create alert rules for system health -- S --
 - [ ] Implement backup strategy for highlights -- S --
-- [ ] Plan Phase 3 Stellar integration -- M --
+- [ ] Plan Phase 3 Stellar integration -- S --
 - [ ] Research Freighter wallet API -- S --
 - [ ] Design wallet connection UX -- S --
 - [ ] Set up testnet environment -- C --
@@ -1362,8 +1362,8 @@ While building Phase 2, prepare for Phase 3 by:
 
 | Priority | Count | Percentage |
 |----------|-------|------------|
-| **M (Must have)** | 87 | 44.6% |
-| **S (Should have)** | 71 | 36.4% |
-| **C (Could have)** | 23 | 11.8% |
+| **M (Must have)** | 73 | 37.4% |
+| **S (Should have)** | 85 | 43.6% |
+| **C (Could have)** | 32 | 16.4% |
 | **W (Won't have)** | 14 | 7.2% |
 | **TOTAL** | **195** | **100%** |

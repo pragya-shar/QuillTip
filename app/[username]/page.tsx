@@ -16,8 +16,15 @@ interface ProfilePageProps {
 
 async function getUserProfile(username: string, page: number = 1) {
   try {
+    // Add logging for debugging
+    console.log('[Profile] Fetching user:', username);
+    console.log('[Profile] DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    
     const limit = 9
     const skip = (page - 1) * limit
+
+    // Ensure database connection
+    await prisma.$connect();
 
     // Fetch user
     const user = await prisma.user.findUnique({
@@ -42,6 +49,7 @@ async function getUserProfile(username: string, page: number = 1) {
     })
 
     if (!user) {
+      console.log('[Profile] User not found:', username);
       return null
     }
 
@@ -94,8 +102,11 @@ async function getUserProfile(username: string, page: number = 1) {
       }
     }
   } catch (error) {
-    console.error('Error fetching user profile:', error)
+    console.error('[Profile] Database error:', error)
+    // Return null to trigger 404 instead of crashing
     return null
+  } finally {
+    await prisma.$disconnect()
   }
 }
 

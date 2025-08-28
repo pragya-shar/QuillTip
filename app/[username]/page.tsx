@@ -212,3 +212,4 @@ export async function generateMetadata({ params }: ProfilePageProps) {
 export const dynamic = 'force-dynamic'
 export const dynamicParams = true
 export const revalidate = 0
+export const runtime = 'nodejs' // Ensure Node.js runtime for Prisma compatibility

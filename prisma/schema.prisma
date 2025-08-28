@@ -20,6 +20,7 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   articles        Article[]
+  highlights      Highlight[]
 
   @@map("users")
 }
@@ -36,6 +37,7 @@ model Article {
   tags            Tag[]
   author          User      @relation(fields: [authorId], references: [id])
   authorId        String
+  highlights      Highlight[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -51,4 +53,37 @@ model Tag {
   articles        Article[]
 
   @@map("tags")
+}
+
+enum InteractionType {
+  LIKE
+  SHARE
+  REPORT
+}
+
+model Highlight {
+  id              String    @id @default(cuid())
+  articleId       String
+  article         Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Text selection data
+  text            String    // The highlighted text content
+  startOffset     Int       // Character offset from start
+  endOffset       Int       // Character offset from end
+  startNode       String    // CSS selector path for start node
+  endNode         String    // CSS selector path for end node
+  
+  // Metadata
+  color           String?   @default("#FFE0B2")
+  isPublic        Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Performance indexes
+  @@index([articleId, userId])
+  @@index([articleId, isPublic])
+  @@map("highlights")
 }

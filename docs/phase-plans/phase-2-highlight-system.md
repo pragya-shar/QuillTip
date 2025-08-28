@@ -1152,12 +1152,12 @@ While building Phase 2, prepare for Phase 3 by:
 
 #### Day 3-4: Text Selection System
 
-- [ ] Create SelectionManager class -- M --
-- [ ] Implement mouse event handlers for text selection -- M --
-- [ ] Implement touch event handlers for mobile selection -- M --
-- [ ] Create TextSelection interface and types -- M --
-- [ ] Implement selection range capture logic -- M --
-- [ ] Add selection clearing functionality -- M --
+- [x] Create SelectionManager class -- M --
+- [x] Implement mouse event handlers for text selection -- M --
+- [x] Implement touch event handlers for mobile selection -- M --
+- [x] Create TextSelection interface and types -- M --
+- [x] Implement selection range capture logic -- M --
+- [x] Add selection clearing functionality -- M --
 - [ ] Create HighlightSerializer class -- M --
 - [ ] Implement serialize method for selections -- M --
 - [ ] Implement deserialize method for highlights -- M --
@@ -1165,7 +1165,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Create node path resolution utilities -- M --
 - [ ] Handle text node selection edge cases -- S --
 - [ ] Handle partial element selections -- S --
-- [ ] Implement selection validation logic -- M --
+- [x] Implement selection validation logic -- M --
 - [ ] Add selection boundary checks -- S --
 - [ ] Create selection debouncing logic -- S --
 - [ ] Test cross-browser selection compatibility -- S --

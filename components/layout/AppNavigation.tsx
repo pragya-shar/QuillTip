@@ -61,9 +61,9 @@ export default function AppNavigation() {
                   <span>Drafts</span>
                 </Link>
                 <Link 
-                  href={`/${session.user?.username || 'profile'}`} 
+                  href={`/u/${session.user?.username || 'profile'}`} 
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
-                    pathname === `/${session.user?.username}` ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
+                    pathname === `/u/${session.user?.username}` ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
                   }`}
                 >
                   <User className="w-4 h-4" />

@@ -33,7 +33,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
     <article className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
       {/* Cover Image */}
       {article.coverImage && (
-        <Link href={`/${article.author.username}/${article.slug}`}>
+        <Link href={`/u/${article.author.username}/${article.slug}`}>
           <div className="relative h-48 w-full overflow-hidden">
             <Image
               src={article.coverImage}
@@ -48,7 +48,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
 
       <div className="p-6">
         {/* Title */}
-        <Link href={`/${article.author.username}/${article.slug}`}>
+        <Link href={`/u/${article.author.username}/${article.slug}`}>
           <h2 className="text-xl font-bold text-gray-900 mb-2 hover:text-brand-blue transition-colors line-clamp-2">
             {article.title}
           </h2>
@@ -83,7 +83,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
         {/* Author Info */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <Link 
-            href={`/${article.author.username}`}
+            href={`/u/${article.author.username}`}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             {article.author.avatar ? (

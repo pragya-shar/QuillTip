@@ -144,7 +144,7 @@ export default async function ProfilePage({ params, searchParams }: ProfilePageP
                   <Pagination
                     currentPage={pagination.page}
                     totalPages={pagination.totalPages}
-                    basePath={`/${username}`}
+                    basePath={`/u/${username}`}
                   />
                 </div>
               )}

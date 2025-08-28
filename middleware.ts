@@ -4,14 +4,8 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Handle dynamic user profile and article routes with proper headers
-  // Match both /username (profile) and /username/slug (article) patterns
-  if (pathname.match(/^\/[^\/]+$/) || pathname.match(/^\/[^\/]+\/[^\/]+$/)) {
-    // Skip if it's a known static route
-    const staticRoutes = ['/login', '/register', '/write', '/drafts', '/articles', '/test-upload']
-    if (staticRoutes.includes(pathname)) {
-      return NextResponse.next()
-    }
-    
+  // Match both /u/username (profile) and /u/username/slug (article) patterns
+  if (pathname.match(/^\/u\/[^\/]+$/) || pathname.match(/^\/u\/[^\/]+\/[^\/]+$/)) {
     const response = NextResponse.next()
     
     // Add headers to improve RSC streaming reliability

@@ -23,10 +23,7 @@ async function getUserProfile(username: string, page: number = 1) {
     const limit = 9
     const skip = (page - 1) * limit
 
-    // Ensure database connection
-    await prisma.$connect();
-
-    // Fetch user
+    // Fetch user (no explicit connect needed in serverless)
     const user = await prisma.user.findUnique({
       where: { username },
       select: {
@@ -105,8 +102,6 @@ async function getUserProfile(username: string, page: number = 1) {
     console.error('[Profile] Database error:', error)
     // Return null to trigger 404 instead of crashing
     return null
-  } finally {
-    await prisma.$disconnect()
   }
 }
 

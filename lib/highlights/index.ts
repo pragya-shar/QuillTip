@@ -6,6 +6,7 @@
  */
 
 export { SelectionManager } from './SelectionManager';
+export { HighlightSerializer } from './HighlightSerializer';
 export type { 
   TextSelection, 
   SerializedHighlight, 

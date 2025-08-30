@@ -54,10 +54,10 @@ export default function ArticlesPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  const currentPage = parseInt(searchParams.get('page') || '1')
-  const tag = searchParams.get('tag')
-  const author = searchParams.get('author')
-  const urlSearch = searchParams.get('search') || ''
+  const currentPage = parseInt(searchParams?.get('page') || '1')
+  const tag = searchParams?.get('tag')
+  const author = searchParams?.get('author')
+  const urlSearch = searchParams?.get('search') || ''
 
   const fetchArticles = useCallback(async () => {
     setLoading(true)
@@ -98,13 +98,13 @@ export default function ArticlesPage() {
   }, [urlSearch])
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || '')
     params.set('page', page.toString())
     router.push(`/articles?${params.toString()}`)
   }
 
   const handleSearchChange = (search: string) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(searchParams?.toString() || '')
     if (search.trim()) {
       params.set('search', search.trim())
     } else {
@@ -150,7 +150,7 @@ export default function ArticlesPage() {
                 Tag: {tag}
                 <button
                   onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString())
+                    const params = new URLSearchParams(searchParams?.toString() || '')
                     params.delete('tag')
                     params.set('page', '1')
                     router.push(`/articles?${params.toString()}`)
@@ -167,7 +167,7 @@ export default function ArticlesPage() {
                 Author: @{author}
                 <button
                   onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString())
+                    const params = new URLSearchParams(searchParams?.toString() || '')
                     params.delete('author')
                     params.set('page', '1')
                     router.push(`/articles?${params.toString()}`)
@@ -184,7 +184,7 @@ export default function ArticlesPage() {
                 Search: &ldquo;{urlSearch}&rdquo;
                 <button
                   onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString())
+                    const params = new URLSearchParams(searchParams?.toString() || '')
                     params.delete('search')
                     params.set('page', '1')
                     router.push(`/articles?${params.toString()}`)

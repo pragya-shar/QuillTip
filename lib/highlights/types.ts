@@ -22,6 +22,8 @@ export interface SerializedHighlight {
   endNode: string;
   color?: string;
   isPublic?: boolean;
+  id?: string;
+  createdAt?: string;
 }
 
 /**

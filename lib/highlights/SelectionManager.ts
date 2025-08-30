@@ -56,7 +56,7 @@ export class SelectionManager {
   /**
    * Handle mouse up events
    */
-  private handleMouseUp = (_event: MouseEvent): void => {
+  private handleMouseUp = (): void => {
     if (!this.isActive) return;
     
     // Small delay to ensure selection is complete
@@ -68,7 +68,7 @@ export class SelectionManager {
   /**
    * Handle touch end events for mobile devices
    */
-  private handleTouchEnd = (_event: TouchEvent): void => {
+  private handleTouchEnd = (): void => {
     if (!this.isActive) return;
     
     this.debounceSelection(() => {
@@ -93,7 +93,7 @@ export class SelectionManager {
   /**
    * Allow text selection to proceed normally
    */
-  private handleSelectStart = (_event: Event): void => {
+  private handleSelectStart = (): void => {
     // Don't prevent default - we want normal text selection behavior
     // This handler is just for future extensibility
   };

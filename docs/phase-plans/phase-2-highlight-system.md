@@ -1158,11 +1158,11 @@ While building Phase 2, prepare for Phase 3 by:
 - [x] Create TextSelection interface and types -- M --
 - [x] Implement selection range capture logic -- M --
 - [x] Add selection clearing functionality -- M --
-- [ ] Create HighlightSerializer class -- M --
-- [ ] Implement serialize method for selections -- M --
-- [ ] Implement deserialize method for highlights -- M --
-- [ ] Create node path generation utilities -- M --
-- [ ] Create node path resolution utilities -- M --
+- [x] Create HighlightSerializer class -- M --
+- [x] Implement serialize method for selections -- M --
+- [x] Implement deserialize method for highlights -- M --
+- [x] Create node path generation utilities -- M --
+- [x] Create node path resolution utilities -- M --
 - [ ] Handle text node selection edge cases -- S --
 - [ ] Handle partial element selections -- S --
 - [x] Implement selection validation logic -- M --
@@ -1171,7 +1171,7 @@ While building Phase 2, prepare for Phase 3 by:
 - [ ] Test cross-browser selection compatibility -- S --
 - [ ] Add selection visual feedback -- C --
 - [ ] Implement selection size limits -- C --
-- [ ] Create selection persistence utilities -- M --
+- [x] Create selection persistence utilities -- M --
 
 #### Day 5: Highlight UI Components
 

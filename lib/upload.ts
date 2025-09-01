@@ -1,6 +1,10 @@
 /**
- * File upload utilities for handling image uploads to Supabase Storage
+ * File upload utilities for handling image uploads to Convex Storage
  */
+
+import { ConvexReactClient } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
 
 interface UploadResult {
   success: boolean
@@ -15,10 +19,13 @@ interface UploadProgress {
 }
 
 /**
- * Upload a file to the server and get back the public URL
+ * Upload a file using Convex storage and get back the public URL
  */
 export async function uploadFile(
   file: File,
+  convexClient: ConvexReactClient,
+  uploadType: string = 'article_image',
+  articleId?: Id<"articles">,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResult> {
   try {
@@ -39,31 +46,11 @@ export async function uploadFile(
       }
     }
 
-    // Step 1: Get presigned upload URL
-    const metadataResponse = await fetch('/api/upload', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size
-      })
-    })
-
-    if (!metadataResponse.ok) {
-      const errorData = await metadataResponse.json()
-      return {
-        success: false,
-        error: errorData.error || 'Failed to get upload URL'
-      }
-    }
-
-    const { uploadUrl, publicUrl } = await metadataResponse.json()
-
-    // Step 2: Upload directly to Supabase Storage using XMLHttpRequest for progress tracking
-    return new Promise((resolve) => {
+    // Step 1: Get upload URL from Convex
+    const uploadUrl = await convexClient.mutation(api.uploads.generateUploadUrl, {})
+    
+    // Step 2: Upload file to Convex storage with progress tracking
+    const result = await new Promise<{storageId?: Id<"_storage">, error?: string}>((resolve) => {
       const xhr = new XMLHttpRequest()
       
       // Track upload progress
@@ -79,38 +66,55 @@ export async function uploadFile(
       })
       
       // Handle completion
-      xhr.addEventListener('load', () => {
+      xhr.addEventListener('load', async () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          resolve({
-            success: true,
-            url: publicUrl
-          })
+          try {
+            const response = JSON.parse(xhr.responseText)
+            resolve({ storageId: response.storageId })
+          } catch (e) {
+            resolve({ error: 'Failed to parse upload response' })
+          }
         } else {
-          resolve({
-            success: false,
-            error: 'Failed to upload file to storage'
-          })
+          resolve({ error: 'Failed to upload file to storage' })
         }
       })
       
       // Handle errors
       xhr.addEventListener('error', () => {
-        resolve({
-          success: false,
-          error: 'Network error occurred during upload'
-        })
+        resolve({ error: 'Network error occurred during upload' })
       })
       
       // Start upload
-      xhr.open('PUT', uploadUrl)
-      xhr.setRequestHeader('Content-Type', file.type)
+      xhr.open('POST', uploadUrl)
       xhr.send(file)
     })
+    
+    if (result.error || !result.storageId) {
+      return {
+        success: false,
+        error: result.error || 'Upload failed'
+      }
+    }
+
+    // Step 3: Store file metadata and get public URL
+    const metadata = await convexClient.mutation(api.uploads.storeFileMetadata, {
+      storageId: result.storageId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      uploadType,
+      articleId,
+    })
+
+    return {
+      success: true,
+      url: metadata.url || undefined
+    }
   } catch (error) {
     console.error('Upload error:', error)
     return {
       success: false,
-      error: 'Network error occurred during upload'
+      error: error instanceof Error ? error.message : 'Network error occurred during upload'
     }
   }
 }

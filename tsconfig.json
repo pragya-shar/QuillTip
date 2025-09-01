@@ -27,7 +27,8 @@
       "@/types/*": ["./types/*"],
       "@/hooks/*": ["./hooks/*"],
       "@/actions/*": ["./actions/*"],
-      "@/contexts/*": ["./components/providers/*"]
+      "@/contexts/*": ["./components/providers/*"],
+      "@/convex/*": ["./convex/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

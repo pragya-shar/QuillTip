@@ -5,15 +5,34 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: '*.convex.cloud',
         port: '',
-        pathname: '/storage/v1/object/public/**',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.convex.site',
+        port: '',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'img.youtube.com',
         port: '',
         pathname: '/vi/**',
+      },
+      // Temporary: Allow Unsplash for legacy content
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'plus.unsplash.com',
+        port: '',
+        pathname: '/**',
       },
     ],
   },

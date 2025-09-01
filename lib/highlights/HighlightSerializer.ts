@@ -71,7 +71,7 @@ export class HighlightSerializer {
    * @param node - The node to generate a path for
    * @returns Path string using dot-separated indices (e.g., "0.2.1.3")
    */
-  private static getNodePath(node: Node): string {
+  static getNodePath(node: Node): string {
     const path: number[] = [];
     let current: Node | null = node;
     
@@ -97,7 +97,7 @@ export class HighlightSerializer {
    * @param path - The path string (e.g., "0.2.1.3")
    * @returns The node at the specified path or null if not found
    */
-  private static getNodeFromPath(path: string): Node | null {
+  static getNodeFromPath(path: string): Node | null {
     if (!path) {
       return null;
     }

@@ -12,6 +12,9 @@ import { formatDistanceToNow } from 'date-fns'
 import { JSONContent } from '@tiptap/react'
 import Image from 'next/image'
 import ShareButtons from './ShareButtons'
+import { HighlightableArticle } from '@/components/articles/HighlightableArticle'
+import { useAuth } from '@/components/providers/AuthContext'
+import { Id } from '@/convex/_generated/dataModel'
 
 const lowlight = createLowlight(common)
 
@@ -39,15 +42,20 @@ interface Article {
 
 interface ArticleDisplayProps {
   article: Article
+  showHighlights?: boolean
 }
 
-export default function ArticleDisplay({ article }: ArticleDisplayProps) {
+export default function ArticleDisplay({ article, showHighlights = true }: ArticleDisplayProps) {
   const [currentUrl, setCurrentUrl] = useState('')
+  const { isAuthenticated } = useAuth()
+  const [useHighlightable, setUseHighlightable] = useState(false)
 
   // Get current URL on client side only
   useEffect(() => {
     setCurrentUrl(window.location.href)
-  }, [])
+    // Enable highlightable article for authenticated users
+    setUseHighlightable(showHighlights && isAuthenticated)
+  }, [showHighlights, isAuthenticated])
 
   const editor = useEditor({
     extensions: [
@@ -146,7 +154,15 @@ export default function ArticleDisplay({ article }: ArticleDisplayProps) {
 
       {/* Article Content */}
       <div className="article-content">
-        <EditorContent editor={editor} />
+        {useHighlightable ? (
+          <HighlightableArticle
+            articleId={article.id as Id<'articles'>}
+            content={article.content}
+            showHighlights={showHighlights}
+          />
+        ) : (
+          <EditorContent editor={editor} />
+        )}
       </div>
 
       {/* Share Buttons */}

@@ -108,10 +108,9 @@ export const TextHighlighter = forwardRef<
       setCurrentDirection(direction)
     }, [direction])
 
-    const isInView =
-      triggerType === "inView"
-        ? useInView(componentRef, useInViewOptions)
-        : false
+    // Always call hooks, but conditionally use their results
+    const inViewResult = useInView(componentRef, useInViewOptions)
+    const isInView = triggerType === "inView" ? inViewResult : false
 
     useImperativeHandle(ref, () => ({
       animate: (animationDirection?: HighlightDirection) => {

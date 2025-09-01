@@ -9,7 +9,11 @@ import AppNavigation from '@/components/layout/AppNavigation'
 import { TipStats } from '@/components/tipping/TipStats'
 import { TipButton } from '@/components/tipping/TipButton'
 import { NFTIntegration } from '@/components/nft/NFTIntegration'
-import { DollarSign, Trophy, Heart } from 'lucide-react'
+import { DollarSign, Trophy, Heart, Highlighter, X } from 'lucide-react'
+import { HighlightsList } from '@/components/highlights/HighlightsList'
+import { useAuth } from '@/components/providers/AuthContext'
+import { Id } from '@/convex/_generated/dataModel'
+import { cn } from '@/lib/utils'
 
 interface ArticlePageProps {
   params: Promise<{
@@ -23,6 +27,8 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     username: string | null
     slug: string | null
   }>({ username: null, slug: null })
+  const [showHighlightsPanel, setShowHighlightsPanel] = useState(false)
+  const { user } = useAuth()
   
   // Get params from promise
   useEffect(() => {
@@ -38,6 +44,12 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     routeParams.username && routeParams.slug 
       ? { username: routeParams.username, slug: routeParams.slug }
       : 'skip'
+  )
+  
+  // Fetch highlights if article exists
+  const highlights = useQuery(
+    api.highlights.getArticleHighlights,
+    article ? { articleId: article._id as Id<'articles'> } : 'skip'
   )
   
   // Loading state
@@ -150,6 +162,45 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                     articleTitle={article.title}
                     authorId={article.author.id}
                   />
+                </div>
+                
+                {/* Highlights Section */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                  <button
+                    onClick={() => setShowHighlightsPanel(!showHighlightsPanel)}
+                    className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Highlighter className="w-5 h-5 text-yellow-500" />
+                      Highlights
+                      {highlights && highlights.length > 0 && (
+                        <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-sm rounded-full">
+                          {highlights.length}
+                        </span>
+                      )}
+                    </h3>
+                    <div className={cn(
+                      "transform transition-transform",
+                      showHighlightsPanel ? "rotate-180" : ""
+                    )}>
+                      <X className="w-4 h-4" />
+                    </div>
+                  </button>
+                  
+                  {showHighlightsPanel && (
+                    <div className="border-t">
+                      <HighlightsList
+                        highlights={highlights || []}
+                        currentUserId={user?._id as Id<'users'> | undefined}
+                        onHighlightClick={(highlight) => {
+                          // Scroll to highlight in article
+                          const element = document.querySelector(`[data-highlight-id="${highlight._id}"]`)
+                          element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }}
+                        className="max-h-[500px] overflow-y-auto"
+                      />
+                    </div>
+                  )}
                 </div>
                 
                 {/* Article Stats */}

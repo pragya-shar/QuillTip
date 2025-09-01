@@ -29,6 +29,49 @@ declare module '@tiptap/core' {
   }
 }
 
+// Helper function to convert hex color to RGB values
+const getColorRgb = (hexColor: string): string => {
+  const colorMap: Record<string, string> = {
+    '#F59E0B': '245, 158, 11', // Amber
+    '#10B981': '16, 185, 129', // Emerald
+    '#3B82F6': '59, 130, 246', // Azure
+    '#F43F5E': '244, 63, 94', // Rose
+    '#8B5CF6': '139, 92, 246', // Violet
+    '#FB7185': '251, 113, 133', // Coral
+    // Fallback for old colors
+    '#FFEB3B': '255, 235, 59', // Yellow
+    '#B2FF59': '178, 255, 89', // Green
+    '#40C4FF': '64, 196, 255', // Blue
+    '#FF4081': '255, 64, 129', // Pink
+    '#E040FB': '224, 64, 251', // Purple
+    '#FFAB40': '255, 171, 64', // Orange
+  }
+
+  return colorMap[hexColor] || '255, 235, 59' // Default to yellow if not found
+}
+
+// Overlap detection helper
+class HighlightOverlapManager {
+  private highlights: Map<string, { start: number; end: number }> = new Map()
+
+  addHighlight(id: string, start: number, end: number) {
+    this.highlights.set(id, { start, end })
+  }
+
+  getOverlapCount(start: number, end: number): number {
+    let count = 0
+    this.highlights.forEach((highlight) => {
+      if (start < highlight.end && end > highlight.start) {
+        count++
+      }
+    })
+    return Math.min(count, 5) // Cap at 5 for visual clarity
+  }
+
+  clear() {
+    this.highlights.clear()
+  }
+}
 const HighlightExtension = Mark.create<HighlightOptions>({
   name: 'highlight',
 
@@ -49,8 +92,8 @@ const HighlightExtension = Mark.create<HighlightOptions>({
     return {
       id: {
         default: null,
-        parseHTML: element => element.getAttribute('data-highlight-id'),
-        renderHTML: attributes => {
+        parseHTML: (element) => element.getAttribute('data-highlight-id'),
+        renderHTML: (attributes) => {
           if (!attributes.id) {
             return {}
           }
@@ -61,21 +104,23 @@ const HighlightExtension = Mark.create<HighlightOptions>({
       },
       color: {
         default: null,
-        parseHTML: element => element.getAttribute('data-color') || element.style.backgroundColor,
-        renderHTML: attributes => {
+        parseHTML: (element) =>
+          element.getAttribute('data-color') || element.style.backgroundColor,
+        renderHTML: (attributes) => {
           if (!attributes.color) {
             return {}
           }
           return {
             'data-color': attributes.color,
-            style: `background-color: ${attributes.color}; cursor: pointer; position: relative;`,
+            'data-color-rgb': getColorRgb(attributes.color),
+            style: `--highlight-color: ${attributes.color}; --highlight-color-rgb: ${getColorRgb(attributes.color)}; --highlight-opacity: 0.4;`,
           }
         },
       },
       userId: {
         default: null,
-        parseHTML: element => element.getAttribute('data-user-id'),
-        renderHTML: attributes => {
+        parseHTML: (element) => element.getAttribute('data-user-id'),
+        renderHTML: (attributes) => {
           if (!attributes.userId) {
             return {}
           }
@@ -86,8 +131,8 @@ const HighlightExtension = Mark.create<HighlightOptions>({
       },
       userName: {
         default: null,
-        parseHTML: element => element.getAttribute('data-user-name'),
-        renderHTML: attributes => {
+        parseHTML: (element) => element.getAttribute('data-user-name'),
+        renderHTML: (attributes) => {
           if (!attributes.userName) {
             return {}
           }
@@ -98,14 +143,25 @@ const HighlightExtension = Mark.create<HighlightOptions>({
       },
       note: {
         default: null,
-        parseHTML: element => element.getAttribute('data-note'),
-        renderHTML: attributes => {
+        parseHTML: (element) => element.getAttribute('data-note'),
+        renderHTML: (attributes) => {
           if (!attributes.note) {
             return {}
           }
           return {
             'data-note': attributes.note,
             title: attributes.note, // Show note on hover
+          }
+        },
+      },
+      overlapCount: {
+        default: 1,
+        parseHTML: (element) =>
+          parseInt(element.getAttribute('data-overlap-count') || '1'),
+        renderHTML: (attributes) => {
+          const count = attributes.overlapCount || 1
+          return {
+            'data-overlap-count': count.toString(),
           }
         },
       },
@@ -124,7 +180,11 @@ const HighlightExtension = Mark.create<HighlightOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['mark', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
+    return [
+      'mark',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      0,
+    ]
   },
 
   addCommands() {
@@ -160,15 +220,17 @@ const HighlightExtension = Mark.create<HighlightOptions>({
             const { schema, doc } = view.state
             const range = doc.resolve(pos)
             const marks = range.marks()
-            
-            const highlightMark = marks.find(mark => mark.type === schema.marks.highlight)
-            
+
+            const highlightMark = marks.find(
+              (mark) => mark.type === schema.marks.highlight
+            )
+
             if (highlightMark && highlightMark.attrs.id) {
               event.preventDefault()
               onHighlightClick(highlightMark.attrs as HighlightAttributes)
               return true
             }
-            
+
             return false
           },
         },
@@ -186,26 +248,43 @@ const HighlightExtension = Mark.create<HighlightOptions>({
           decorations(state) {
             const { doc, schema } = state
             const decorations: Decoration[] = []
-            
+            const overlapManager = new HighlightOverlapManager()
+
+            // First pass: collect all highlights
             doc.descendants((node, pos) => {
               if (node.isText && node.marks.length) {
-                node.marks.forEach(mark => {
+                node.marks.forEach((mark) => {
+                  if (mark.type === schema.marks.highlight && mark.attrs.id) {
+                    overlapManager.addHighlight(
+                      mark.attrs.id,
+                      pos,
+                      pos + node.nodeSize
+                    )
+                  }
+                })
+              }
+            })
+
+            // Second pass: create decorations with overlap counts
+            doc.descendants((node, pos) => {
+              if (node.isText && node.marks.length) {
+                node.marks.forEach((mark) => {
                   if (mark.type === schema.marks.highlight) {
-                    // Add animation class to highlighted text
                     const from = pos
                     const to = pos + node.nodeSize
+                    const overlapCount = overlapManager.getOverlapCount(
+                      from,
+                      to
+                    )
+                    const colorRgb = getColorRgb(mark.attrs.color || '#F59E0B')
+
                     decorations.push(
                       Decoration.inline(from, to, {
                         class: 'highlight-animated',
+                        'data-overlap-count': overlapCount.toString(),
                         style: `
-                          background-image: linear-gradient(${mark.attrs.color || '#FFEB3B'}, ${mark.attrs.color || '#FFEB3B'});
-                          background-repeat: no-repeat;
-                          background-size: 100% 100%;
-                          background-position: 0 0;
-                          animation: highlight-fade-in 0.4s ease-out;
-                          cursor: pointer;
-                          position: relative;
-                          transition: filter 0.2s ease;
+                          --highlight-color: ${mark.attrs.color || '#F59E0B'};
+                          --highlight-color-rgb: ${colorRgb};
                         `,
                       })
                     )
@@ -213,7 +292,7 @@ const HighlightExtension = Mark.create<HighlightOptions>({
                 })
               }
             })
-            
+
             return DecorationSet.create(doc, decorations)
           },
         },

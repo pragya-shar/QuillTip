@@ -1,0 +1,318 @@
+/* Premium Highlight System Styles */
+
+/* Color Palette Variables */
+:root {
+  /* Premium Highlight Colors */
+  --highlight-amber: #F59E0B;
+  --highlight-amber-rgb: 245, 158, 11;
+  --highlight-emerald: #10B981;
+  --highlight-emerald-rgb: 16, 185, 129;
+  --highlight-azure: #3B82F6;
+  --highlight-azure-rgb: 59, 130, 246;
+  --highlight-rose: #F43F5E;
+  --highlight-rose-rgb: 244, 63, 94;
+  --highlight-violet: #8B5CF6;
+  --highlight-violet-rgb: 139, 92, 246;
+  --highlight-coral: #FB7185;
+  --highlight-coral-rgb: 251, 113, 133;
+  
+  /* Opacity Levels */
+  --opacity-whisper: 0.15;
+  --opacity-soft: 0.25;
+  --opacity-medium: 0.40;
+  --opacity-strong: 0.60;
+  --opacity-intense: 0.80;
+}
+
+/* Base Highlight Container */
+.highlight-container {
+  position: relative;
+  isolation: isolate;
+  contain: layout style paint;
+}
+
+/* Premium Highlight Mark Styling */
+mark[data-highlight-id] {
+  position: relative;
+  background-color: rgba(var(--highlight-color-rgb), var(--highlight-opacity, 0.3));
+  mix-blend-mode: normal;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+  padding: 0 2px;
+  margin: 0 -2px;
+  cursor: pointer;
+  will-change: transform, opacity, filter;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Heatmap Intensity Levels */
+mark[data-overlap-count="1"] {
+  --highlight-opacity: 0.15;
+}
+
+mark[data-overlap-count="2"] {
+  --highlight-opacity: 0.20;
+  filter: saturate(1.1);
+}
+
+mark[data-overlap-count="3"] {
+  --highlight-opacity: 0.25;
+  filter: saturate(1.2);
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+}
+
+mark[data-overlap-count="4"] {
+  --highlight-opacity: 0.30;
+  filter: saturate(1.3);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+mark[data-overlap-count="5"] {
+  --highlight-opacity: 0.35;
+  filter: saturate(1.4);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.10);
+}
+
+/* Premium Hover Effects */
+mark[data-highlight-id]:hover {
+  filter: brightness(1.1) saturate(1.2);
+  transform: scale(1.02) translateZ(0);
+  box-shadow: 
+    0 2px 8px rgba(var(--highlight-color-rgb), 0.3),
+    0 0 0 2px rgba(var(--highlight-color-rgb), 0.1);
+  z-index: 10;
+}
+
+/* Tooltip on Hover */
+mark[data-highlight-id]::after {
+  content: attr(data-user-name);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(17, 24, 39, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+mark[data-highlight-id]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Entrance Animations */
+@keyframes highlight-paint {
+  0% {
+    background-size: 0% 100%;
+    opacity: 0;
+    transform: scaleX(0.95);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    background-size: 100% 100%;
+    transform: scaleX(1);
+  }
+}
+
+/* Shimmer animation removed for better readability */
+
+.highlight-animated {
+  animation: highlight-paint 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  background-color: rgba(var(--highlight-color-rgb), var(--highlight-opacity, 0.3));
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Premium Popover Styles */
+.highlight-popover {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: popover-enter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes popover-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.95) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+/* Color Picker Styles */
+.color-picker-container {
+  display: flex;
+  gap: 12px;
+  padding: 8px;
+  background: linear-gradient(to right, rgba(249, 250, 251, 0.8), rgba(255, 255, 255, 0.9));
+  border-radius: 12px;
+  position: relative;
+}
+
+.color-picker-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-picker-button:hover {
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.color-picker-button:active {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.color-picker-button.selected {
+  border-color: rgba(17, 24, 39, 0.8);
+  box-shadow: 
+    0 0 0 3px rgba(255, 255, 255, 1),
+    0 0 0 5px rgba(17, 24, 39, 0.2);
+}
+
+/* Color Tooltip */
+.color-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.color-picker-button:hover .color-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.color-tooltip-arrow {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(17, 24, 39, 0.95);
+}
+
+/* Text Preview */
+.highlight-text-preview {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(249, 250, 251, 0.8), rgba(243, 244, 246, 0.6));
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(55, 65, 81, 0.9);
+  max-height: 96px;
+  overflow-y: auto;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  font-family: 'Georgia', serif;
+  font-style: italic;
+}
+
+/* Scrollbar Styling */
+.highlight-text-preview::-webkit-scrollbar {
+  width: 6px;
+}
+
+.highlight-text-preview::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.3);
+  border-radius: 3px;
+}
+
+.highlight-text-preview::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.highlight-text-preview::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.6);
+}
+
+/* Action Buttons */
+.highlight-action-button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight-action-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.highlight-action-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Privacy Toggle */
+.privacy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(249, 250, 251, 0.8);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.privacy-toggle:hover {
+  background: rgba(243, 244, 246, 0.9);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  .highlight-popover {
+    min-width: 260px;
+    padding: 12px;
+  }
+  
+  .color-picker-button {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .color-picker-container {
+    gap: 8px;
+  }
+}

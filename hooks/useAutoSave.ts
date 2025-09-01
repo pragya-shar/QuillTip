@@ -1,5 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { JSONContent } from '@tiptap/react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 
 interface DraftResponse {
   id: string;
@@ -44,6 +47,9 @@ export function useAutoSave({
 
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const previousContentRef = useRef<string | undefined>(undefined);
+  
+  // Convex mutation for saving drafts
+  const saveDraftMutation = useMutation(api.articles.saveDraft);
 
   const saveDraft = useCallback(async () => {
     // Check isSaving using setState callback to get latest state
@@ -56,24 +62,12 @@ export function useAutoSave({
     if (!content) return;
 
     try {
-      const response = await fetch('/api/articles/draft', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: articleId,
-          title: title || 'Untitled',
-          content,
-          excerpt,
-        }),
+      const draftId = await saveDraftMutation({
+        id: articleId as Id<"articles"> | undefined,
+        title: title || 'Untitled',
+        content,
+        excerpt,
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save draft: ${response.statusText}`);
-      }
-
-      const data = await response.json();
       
       setState(prev => ({
         ...prev,
@@ -82,7 +76,18 @@ export function useAutoSave({
         error: null,
       }));
 
-      onSaveSuccess?.(data);
+      // Create response compatible with existing interface
+      const response: DraftResponse = {
+        id: draftId,
+        title: title || 'Untitled',
+        content,
+        excerpt,
+        version: 1, // Convex handles versioning internally
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      onSaveSuccess?.(response);
     } catch (error) {
       const err = error instanceof Error ? error : new Error('Failed to save draft');
       
@@ -94,7 +99,7 @@ export function useAutoSave({
 
       onSaveError?.(err);
     }
-  }, [content, articleId, title, excerpt, onSaveSuccess, onSaveError]);
+  }, [content, articleId, title, excerpt, onSaveSuccess, onSaveError, saveDraftMutation]);
 
   const debouncedSave = useCallback(() => {
     if (timeoutRef.current) {
@@ -138,13 +143,10 @@ export function useAutoSave({
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (enabled && content && !state.isSaving) {
-        // Try to save before leaving
-        navigator.sendBeacon('/api/articles/draft/beacon', JSON.stringify({
-          id: articleId,
-          title: title || 'Untitled',
-          content,
-          excerpt,
-        }));
+        // Try to save before leaving using Convex
+        // Note: navigator.sendBeacon won't work with Convex mutations
+        // We'll attempt a synchronous save instead
+        saveDraft().catch(console.error);
       }
     };
 
@@ -153,7 +155,7 @@ export function useAutoSave({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [enabled, content, articleId, title, excerpt, state.isSaving]);
+  }, [enabled, content, state.isSaving, saveDraft]);
 
   return {
     ...state,

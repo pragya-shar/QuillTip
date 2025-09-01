@@ -46,3 +46,4 @@ next-env.d.ts
 
 # contracts
 contracts/tipping/target
+contracts/article-nft/target

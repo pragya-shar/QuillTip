@@ -38,15 +38,19 @@
   - [x] Component index exports
 
 - [x] **Testing & Build**
-  - [x] Integration test suite created
-  - [x] Manual test helper functions
   - [x] Fixed TypeScript type errors
   - [x] Fixed ESLint issues
   - [x] Build passes successfully
+  - [x] Rust contract tests pass
 
 ### 🚧 In Progress
 
 ### ❌ Not Started
+
+- [ ] **Testing**
+  - [ ] Integration test suite for NFT flows
+  - [ ] Manual test helper functions
+  - [ ] E2E tests for minting and transfers
 
 - [ ] **Contract Deployment**
   - [ ] Deploy to Stellar testnet

@@ -6,6 +6,10 @@ import { api } from '@/convex/_generated/api'
 import { useState, useEffect } from 'react'
 import ArticleDisplay from '@/components/articles/ArticleDisplay'
 import AppNavigation from '@/components/layout/AppNavigation'
+import { TipStats } from '@/components/tipping/TipStats'
+import { TipButton } from '@/components/tipping/TipButton'
+import { NFTIntegration } from '@/components/nft/NFTIntegration'
+import { DollarSign, Trophy, Heart } from 'lucide-react'
 
 interface ArticlePageProps {
   params: Promise<{
@@ -110,7 +114,67 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     <div className="min-h-screen bg-brand-cream">
       <AppNavigation />
       <main className="pt-20">
-        <ArticleDisplay article={articleForDisplay} />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Main Article Content */}
+            <div className="lg:col-span-8">
+              <ArticleDisplay article={articleForDisplay} />
+            </div>
+            
+            {/* Engagement Sidebar */}
+            <div className="lg:col-span-4">
+              <div className="sticky top-24 space-y-6">
+                {/* Tip Section */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-red-500" />
+                    Support the Author
+                  </h3>
+                  <TipButton
+                    articleId={article._id}
+                    authorName={article.author.name || article.author.username}
+                  />
+                  <div className="mt-4 pt-4 border-t">
+                    <TipStats articleId={article._id} />
+                  </div>
+                </div>
+                
+                {/* NFT Section */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-purple-500" />
+                    NFT Collection
+                  </h3>
+                  <NFTIntegration 
+                    articleId={article._id}
+                    articleTitle={article.title}
+                    authorId={article.author.id}
+                  />
+                </div>
+                
+                {/* Article Stats */}
+                {article.tipStats && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-green-500" />
+                      Article Stats
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Tips</span>
+                        <span className="font-semibold">{article.tipStats.count || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Earned</span>
+                        <span className="font-semibold">${(article.tipStats.total || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )

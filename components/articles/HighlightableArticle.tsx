@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -8,15 +8,15 @@ import Link from '@tiptap/extension-link'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { ResizableImage } from '@/components/editor/extensions/ResizableImage'
-import { SelectionManager } from '@/lib/highlights/SelectionManager'
-import { HighlightSerializer } from '@/lib/highlights/HighlightSerializer'
-import { TextHighlighter } from '@/components/fancy/text/text-highlighter'
+import HighlightExtension from '@/components/editor/extensions/HighlightExtension'
+import { HighlightConverter } from '@/lib/highlights/HighlightConverter'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { HighlightPopover } from '@/components/highlights/HighlightPopover'
 import { cn } from '@/lib/utils'
 import { JSONContent } from '@tiptap/react'
+import { motion, AnimatePresence } from 'motion/react'
 
 const lowlight = createLowlight(common)
 
@@ -38,7 +38,7 @@ interface HighlightData {
 
 interface HighlightableArticleProps {
   articleId: Id<'articles'>
-  content: JSONContent // TipTap JSON content
+  content: JSONContent
   editable?: boolean
   showHighlights?: boolean
   onHighlightClick?: (highlight: HighlightData) => void
@@ -53,20 +53,17 @@ export function HighlightableArticle({
   onHighlightClick,
   className
 }: HighlightableArticleProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const selectionManagerRef = useRef<SelectionManager | null>(null)
-  const setSelectionManager = (manager: SelectionManager | null) => {
-    selectionManagerRef.current = manager
-  }
   const [selectedText, setSelectedText] = useState<{
     text: string
-    startOffset: number
-    endOffset: number
-    startPath: string
-    endPath: string
+    from: number
+    to: number
   } | null>(null)
   const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number } | null>(null)
-  const [highlightedRanges, setHighlightedRanges] = useState<Map<string, Range>>(new Map())
+  const [highlightTooltip, setHighlightTooltip] = useState<{
+    highlight: HighlightData
+    position: { top: number; left: number }
+  } | null>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
   
   // Fetch highlights for the article
   const highlights = useQuery(api.highlights.getArticleHighlights, { 
@@ -76,7 +73,7 @@ export function HighlightableArticle({
   // Mutation to create a highlight
   const createHighlight = useMutation(api.highlights.createHighlight)
   
-  // Initialize TipTap editor
+  // Initialize TipTap editor with highlight extension
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -88,6 +85,42 @@ export function HighlightableArticle({
         lowlight,
       }),
       ResizableImage,
+      HighlightExtension.configure({
+        multicolor: true,
+        highlights: highlights?.map(h => ({
+          id: h._id,
+          color: h.color || '#FFEB3B',
+          userId: h.userId,
+          userName: h.userName,
+          userAvatar: h.userAvatar,
+          note: h.note,
+          createdAt: h.createdAt
+        })) || [],
+        onHighlightClick: (highlightAttrs) => {
+          // Find the full highlight data
+          const fullHighlight = highlights?.find(h => h._id === highlightAttrs.id)
+          if (fullHighlight) {
+            // Show tooltip with highlight info
+            if (onHighlightClick) {
+              onHighlightClick(fullHighlight)
+            } else {
+              // Default behavior: show tooltip
+              const selection = window.getSelection()
+              if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0)
+                const rect = range.getBoundingClientRect()
+                setHighlightTooltip({
+                  highlight: fullHighlight,
+                  position: {
+                    top: rect.top + window.scrollY - 60,
+                    left: rect.left + rect.width / 2
+                  }
+                })
+              }
+            }
+          }
+        }
+      }),
     ],
     content,
     editable,
@@ -97,131 +130,82 @@ export function HighlightableArticle({
         class: 'prose prose-lg prose-stone max-w-none focus:outline-none',
       },
     },
-  })
-  
-  // Initialize selection manager
-  useEffect(() => {
-    if (!containerRef.current || editable) return
-    
-    // Wait for editor to be mounted and find the actual content element
-    const setupSelectionManager = () => {
-      // Find the ProseMirror editor content element
-      const editorElement = containerRef.current?.querySelector('.ProseMirror') || containerRef.current
-      if (!editorElement) {
-        console.warn('Editor element not found')
-        return
-      }
+    onSelectionUpdate: ({ editor }) => {
+      if (editable) return
       
-      const manager = new SelectionManager(
-        editorElement as HTMLElement,
-        (selection) => {
-          const rect = selection.range.getBoundingClientRect()
-          console.log('Selection detected:', selection.text) // Debug log
+      const { selection } = editor.state
+      const { from, to } = selection
+      const text = editor.state.doc.textBetween(from, to, ' ')
+      
+      if (text.trim().length >= 3) {
+        // Get the DOM selection for positioning
+        const domSelection = window.getSelection()
+        if (domSelection && domSelection.rangeCount > 0) {
+          const range = domSelection.getRangeAt(0)
+          const rect = range.getBoundingClientRect()
           
-          setSelectedText({
-            text: selection.text,
-            startOffset: selection.startOffset,
-            endOffset: selection.endOffset,
-            startPath: HighlightSerializer.getNodePath(selection.startContainer),
-            endPath: HighlightSerializer.getNodePath(selection.endContainer)
-          })
-          
+          setSelectedText({ text, from, to })
           setPopoverPosition({
             top: rect.top + window.scrollY - 60,
             left: rect.left + rect.width / 2
           })
-        },
-        {
-          minSelectionLength: 3,
-          debounceMs: 300
         }
-      )
-      
-      setSelectionManager(manager)
-      
-      return manager
-    }
-    
-    // Give editor time to mount
-    const timer = setTimeout(() => {
-      const manager = setupSelectionManager()
-      if (manager) {
-        return () => {
-          manager.destroy()
-        }
+      } else {
+        setSelectedText(null)
+        setPopoverPosition(null)
       }
-    }, 100)
-    
-    return () => {
-      clearTimeout(timer)
-      selectionManagerRef.current?.destroy()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editable])
+    },
+  })
   
-  // Apply highlights to content
+  // Apply highlights when they change
   useEffect(() => {
-    if (!highlights || !containerRef.current || !showHighlights) return
+    if (!editor || !highlights || !showHighlights) return
     
-    const newHighlightedRanges = new Map<string, Range>()
-    
-    // Clear existing highlights
-    highlightedRanges.forEach((range) => {
-      try {
-        const contents = range.extractContents()
-        range.insertNode(contents)
-      } catch (e) {
-        console.error('Error clearing highlight:', e)
-      }
-    })
-    
-    // Apply new highlights
-    highlights.forEach((highlight) => {
-      try {
-        const startNode = HighlightSerializer.getNodeFromPath(highlight.startContainerPath)
-        const endNode = HighlightSerializer.getNodeFromPath(highlight.endContainerPath)
-        
-        if (startNode && endNode) {
-          const range = document.createRange()
-          range.setStart(startNode, highlight.startOffset)
-          range.setEnd(endNode, highlight.endOffset)
-          
-          newHighlightedRanges.set(highlight._id, range)
-        }
-      } catch (e) {
-        console.error('Error applying highlight:', e)
-      }
-    })
-    
-    setHighlightedRanges(newHighlightedRanges)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [highlights, showHighlights])
+    // Apply highlights to the editor
+    HighlightConverter.applyHighlightsToEditor(editor, highlights)
+  }, [editor, highlights, showHighlights])
   
   // Handle highlight creation
   const handleCreateHighlight = useCallback(async (color: string, note?: string, isPublic: boolean = true) => {
-    if (!selectedText) return
+    if (!selectedText || !editor) return
     
     try {
-      await createHighlight({
-        articleId,
-        text: selectedText.text,
-        startOffset: selectedText.startOffset,
-        endOffset: selectedText.endOffset,
-        startContainerPath: selectedText.startPath,
-        endContainerPath: selectedText.endPath,
+      // Create highlight data from selection
+      const highlightData = HighlightConverter.createHighlightFromSelection(editor, {
         color,
         note,
         isPublic
       })
       
-      // Clear selection
-      setSelectedText(null)
-      setPopoverPosition(null)
-      window.getSelection()?.removeAllRanges()
+      if (highlightData) {
+        // Save to database
+        await createHighlight({
+          articleId,
+          ...highlightData
+        })
+        
+        // Apply the highlight immediately for instant feedback
+        editor
+          .chain()
+          .focus()
+          .setHighlight({
+            id: `temp-${Date.now()}`, // Temporary ID until refetch
+            color,
+            userId: 'current-user', // This would come from auth context
+            note,
+            createdAt: Date.now(),
+          })
+          .run()
+        
+        // Clear selection
+        setSelectedText(null)
+        setPopoverPosition(null)
+        window.getSelection()?.removeAllRanges()
+      }
     } catch (error) {
       console.error('Error creating highlight:', error)
     }
-  }, [selectedText, articleId, createHighlight])
+  }, [selectedText, editor, articleId, createHighlight])
   
   // Handle popover close
   const handlePopoverClose = useCallback(() => {
@@ -230,94 +214,62 @@ export function HighlightableArticle({
     window.getSelection()?.removeAllRanges()
   }, [])
   
-  // Manual selection check (fallback)
-  const checkManualSelection = useCallback(() => {
-    const selection = window.getSelection()
-    if (!selection || selection.rangeCount === 0) return
-    
-    const range = selection.getRangeAt(0)
-    const text = selection.toString().trim()
-    
-    if (text.length < 3) return
-    
-    // Check if selection is within our container
-    const container = containerRef.current
-    if (!container || !container.contains(range.commonAncestorContainer)) return
-    
-    const rect = range.getBoundingClientRect()
-    console.log('Manual selection detected:', text)
-    
-    setSelectedText({
-      text,
-      startOffset: range.startOffset,
-      endOffset: range.endOffset,
-      startPath: HighlightSerializer.getNodePath(range.startContainer),
-      endPath: HighlightSerializer.getNodePath(range.endContainer)
-    })
-    
-    setPopoverPosition({
-      top: rect.top + window.scrollY - 60,
-      left: rect.left + rect.width / 2
-    })
+  // Handle tooltip close
+  const handleTooltipClose = useCallback(() => {
+    setHighlightTooltip(null)
   }, [])
-  
-  // Render highlighted text segments
-  const renderHighlightedContent = () => {
-    if (!editor || !highlights || !showHighlights) {
-      return <EditorContent editor={editor} />
-    }
-    
-    // Group overlapping highlights and render with TextHighlighter
-    const highlightSegments = highlights.map((highlight) => ({
-      id: highlight._id,
-      start: highlight.startOffset,
-      end: highlight.endOffset,
-      color: highlight.color || '#FFEB3B',
-      text: highlight.text,
-      note: highlight.note,
-      userId: highlight.userId,
-      userName: highlight.userName
-    }))
-    
-    return (
-      <div className="highlight-container relative">
-        <EditorContent editor={editor} />
-        {highlightSegments.map((segment) => (
-          <TextHighlighter
-            key={segment.id}
-            highlightColor={segment.color}
-            direction="ltr"
-            triggerType="auto"
-            className="highlight-segment"
-            onClick={() => onHighlightClick && onHighlightClick(highlights.find(h => h._id === segment.id)!)}
-            title={segment.note || `Highlighted by ${segment.userName}`}
-          >
-            <span>{/* Empty span as child */}</span>
-          </TextHighlighter>
-        ))}
-      </div>
-    )
-  }
   
   return (
     <div 
       className={cn("highlightable-article relative", className)} 
-      ref={containerRef}
-      onMouseUp={checkManualSelection}
-      onTouchEnd={checkManualSelection}
+      ref={editorRef}
     >
-      {renderHighlightedContent()}
+      <EditorContent editor={editor} />
       
       {/* Highlight creation popover */}
-      {popoverPosition && selectedText && (
-        <HighlightPopover
-          position={popoverPosition}
-          onCreateHighlight={handleCreateHighlight}
-          onClose={handlePopoverClose}
-          selectedText={selectedText.text}
-        />
-      )}
+      <AnimatePresence>
+        {popoverPosition && selectedText && (
+          <HighlightPopover
+            position={popoverPosition}
+            onCreateHighlight={handleCreateHighlight}
+            onClose={handlePopoverClose}
+            selectedText={selectedText.text}
+          />
+        )}
+      </AnimatePresence>
       
+      {/* Highlight info tooltip */}
+      <AnimatePresence>
+        {highlightTooltip && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="highlight-tooltip visible"
+            style={{
+              top: highlightTooltip.position.top,
+              left: highlightTooltip.position.left,
+              transform: 'translateX(-50%)',
+            }}
+            onMouseLeave={handleTooltipClose}
+          >
+            {highlightTooltip.highlight.userName && (
+              <div className="author">
+                {highlightTooltip.highlight.userName}
+              </div>
+            )}
+            {highlightTooltip.highlight.note && (
+              <div className="note">
+                {highlightTooltip.highlight.note}
+              </div>
+            )}
+            <div className="timestamp">
+              {new Date(highlightTooltip.highlight.createdAt).toLocaleDateString()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

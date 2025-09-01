@@ -9,8 +9,8 @@ import AppNavigation from '@/components/layout/AppNavigation'
 import { TipStats } from '@/components/tipping/TipStats'
 import { TipButton } from '@/components/tipping/TipButton'
 import { NFTIntegration } from '@/components/nft/NFTIntegration'
-import { DollarSign, Trophy, Heart, Highlighter, X } from 'lucide-react'
-import { HighlightsList } from '@/components/highlights/HighlightsList'
+import { DollarSign, Trophy, Heart, MessageSquare, ChevronDown } from 'lucide-react'
+import { HighlightNotes } from '@/components/highlights/HighlightNotes'
 import { useAuth } from '@/components/providers/AuthContext'
 import { Id } from '@/convex/_generated/dataModel'
 import { cn } from '@/lib/utils'
@@ -164,35 +164,33 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                   />
                 </div>
                 
-                {/* Highlights Section */}
+                {/* Highlight Notes Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                   <button
                     onClick={() => setShowHighlightsPanel(!showHighlightsPanel)}
                     className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
                   >
                     <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Highlighter className="w-5 h-5 text-yellow-500" />
-                      Highlights
-                      {highlights && highlights.length > 0 && (
-                        <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 text-sm rounded-full">
-                          {highlights.length}
+                      <MessageSquare className="w-5 h-5 text-blue-500" />
+                      Highlight Notes
+                      {highlights && highlights.filter(h => h.note).length > 0 && (
+                        <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-sm rounded-full">
+                          {highlights.filter(h => h.note).length}
                         </span>
                       )}
                     </h3>
-                    <div className={cn(
-                      "transform transition-transform",
+                    <ChevronDown className={cn(
+                      "w-4 h-4 transform transition-transform",
                       showHighlightsPanel ? "rotate-180" : ""
-                    )}>
-                      <X className="w-4 h-4" />
-                    </div>
+                    )} />
                   </button>
                   
                   {showHighlightsPanel && (
                     <div className="border-t">
-                      <HighlightsList
+                      <HighlightNotes
                         highlights={highlights || []}
                         currentUserId={user?._id as Id<'users'> | undefined}
-                        onHighlightClick={(highlight) => {
+                        onNoteClick={(highlight) => {
                           // Scroll to highlight in article
                           const element = document.querySelector(`[data-highlight-id="${highlight._id}"]`)
                           element?.scrollIntoView({ behavior: 'smooth', block: 'center' })

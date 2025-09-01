@@ -26,6 +26,7 @@ pub enum DataKey {
     PlatformAddress,
     PlatformFeeBps,
     ArticleTips(Symbol),
+    ArticleTotalTips(Symbol),  // Track total tips per article for NFT threshold
     AuthorBalance(Address),
     TipCounter,
     TotalVolume,
@@ -138,6 +139,16 @@ impl TippingContract {
             .persistent()
             .set(&DataKey::ArticleTips(article_id.clone()), &article_tips);
         
+        // Update article total tips (for NFT threshold checking)
+        let current_article_total: i128 = env.storage()
+            .persistent()
+            .get(&DataKey::ArticleTotalTips(article_id.clone()))
+            .unwrap_or(0);
+        
+        env.storage()
+            .persistent()
+            .set(&DataKey::ArticleTotalTips(article_id.clone()), &(current_article_total + amount));
+        
         // Update total volume
         let total_volume: i128 = env.storage()
             .persistent()
@@ -172,6 +183,20 @@ impl TippingContract {
             .persistent()
             .get(&DataKey::AuthorBalance(author))
             .unwrap_or(0)
+    }
+    
+    /// Get total tips for an article (for NFT threshold checking)
+    pub fn get_article_total_tips(env: Env, article_id: Symbol) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::ArticleTotalTips(article_id))
+            .unwrap_or(0)
+    }
+    
+    /// Check if article has reached NFT minting threshold
+    pub fn is_nft_eligible(env: Env, article_id: Symbol, threshold: i128) -> bool {
+        let total_tips = Self::get_article_total_tips(env, article_id);
+        total_tips >= threshold
     }
     
     /// Withdraw earnings (simplified for POC)

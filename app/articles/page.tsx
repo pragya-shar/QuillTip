@@ -1,100 +1,78 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import AppNavigation from '@/components/layout/AppNavigation'
 import ArticleGrid from '@/components/articles/ArticleGrid'
 import Pagination from '@/components/articles/Pagination'
 import SearchInput from '@/components/articles/SearchInput'
 import { Loader2 } from 'lucide-react'
+import { ArticleForDisplay } from '@/types/index'
 
-interface Article {
-  id: string
-  slug: string
-  title: string
-  excerpt?: string | null
-  coverImage?: string | null
-  publishedAt: Date | string | null
-  author: {
-    id: string
-    name?: string | null
-    username: string
-    avatar?: string | null
-  }
-  tags: Array<{
-    id: string
-    name: string
-    slug: string
-  }>
-}
-
-interface PaginationData {
-  page: number
-  limit: number
-  totalCount: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-}
 
 export default function ArticlesPage() {
-  const [articles, setArticles] = useState<Article[]>([])
-  const [pagination, setPagination] = useState<PaginationData>({
-    page: 1,
-    limit: 9,
-    totalCount: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPreviousPage: false
-  })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   
   const searchParams = useSearchParams()
   const router = useRouter()
   
   const currentPage = parseInt(searchParams?.get('page') || '1')
-  const tag = searchParams?.get('tag')
-  const author = searchParams?.get('author')
-  const urlSearch = searchParams?.get('search') || ''
+  const tag = searchParams?.get('tag') || undefined
+  const author = searchParams?.get('author') || undefined
+  const urlSearch = searchParams?.get('search') || undefined
 
-  const fetchArticles = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const params = new URLSearchParams()
-      params.set('page', currentPage.toString())
-      params.set('limit', '9')
-      
-      if (tag) params.set('tag', tag)
-      if (author) params.set('author', author)
-      if (urlSearch) params.set('search', urlSearch)
-      
-      const response = await fetch(`/api/articles?${params.toString()}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch articles')
-      }
-      
-      const data = await response.json()
-      setArticles(data.articles)
-      setPagination(data.pagination)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }, [currentPage, tag, author, urlSearch])
+  // Use Convex query to fetch articles
+  const result = useQuery(api.articles.listArticles, {
+    page: currentPage,
+    limit: 9,
+    tag,
+    author,
+    search: urlSearch
+  })
 
-  useEffect(() => {
-    fetchArticles()
-  }, [fetchArticles])
+  // Map Convex articles to expected ArticleCard format
+  const articles: ArticleForDisplay[] = result?.articles.map(article => ({
+    id: article._id,
+    slug: article.slug,
+    title: article.title,
+    excerpt: article.excerpt || null,
+    coverImage: article.coverImage || null,
+    publishedAt: article.publishedAt ? new Date(article.publishedAt) : null,
+    author: {
+      id: article.author?.id as string,
+      name: article.author?.name || null,
+      username: article.author?.username || '',
+      avatar: article.author?.avatar || null,
+    },
+    tags: (article.tags || []).map((tagName, index) => ({
+      id: `tag-${index}`, // Generate temporary IDs for tag strings
+      name: tagName,
+      slug: tagName.toLowerCase().replace(/\s+/g, '-'),
+    })),
+  })) || []
+  const pagination = result ? {
+    page: result.page,
+    limit: result.limit,
+    totalCount: result.total,
+    totalPages: result.totalPages || Math.ceil(result.total / result.limit),
+    hasNextPage: result.page < (result.totalPages || Math.ceil(result.total / result.limit)),
+    hasPreviousPage: result.page > 1
+  } : {
+    page: 1,
+    limit: 9,
+    totalCount: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false
+  }
+  const loading = result === undefined
+  const error = null // Convex handles errors automatically
 
   // Sync searchTerm with URL parameter
   useEffect(() => {
-    setSearchTerm(urlSearch)
+    setSearchTerm(urlSearch || '')
   }, [urlSearch])
 
   const handlePageChange = (page: number) => {
@@ -213,18 +191,7 @@ export default function ArticlesPage() {
           </div>
         )}
 
-        {/* Error State */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">Error: {error}</p>
-            <button
-              onClick={fetchArticles}
-              className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-            >
-              Try again
-            </button>
-          </div>
-        )}
+        {/* Error handling is done automatically by Convex */}
 
         {/* Articles Grid */}
         {!loading && !error && (

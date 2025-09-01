@@ -11,9 +11,13 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { ResizableImage } from '@/components/editor/extensions/ResizableImage'
 import { EditorToolbar } from '@/components/editor/EditorToolbar'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/AuthContext'
 import AppNavigation from '@/components/layout/AppNavigation'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useQuery, useMutation, useConvex } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
+import { uploadFile, compressImage } from '@/lib/upload'
 
 const lowlight = createLowlight(common)
 
@@ -21,6 +25,9 @@ export default function WritePage() {
   const [title, setTitle] = useState('')
   const [excerpt, setExcerpt] = useState('')
   const [coverImage, setCoverImage] = useState('')
+  const [coverImageInput, setCoverImageInput] = useState('')
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
+  const [coverUploadError, setCoverUploadError] = useState('')
   const [tags, setTags] = useState('')
   const [isPublishing, setIsPublishing] = useState(false)
   const [isUnpublishing, setIsUnpublishing] = useState(false)
@@ -33,7 +40,13 @@ export default function WritePage() {
   })
   
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { isAuthenticated, isLoading } = useAuth()
+  const convex = useConvex()
+  
+  // Convex mutations
+  const createArticleMutation = useMutation(api.articles.createArticle)
+  const publishArticleMutation = useMutation(api.articles.publishArticle)
+  const unpublishArticleMutation = useMutation(api.articles.unpublishArticle)
 
   // Initialize editor with proper configuration
   const editor = useEditor({
@@ -85,13 +98,13 @@ export default function WritePage() {
     }
   })
 
-  // Auto-save hook - enable when we have a session and any content
+  // Auto-save hook - enable when we have a user and any content
   const { isSaving, lastSavedAt, error, saveNow } = useAutoSave({
     content: editorContent,
     articleId,
     title: title || 'Untitled',
     excerpt,
-    enabled: !!session && (hasUnsavedChanges || !!title),
+    enabled: isAuthenticated && (hasUnsavedChanges || !!title),
     onSaveSuccess: (response) => {
       if (!articleId && response.id) {
         setArticleId(response.id)
@@ -103,41 +116,101 @@ export default function WritePage() {
     }
   })
 
-  // Load draft if returning to edit
-  useEffect(() => {
-    const loadDraft = async () => {
-      const urlParams = new URLSearchParams(window.location.search)
-      const draftId = urlParams.get('id')
-      
-      if (draftId) {
-        try {
-          const response = await fetch(`/api/articles/draft?id=${draftId}`)
-          if (response.ok) {
-            const draft = await response.json()
-            setArticleId(draft.id)
-            setTitle(draft.title)
-            setExcerpt(draft.excerpt || '')
-            setPublishStatus({
-              published: draft.published,
-              publishedAt: draft.publishedAt ? new Date(draft.publishedAt) : null
-            })
-            if (editor && draft.content) {
-              editor.commands.setContent(draft.content)
-              setEditorContent(draft.content)
-            }
-            // Reset unsaved changes flag after loading draft
-            setHasUnsavedChanges(false)
-          }
-        } catch (error) {
-          console.error('Failed to load draft:', error)
-        }
-      }
-    }
+  // Get draft ID from URL params
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const draftId = urlParams?.get('id')
+  
+  // Load draft using Convex query
+  const draft = useQuery(
+    api.articles.getArticleById, 
+    draftId ? { id: draftId as Id<"articles"> } : "skip"
+  )
 
-    if (editor && status === 'authenticated') {
-      loadDraft()
+  // Load draft data when it arrives
+  useEffect(() => {
+    if (draft && editor) {
+      setArticleId(draft._id)
+      setTitle(draft.title)
+      setExcerpt(draft.excerpt || '')
+      setPublishStatus({
+        published: draft.published,
+        publishedAt: draft.publishedAt ? new Date(draft.publishedAt) : null
+      })
+      if (draft.content) {
+        editor.commands.setContent(draft.content)
+        setEditorContent(draft.content)
+      }
+      // Reset unsaved changes flag after loading draft
+      setHasUnsavedChanges(false)
     }
-  }, [editor, status])
+  }, [draft, editor])
+
+  // Handle cover image URL upload
+  const handleCoverImageUpload = useCallback(async (url: string) => {
+    if (!url.trim()) {
+      setCoverImage('')
+      return
+    }
+    
+    // Check if it's already a Convex URL
+    if (url.includes('convex.cloud') || url.includes('convex.site')) {
+      setCoverImage(url)
+      return
+    }
+    
+    setIsUploadingCover(true)
+    setCoverUploadError('')
+    
+    try {
+      // Fetch the image from the URL
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error('Failed to fetch image from URL')
+      }
+      
+      const blob = await response.blob()
+      
+      // Check if it's actually an image
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('URL does not point to a valid image')
+      }
+      
+      // Convert blob to File
+      const file = new File([blob], 'cover-image', { type: blob.type })
+      
+      // Compress and upload to Convex storage
+      const compressedFile = await compressImage(file, 1200, 0.8)
+      const result = await uploadFile(
+        compressedFile, 
+        convex,
+        'article_cover',
+        undefined, // no specific article yet
+      )
+      
+      if (result.success && result.url) {
+        setCoverImage(result.url)
+        setCoverImageInput(result.url)
+        setCoverUploadError('')
+      } else {
+        throw new Error(result.error || 'Upload failed')
+      }
+    } catch (error) {
+      console.error('Cover image upload error:', error)
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          setCoverUploadError('Unable to fetch image. It may be protected by CORS.')
+        } else {
+          setCoverUploadError(error.message)
+        }
+      } else {
+        setCoverUploadError('Failed to upload image')
+      }
+      // Keep the original URL in the input
+      setCoverImage(url)
+    } finally {
+      setIsUploadingCover(false)
+    }
+  }, [convex])
 
   // Handle publish
   const handlePublish = useCallback(async () => {
@@ -151,69 +224,44 @@ export default function WritePage() {
       // Save one final time before publishing
       await saveNow()
       
-      // If we have an existing article ID, update it. Otherwise create new.
-      let response;
-      const data = await (async () => {
+      let resultId: string;
       
       if (articleId) {
-        // Update existing article to published status
-        response = await fetch(`/api/articles/${articleId}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            published: true,
-          }),
-        })
+        // Publish existing draft
+        resultId = await publishArticleMutation({ id: articleId as Id<"articles"> })
       } else {
-        // Create new article if no draft exists
-        response = await fetch('/api/articles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            title,
-            content: editorContent,
-            excerpt: excerpt || '',
-            tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-            coverImage: coverImage || '',
-            published: true, // Publishing immediately
-          }),
+        // Create and publish new article
+        resultId = await createArticleMutation({
+          title,
+          content: editorContent,
+          excerpt: excerpt || undefined,
+          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+          coverImage: coverImage || undefined,
+          published: true, // Publishing immediately
         })
       }
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to publish')
-      }
-
-      return await response.json()
-    })()
-      console.log('Article published:', data)
+      
+      console.log('Article published:', resultId)
       
       // If it was a new article, update the articleId
-      if (!articleId && data.article?.id) {
-        setArticleId(data.article.id)
+      if (!articleId) {
+        setArticleId(resultId)
       }
       
       // Update publish status
       setPublishStatus({
         published: true,
-        publishedAt: new Date(data.article.publishedAt)
+        publishedAt: new Date()
       })
       
       alert('Article published successfully!')
-      // Stay on the same page to show the updated status
-      // router.push('/articles') // Disabled until we create the articles page
     } catch (error) {
       console.error('Publish error:', error)
       alert(`Failed to publish article: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsPublishing(false)
     }
-  }, [title, editorContent, excerpt, tags, coverImage, saveNow, articleId])
+  }, [title, editorContent, excerpt, tags, coverImage, saveNow, articleId, publishArticleMutation, createArticleMutation])
 
   // Handle unpublish
   const handleUnpublish = useCallback(async () => {
@@ -224,23 +272,8 @@ export default function WritePage() {
 
     setIsUnpublishing(true)
     try {
-      const response = await fetch(`/api/articles/${articleId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          published: false,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to unpublish')
-      }
-
-      const data = await response.json()
-      console.log('Article unpublished:', data)
+      const resultId = await unpublishArticleMutation({ id: articleId as Id<"articles"> })
+      console.log('Article unpublished:', resultId)
       
       // Update publish status
       setPublishStatus({
@@ -255,7 +288,7 @@ export default function WritePage() {
     } finally {
       setIsUnpublishing(false)
     }
-  }, [articleId])
+  }, [articleId, unpublishArticleMutation])
 
   // Handle toggle publish status
   const handleTogglePublish = useCallback(async () => {
@@ -267,7 +300,7 @@ export default function WritePage() {
   }, [publishStatus.published, handleUnpublish, handlePublish])
 
   // Authentication checks
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -275,7 +308,7 @@ export default function WritePage() {
     )
   }
 
-  if (status === 'unauthenticated') {
+  if (!isAuthenticated) {
     router.push('/login')
     return null
   }
@@ -402,24 +435,54 @@ export default function WritePage() {
 
         {/* Cover Image URL */}
         <div className="mb-6">
-          <input
-            type="url"
-            placeholder="Cover Image URL (optional)"
-            value={coverImage}
-            onChange={(e) => setCoverImage(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:border-blue-500 outline-none placeholder-gray-400"
-          />
+          <div className="relative">
+            <input
+              type="url"
+              placeholder="Cover Image URL (optional - will be uploaded to storage)"
+              value={coverImageInput}
+              onChange={(e) => {
+                setCoverImageInput(e.target.value)
+                setHasUnsavedChanges(true)
+              }}
+              onBlur={(e) => {
+                if (e.target.value && e.target.value !== coverImage) {
+                  handleCoverImageUpload(e.target.value)
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && coverImageInput && coverImageInput !== coverImage) {
+                  e.preventDefault()
+                  handleCoverImageUpload(coverImageInput)
+                }
+              }}
+              disabled={isUploadingCover}
+              className="w-full px-4 py-2 pr-32 border border-gray-200 rounded-lg focus:border-blue-500 outline-none placeholder-gray-400 disabled:bg-gray-50"
+            />
+            {isUploadingCover && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                Uploading...
+              </div>
+            )}
+          </div>
+          
+          {coverUploadError && (
+            <p className="mt-1 text-sm text-red-600">{coverUploadError}</p>
+          )}
+          
           {coverImage && (
             <div className="mt-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={coverImage} 
                 alt="Cover preview" 
-                className="h-48 object-cover rounded-lg"
+                className="h-48 w-full object-cover rounded-lg"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
                 }}
               />
+              {coverImage.includes('convex') && (
+                <p className="mt-1 text-xs text-green-600">✓ Image uploaded to storage</p>
+              )}
             </div>
           )}
         </div>

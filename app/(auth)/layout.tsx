@@ -1,28 +1,18 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 
 /**
  * Auth Layout
  * 
  * This layout wraps all authentication pages (login, register).
- * It redirects authenticated users to the dashboard and provides
- * a clean, centered layout for auth forms.
+ * Provides a clean, centered layout for auth forms.
+ * Authentication redirect logic is handled by individual auth pages.
  */
 
-export default async function AuthLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // Check if user is already authenticated
-  const session = await getServerSession(authOptions)
-  
-  // Redirect to home if already logged in
-  if (session) {
-    redirect('/')
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-cream to-white">

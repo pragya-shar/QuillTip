@@ -1,47 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/AuthContext'
 import Link from 'next/link'
 import AppNavigation from '@/components/layout/AppNavigation'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 
-interface Draft {
-  id: string
-  title: string
-  excerpt?: string
-  createdAt: string
-  updatedAt: string
-  published: boolean
-}
 
 export default function DraftsPage() {
-  const [drafts, setDrafts] = useState<Draft[]>([])
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const { status } = useSession()
+  const { isAuthenticated, isLoading } = useAuth()
+  
+  // Fetch drafts using Convex query
+  const drafts = useQuery(api.articles.getUserDrafts) || []
+  const loading = drafts === undefined
+  
+  // Convex mutation for deleting articles
+  const deleteArticleMutation = useMutation(api.articles.deleteArticle)
 
-  useEffect(() => {
-    const fetchDrafts = async () => {
-      if (status !== 'authenticated') return
-
-      try {
-        const response = await fetch('/api/articles/drafts')
-        if (response.ok) {
-          const data = await response.json()
-          setDrafts(data)
-        }
-      } catch (error) {
-        console.error('Failed to fetch drafts:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchDrafts()
-  }, [status])
-
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -49,7 +27,7 @@ export default function DraftsPage() {
     )
   }
 
-  if (status === 'unauthenticated') {
+  if (!isAuthenticated && !isLoading) {
     router.push('/login')
     return null
   }
@@ -97,7 +75,7 @@ export default function DraftsPage() {
           <div className="space-y-4">
             {drafts.map((draft) => (
               <div
-                key={draft.id}
+                key={draft._id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex justify-between items-start">
@@ -111,9 +89,9 @@ export default function DraftsPage() {
                       </p>
                     )}
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span>Created: {formatDate(draft.createdAt)}</span>
+                      <span>Created: {formatDate(new Date(draft._creationTime).toISOString())}</span>
                       <span>•</span>
-                      <span>Last saved: {formatDate(draft.updatedAt)}</span>
+                      <span>Last saved: {formatDate(new Date(draft.updatedAt).toISOString())}</span>
                       {!draft.published && (
                         <>
                           <span>•</span>
@@ -124,7 +102,7 @@ export default function DraftsPage() {
                   </div>
                   <div className="flex gap-2 ml-4">
                     <Link
-                      href={`/write?id=${draft.id}`}
+                      href={`/write?id=${draft._id}`}
                       className="px-4 py-2 text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
                     >
                       Edit
@@ -133,14 +111,11 @@ export default function DraftsPage() {
                       onClick={async () => {
                         if (confirm('Are you sure you want to delete this draft?')) {
                           try {
-                            const response = await fetch(`/api/articles/draft?id=${draft.id}`, {
-                              method: 'DELETE'
-                            })
-                            if (response.ok) {
-                              setDrafts(drafts.filter(d => d.id !== draft.id))
-                            }
+                            await deleteArticleMutation({ id: draft._id })
+                            // No need to manually update state - Convex will handle reactivity
                           } catch (error) {
                             console.error('Failed to delete draft:', error)
+                            alert('Failed to delete draft. Please try again.')
                           }
                         }
                       }}

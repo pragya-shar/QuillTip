@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/components/providers/AuthContext'
 import Navigation from '@/components/landing/Navigation';
 import AppNavigation from '@/components/layout/AppNavigation';
 import HeroSection from '@/components/landing/HeroSection';
@@ -11,9 +11,9 @@ import Link from 'next/link';
 import { PenSquare, BookOpen, TrendingUp } from 'lucide-react';
 
 export default function HomePage() {
-  const { data: session, status } = useSession()
+  const { user, isAuthenticated, isLoading } = useAuth()
 
-  if (status === 'authenticated') {
+  if (isAuthenticated && user) {
     return (
       <div className="min-h-screen bg-gray-50">
         <AppNavigation />
@@ -21,7 +21,7 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto px-4">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back, {session.user?.name || session.user?.email}
+                Welcome back, {user.name || user.username || user.email}
               </h1>
               <p className="text-gray-600">Ready to write your next story?</p>
             </div>

@@ -32,21 +32,21 @@
   - [x] Added TipStatus enum
   - [x] Generated Prisma client
 
+- [x] **API Endpoints**
+  - [x] POST /api/tips/send - Send a micro-tip
+  - [x] GET /api/tips/article/[id] - Get tips for article
+  - [x] GET /api/earnings/balance - Get author balance
+  - [x] POST /api/earnings/withdraw - Withdraw earnings
+
+- [x] **UI Components**
+  - [x] TipButton component with amount selector
+  - [x] TipStats component for article tip display
+  - [x] EarningsDashboard component for authors
+  - [x] Modal with tip confirmation
+
 ### 🚧 In Progress
 
-- [ ] **API Endpoints**
-  - [ ] POST /api/tips/send - Send a micro-tip
-  - [ ] GET /api/tips/article/[id] - Get tips for article
-  - [ ] GET /api/earnings/balance - Get author balance
-  - [ ] POST /api/earnings/withdraw - Withdraw earnings
-
 ### ❌ Not Started
-
-- [ ] **UI Components**
-  - [ ] Simple tip button component
-  - [ ] Tip amount selector (1¢, 5¢, 10¢, 25¢)
-  - [ ] Author earnings dashboard
-  - [ ] Transaction confirmation modal
 
 - [ ] **Contract Deployment**
   - [ ] Deploy to Stellar testnet

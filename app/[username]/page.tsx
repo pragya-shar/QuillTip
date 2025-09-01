@@ -26,7 +26,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { user: currentUser } = useAuth()
   const [username, setUsername] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('articles')
-  const page = parseInt(searchParams.get('page') || '1', 10)
+  const page = parseInt(searchParams?.get('page') || '1', 10)
   
   // Get username from params
   useEffect(() => {

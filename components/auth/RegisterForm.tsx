@@ -38,7 +38,7 @@ export default function RegisterForm() {
     setError(null)
     
     try {
-      const result = await signIn('password', {
+      await signIn('password', {
         email: data.email,
         password: data.password,
         flow: 'signUp',

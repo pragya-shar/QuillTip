@@ -71,7 +71,7 @@ export async function uploadFile(
           try {
             const response = JSON.parse(xhr.responseText)
             resolve({ storageId: response.storageId })
-          } catch (e) {
+          } catch {
             resolve({ error: 'Failed to parse upload response' })
           }
         } else {

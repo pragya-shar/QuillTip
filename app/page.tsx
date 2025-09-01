@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { PenSquare, BookOpen, TrendingUp } from 'lucide-react';
 
 export default function HomePage() {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated } = useAuth()
 
   if (isAuthenticated && user) {
     return (

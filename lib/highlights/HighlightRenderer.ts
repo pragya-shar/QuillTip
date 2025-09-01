@@ -277,12 +277,6 @@ export class HighlightRenderer {
    * Reapply highlights after content change
    */
   private reapplyHighlights() {
-    // Store current highlight data
-    const currentHighlights = Array.from(this.highlights.values()).map(h => ({
-      id: h.id,
-      color: h.color
-    }))
-    
     // Clear and reapply
     this.clearHighlights()
     // Note: You'll need to store and pass the original segments

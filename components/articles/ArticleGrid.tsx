@@ -1,27 +1,8 @@
 import ArticleCard from './ArticleCard'
-
-interface Article {
-  id: string
-  slug: string
-  title: string
-  excerpt?: string | null
-  coverImage?: string | null
-  publishedAt: Date | string | null
-  author: {
-    id: string
-    name?: string | null
-    username: string
-    avatar?: string | null
-  }
-  tags: Array<{
-    id: string
-    name: string
-    slug: string
-  }>
-}
+import { ArticleForDisplay } from '@/types/index'
 
 interface ArticleGridProps {
-  articles: Article[]
+  articles: ArticleForDisplay[]
 }
 
 export default function ArticleGrid({ articles }: ArticleGridProps) {

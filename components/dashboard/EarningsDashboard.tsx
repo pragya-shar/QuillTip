@@ -1,94 +1,69 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Coins, TrendingUp, Clock, DollarSign, Loader2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { Coins, TrendingUp, Clock, DollarSign, Loader2, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface EarningsData {
-  earnings: {
-    totalTips: number;
-    totalEarnedUsd: number;
-    pendingAmountUsd: number;
-    lastWithdrawal: string | null;
-  };
-  recentTips: Array<{
-    id: string;
-    amountUsd: number;
-    article: {
-      title: string;
-      slug: string;
-    };
-    tipper: {
-      username: string;
-      name: string | null;
-    };
-    createdAt: string;
-  }>;
-  articleStats: Array<{
-    articleId: string;
-    title: string;
-    slug: string;
-    totalTips: number;
-    totalAmountUsd: number;
-  }>;
-}
-
 export function EarningsDashboard() {
-  const [data, setData] = useState<EarningsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [stellarAddress, setStellarAddress] = useState('');
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
-  const fetchEarnings = async () => {
-    try {
-      const response = await fetch('/api/earnings/balance');
-      if (response.ok) {
-        const earningsData = await response.json();
-        setData(earningsData);
-      } else {
-        toast.error('Failed to load earnings data');
-      }
-    } catch (error) {
-      console.error('Failed to fetch earnings:', error);
-      toast.error('Failed to load earnings data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchEarnings();
-  }, []);
+  // Fetch earnings data
+  const earnings = useQuery(api.tips.getAuthorEarnings, {});
+  const recentTips = useQuery(api.tips.getUserReceivedTips, {});
+  
+  // Withdrawal mutations
+  const withdrawEarnings = useMutation(api.tips.withdrawEarnings);
 
   const handleWithdraw = async () => {
-    if (!data || data.earnings.pendingAmountUsd < 1) {
-      toast.error('Minimum withdrawal amount is $1.00');
+    const amount = parseFloat(withdrawAmount);
+    
+    if (!amount || amount < 10) {
+      toast.error('Minimum withdrawal amount is $10.00');
+      return;
+    }
+
+    if (!stellarAddress || !stellarAddress.startsWith('G')) {
+      toast.error('Please enter a valid Stellar address');
+      return;
+    }
+
+    if (earnings && amount > earnings.availableBalanceUsd) {
+      toast.error('Insufficient balance');
       return;
     }
 
     setIsWithdrawing(true);
     try {
-      const response = await fetch('/api/earnings/withdraw', {
-        method: 'POST',
+      // Initiate withdrawal - this automatically schedules confirmation
+      await withdrawEarnings({
+        amountUsd: amount,
+        stellarAddress: stellarAddress,
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        toast.success(`Successfully withdrew $${result.withdrawal.amountUsd.toFixed(2)}`);
-        // Refresh earnings data
-        await fetchEarnings();
-      } else {
-        toast.error(result.error || 'Withdrawal failed');
-      }
+      // Show success
+      toast.success(`Withdrawal initiated! $${amount.toFixed(2)} will be sent to your Stellar wallet shortly.`);
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      setStellarAddress('');
+      
+      // Note: The confirmWithdrawal is automatically scheduled by the backend
+      // In production, this would be triggered by a webhook from Stellar
+      
     } catch (error) {
       console.error('Withdrawal error:', error);
-      toast.error('Failed to process withdrawal');
+      toast.error(error instanceof Error ? error.message : 'Failed to process withdrawal');
     } finally {
       setIsWithdrawing(false);
     }
   };
 
-  if (isLoading) {
+  // Loading state
+  if (earnings === undefined || recentTips === undefined) {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -96,14 +71,25 @@ export function EarningsDashboard() {
     );
   }
 
-  if (!data) {
+  // No earnings yet
+  if (!earnings) {
     return (
-      <div className="text-center p-12">
-        <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-600">Failed to load earnings data</p>
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow p-12 text-center">
+          <Coins className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No earnings yet
+          </h3>
+          <p className="text-gray-600">
+            Start earning by sharing great content that readers love!
+          </p>
+        </div>
       </div>
     );
   }
+
+  // Get last withdrawal date from earnings
+  const lastWithdrawal = earnings.lastWithdrawalAt;
 
   return (
     <div className="space-y-6">
@@ -115,52 +101,72 @@ export function EarningsDashboard() {
             <DollarSign className="w-5 h-5 text-green-500" />
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            ${data.earnings.totalEarnedUsd.toFixed(2)}
+            ${earnings.totalEarnedUsd.toFixed(2)}
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            {data.earnings.totalTips} tips received
+            {earnings.tipCount} tips received
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-600">Pending Balance</span>
+            <span className="text-gray-600">Available Balance</span>
             <Coins className="w-5 h-5 text-yellow-500" />
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            ${data.earnings.pendingAmountUsd.toFixed(2)}
+            ${earnings.availableBalanceUsd.toFixed(2)}
           </p>
           <button
-            onClick={handleWithdraw}
-            disabled={isWithdrawing || data.earnings.pendingAmountUsd < 1}
-            className="mt-3 w-full px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm rounded-lg hover:from-yellow-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setShowWithdrawModal(true)}
+            disabled={earnings.availableBalanceUsd < 10}
+            className="mt-3 w-full px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm rounded-lg hover:from-yellow-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isWithdrawing ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Processing...
-              </span>
-            ) : (
-              'Withdraw'
-            )}
+            <Wallet className="w-4 h-4" />
+            Withdraw
           </button>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-600">Last Withdrawal</span>
+            <span className="text-gray-600">Total Withdrawn</span>
             <Clock className="w-5 h-5 text-blue-500" />
           </div>
-          <p className="text-lg font-semibold text-gray-900">
-            {data.earnings.lastWithdrawal
-              ? new Date(data.earnings.lastWithdrawal).toLocaleDateString()
-              : 'Never'}
+          <p className="text-2xl font-bold text-gray-900">
+            ${earnings.withdrawnUsd.toFixed(2)}
           </p>
+          {lastWithdrawal && (
+            <p className="text-sm text-gray-500 mt-1">
+              Last: {new Date(lastWithdrawal).toLocaleDateString()}
+            </p>
+          )}
         </div>
       </div>
 
+      {/* Monthly Earnings Chart */}
+      {earnings.monthlyEarnings && Object.keys(earnings.monthlyEarnings).length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Monthly Earnings</h3>
+          <div className="grid grid-cols-6 gap-2">
+            {Object.entries(earnings.monthlyEarnings)
+              .sort(([a], [b]) => b.localeCompare(a))
+              .slice(0, 6)
+              .reverse()
+              .map(([month, amount]) => (
+                <div key={month} className="text-center">
+                  <div className="text-xs text-gray-500 mb-1">{month}</div>
+                  <div className="bg-gradient-to-t from-yellow-400 to-orange-500 rounded-lg p-2">
+                    <p className="text-sm font-semibold text-white">
+                      ${(amount as number).toFixed(0)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Top Articles */}
-      {data.articleStats.length > 0 && (
+      {earnings.topArticles && earnings.topArticles.length > 0 && (
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b">
             <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -169,18 +175,21 @@ export function EarningsDashboard() {
             </h3>
           </div>
           <div className="divide-y">
-            {data.articleStats.slice(0, 5).map((article) => (
+            {earnings.topArticles.slice(0, 5).map((article, index) => (
               <div key={article.articleId} className="p-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{article.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                      <h4 className="font-medium text-gray-900">{article.title}</h4>
+                    </div>
                     <p className="text-sm text-gray-500 mt-1">
-                      {article.totalTips} tips
+                      {article.tipCount} tips
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-gray-900">
-                      ${article.totalAmountUsd.toFixed(2)}
+                      ${article.earnings.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -191,21 +200,21 @@ export function EarningsDashboard() {
       )}
 
       {/* Recent Tips */}
-      {data.recentTips.length > 0 && (
+      {recentTips && recentTips.length > 0 && (
         <div className="bg-white rounded-lg shadow">
           <div className="p-6 border-b">
             <h3 className="text-lg font-semibold">Recent Tips</h3>
           </div>
           <div className="divide-y">
-            {data.recentTips.map((tip) => (
-              <div key={tip.id} className="p-4 hover:bg-gray-50">
+            {recentTips.slice(0, 10).map((tip) => (
+              <div key={tip._id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-900">
-                      {tip.tipper.name || tip.tipper.username}
+                      {tip.tipper?.name || tip.tipper?.username || 'Anonymous'}
                     </p>
                     <p className="text-sm text-gray-500">
-                      tipped on &ldquo;{tip.article.title}&rdquo;
+                      tipped on &ldquo;{tip.articleTitle}&rdquo;
                     </p>
                   </div>
                   <div className="text-right">
@@ -223,16 +232,91 @@ export function EarningsDashboard() {
         </div>
       )}
 
-      {/* Empty State */}
-      {data.earnings.totalTips === 0 && (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <Coins className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No tips received yet
-          </h3>
-          <p className="text-gray-600">
-            Share your articles to start receiving tips from readers!
-          </p>
+      {/* Withdrawal Modal */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-semibold">Withdraw Earnings</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Withdraw to your Stellar wallet
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (USD)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    min="10"
+                    max={earnings.availableBalanceUsd}
+                    step="0.01"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    placeholder="10.00"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Available: ${earnings.availableBalanceUsd.toFixed(2)} | Min: $10.00
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Stellar Address
+                </label>
+                <input
+                  type="text"
+                  value={stellarAddress}
+                  onChange={(e) => setStellarAddress(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  placeholder="G..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your Stellar wallet address starting with G
+                </p>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  Withdrawals are processed instantly on the Stellar network. 
+                  Transaction fees are covered by QuillTip.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t flex gap-3">
+              <button
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWithdraw}
+                disabled={isWithdrawing || !withdrawAmount || !stellarAddress}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isWithdrawing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Wallet className="w-4 h-4" />
+                    Withdraw
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
 import { MintButton } from './MintButton'
 import { NFTBadge } from './NFTBadge'
 import { TransferModal } from './TransferModal'
@@ -12,10 +15,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowRight, Trophy, TrendingUp, Users, Zap } from 'lucide-react'
 
 interface NFTIntegrationProps {
-  articleId: string
+  articleId: Id<"articles">
   articleTitle: string
-  authorId: string
-  currentUserId?: string
+  authorId: Id<"users">
+  currentUserId?: Id<"users">
   currentUserAddress?: string
 }
 
@@ -37,59 +40,20 @@ export function NFTIntegration({
   currentUserId,
   currentUserAddress
 }: NFTIntegrationProps) {
-  const [nftStatus, setNftStatus] = useState<NFTStatus | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [showTransferModal, setShowTransferModal] = useState(false)
 
-  // Fetch NFT status
-  useEffect(() => {
-    const loadNFTStatus = async () => {
-      setIsLoading(true)
-      try {
-        const response = await fetch(`/api/nft/${articleId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setNftStatus(data)
-        }
-      } catch (error) {
-        console.error('Failed to fetch NFT status:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
-    loadNFTStatus()
-  }, [articleId])
+  // Use Convex query to fetch NFT status
+  const nftStatus = useQuery(api.nfts.getNFTByArticle, { articleId }) as NFTStatus | undefined
 
-  const fetchNFTStatus = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/nft/${articleId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setNftStatus(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch NFT status:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const isLoading = nftStatus === undefined
 
   const handleMintComplete = () => {
-    // Refresh NFT status after minting
-    fetchNFTStatus()
+    // Convex will automatically refresh the query data
   }
 
   const handleTransferComplete = (newOwner: string) => {
-    // Update local state with new owner
-    if (nftStatus) {
-      setNftStatus({
-        ...nftStatus,
-        owner: newOwner,
-        transferCount: nftStatus.transferCount + 1
-      })
-    }
+    // Convex will automatically refresh the query data with updated owner
+    console.log('NFT transferred to:', newOwner)
   }
 
   const isAuthor = currentUserId === authorId

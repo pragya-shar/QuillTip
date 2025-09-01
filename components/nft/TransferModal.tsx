@@ -1,13 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useMutation, useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
+import { Loader2, CheckCircle, AlertCircle, Send } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Send, AlertCircle, CheckCircle } from 'lucide-react'
-import { toast } from 'sonner'
 
 interface TransferModalProps {
   isOpen: boolean
@@ -15,6 +24,7 @@ interface TransferModalProps {
   articleId: string
   articleTitle: string
   currentOwner: string
+  nftId?: Id<"articleNFTs">
   onTransferComplete?: (newOwner: string) => void
 }
 
@@ -24,31 +34,50 @@ export function TransferModal({
   articleId,
   articleTitle,
   currentOwner,
+  nftId,
   onTransferComplete
 }: TransferModalProps) {
-  const [recipientAddress, setRecipientAddress] = useState('')
+  const [recipientUsername, setRecipientUsername] = useState('')
   const [isTransferring, setIsTransferring] = useState(false)
   const [transferStatus, setTransferStatus] = useState<'idle' | 'confirming' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  
+  const transferNFT = useMutation(api.nfts.transferNFT)
+  
+  // Get NFT data if we don't have the ID
+  const nftData = useQuery(
+    api.nfts.getNFTByArticle,
+    !nftId ? { articleId: articleId as Id<"articles"> } : 'skip'
+  )
+  
+  const actualNftId = nftId || nftData?._id
 
-  const validateStellarAddress = (address: string): boolean => {
-    // Basic Stellar address validation (56 characters starting with G)
-    return /^G[A-Z2-7]{55}$/.test(address)
+  const validateUsername = (username: string): boolean => {
+    // Basic username validation
+    return /^[a-zA-Z0-9_-]{3,30}$/.test(username)
   }
 
   const handleTransfer = async () => {
-    // Reset error state
     setErrorMessage('')
-    
-    // Validate recipient address
-    if (!validateStellarAddress(recipientAddress)) {
-      setErrorMessage('Invalid Stellar address. Must be 56 characters starting with G')
+
+    // Validate username
+    if (!recipientUsername.trim()) {
+      setErrorMessage('Please enter a recipient username')
       return
     }
 
-    // Prevent self-transfer
-    if (recipientAddress === currentOwner) {
-      setErrorMessage('Cannot transfer to yourself')
+    if (!validateUsername(recipientUsername)) {
+      setErrorMessage('Invalid username format. Use only letters, numbers, underscores, and hyphens (3-30 characters).')
+      return
+    }
+
+    if (recipientUsername.toLowerCase() === currentOwner.toLowerCase()) {
+      setErrorMessage('Cannot transfer to the current owner')
+      return
+    }
+
+    if (!actualNftId) {
+      setErrorMessage('NFT not found for this article')
       return
     }
 
@@ -56,63 +85,52 @@ export function TransferModal({
     setTransferStatus('confirming')
 
     try {
-      // Call API to transfer NFT
-      const response = await fetch('/api/nft/transfer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          articleId,
-          recipientAddress
-        }),
+      const transferId = await transferNFT({
+        nftId: actualNftId,
+        toUsername: recipientUsername
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Transfer failed')
+      if (transferId) {
+        setTransferStatus('success')
+        
+        // Show success toast
+        toast.success(`NFT Transferred Successfully! Article NFT has been transferred to @${recipientUsername}`)
+
+        // Notify parent component
+        if (onTransferComplete) {
+          onTransferComplete(recipientUsername)
+        }
+
+        // Close modal after a short delay
+        setTimeout(() => {
+          handleClose()
+        }, 2000)
+      } else {
+        throw new Error('Transfer failed')
       }
-
-      await response.json()
-
-      // Show success state
-      setTransferStatus('success')
-      
-      // Show success toast
-      toast.success(`NFT Transferred Successfully! Article NFT has been transferred to ${recipientAddress.slice(0, 4)}...${recipientAddress.slice(-4)}`)
-
-      // Notify parent component
-      if (onTransferComplete) {
-        onTransferComplete(recipientAddress)
-      }
-
-      // Close modal after delay
-      setTimeout(() => {
-        handleClose()
-      }, 2000)
-
     } catch (error) {
+      console.error('Transfer error:', error)
       setTransferStatus('error')
-      setErrorMessage(error instanceof Error ? error.message : 'Transfer failed')
-      
-      toast.error(errorMessage || 'Transfer failed')
+      setErrorMessage(error instanceof Error ? error.message : 'Transfer failed. Please try again.')
+      toast.error(error instanceof Error ? error.message : 'Transfer failed')
     } finally {
       setIsTransferring(false)
     }
   }
 
   const handleClose = () => {
-    // Reset state
-    setRecipientAddress('')
-    setTransferStatus('idle')
-    setErrorMessage('')
-    onClose()
+    if (!isTransferring) {
+      setRecipientUsername('')
+      setTransferStatus('idle')
+      setErrorMessage('')
+      onClose()
+    }
   }
 
   const getStatusMessage = () => {
     switch (transferStatus) {
       case 'confirming':
-        return 'Please confirm the transaction in your wallet...'
+        return 'Processing transfer...'
       case 'success':
         return 'Transfer completed successfully!'
       case 'error':
@@ -141,57 +159,54 @@ export function TransferModal({
         <DialogHeader>
           <DialogTitle>Transfer NFT Ownership</DialogTitle>
           <DialogDescription>
-            Transfer ownership of &quot;{articleTitle}&quot; to another Stellar address.
+            Transfer ownership of &quot;{articleTitle}&quot; to another user.
             This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
+          {/* Current Owner */}
           <div className="space-y-2">
-            <Label htmlFor="current-owner">Current Owner</Label>
-            <div className="flex items-center space-x-2">
-              <Input
-                id="current-owner"
-                value={`${currentOwner.slice(0, 6)}...${currentOwner.slice(-6)}`}
-                disabled
-                className="font-mono text-sm"
-              />
+            <Label className="text-sm text-gray-600">Current Owner</Label>
+            <div className="px-3 py-2 bg-gray-50 rounded-lg text-sm">
+              @{currentOwner}
             </div>
           </div>
 
+          {/* Recipient Input */}
           <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient Address</Label>
+            <Label htmlFor="recipient">Transfer To (Username)</Label>
             <Input
               id="recipient"
-              placeholder="G..."
-              value={recipientAddress}
-              onChange={(e) => setRecipientAddress(e.target.value)}
+              placeholder="Enter recipient username"
+              value={recipientUsername}
+              onChange={(e) => setRecipientUsername(e.target.value)}
+              disabled={isTransferring || transferStatus === 'success'}
               className="font-mono"
-              disabled={isTransferring}
             />
-            <p className="text-xs text-muted-foreground">
-              Enter the Stellar public address of the new owner
+            <p className="text-xs text-gray-500">
+              Enter the username of the recipient (e.g., johndoe)
             </p>
           </div>
 
-          {/* Status Alert */}
+          {/* Status Message */}
           {transferStatus !== 'idle' && (
-            <Alert variant={transferStatus === 'error' ? 'destructive' : 'default'}>
-              <div className="flex items-center gap-2">
-                {getStatusIcon()}
-                <AlertDescription>{getStatusMessage()}</AlertDescription>
-              </div>
-            </Alert>
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${
+              transferStatus === 'success' ? 'bg-green-50 text-green-700' :
+              transferStatus === 'error' ? 'bg-red-50 text-red-700' :
+              'bg-blue-50 text-blue-700'
+            }`}>
+              {getStatusIcon()}
+              <span className="text-sm">{getStatusMessage()}</span>
+            </div>
           )}
 
-          {/* Warning */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Warning:</strong> Once transferred, you will lose ownership of this NFT
-              and all associated rights. Make sure you trust the recipient.
-            </AlertDescription>
-          </Alert>
+          {/* Error Message */}
+          {errorMessage && transferStatus === 'idle' && (
+            <div className="text-sm text-red-500">
+              {errorMessage}
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -204,21 +219,13 @@ export function TransferModal({
           </Button>
           <Button
             onClick={handleTransfer}
-            disabled={
-              !recipientAddress || 
-              isTransferring || 
-              transferStatus === 'success'
-            }
+            disabled={isTransferring || transferStatus === 'success' || !recipientUsername.trim()}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
           >
             {isTransferring ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Transferring...
-              </>
-            ) : transferStatus === 'success' ? (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Transferred
               </>
             ) : (
               <>

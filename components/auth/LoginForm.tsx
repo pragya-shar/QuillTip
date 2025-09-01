@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useAuthActions } from '@convex-dev/auth/react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,7 +11,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 /**
  * Login Form Component
  * 
- * Handles user authentication with NextAuth.
+ * Handles user authentication with Convex Auth.
  * Includes form validation, error handling, and loading states.
  */
 
@@ -21,6 +21,7 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   
   const router = useRouter()
+  const { signIn } = useAuthActions()
   
   const {
     register,
@@ -35,20 +36,18 @@ export default function LoginForm() {
     setError(null)
     
     try {
-      const result = await signIn('credentials', {
+      await signIn('password', {
         email: data.email,
         password: data.password,
-        redirect: false
+        flow: 'signIn'
       })
       
-      if (result?.error) {
-        setError('Invalid email or password. Please try again.')
-      } else if (result?.ok) {
-        router.push('/')
-        router.refresh()
-      }
-    } catch {
-      setError('Something went wrong. Please try again.')
+      // If we reach here, sign-in was successful
+      router.push('/')
+      router.refresh()
+    } catch (error) {
+      console.error('Login error:', error)
+      setError('Invalid email or password. Please try again.')
     } finally {
       setIsLoading(false)
     }

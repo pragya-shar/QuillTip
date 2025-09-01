@@ -11,6 +11,7 @@ import { common, createLowlight } from 'lowlight'
 import { useEffect, useState } from 'react'
 import { ResizableImage } from './extensions/ResizableImage'
 import { uploadFile, compressImage } from '@/lib/upload'
+import { useConvex } from 'convex/react'
 
 const lowlight = createLowlight(common)
 
@@ -32,6 +33,9 @@ export function Editor({
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  
+  // Get Convex client for uploads
+  const convex = useConvex()
   
   const editor = useEditor({
     immediatelyRender: false,
@@ -143,9 +147,15 @@ export function Editor({
 
       // Compress image before upload for better performance
       const compressedFile = await compressImage(file, 1200, 0.8)
-      const result = await uploadFile(compressedFile, (progress) => {
-        setUploadProgress(progress.percentage)
-      })
+      const result = await uploadFile(
+        compressedFile, 
+        convex,
+        'article_image',
+        undefined, // no specific article
+        (progress) => {
+          setUploadProgress(progress.percentage)
+        }
+      )
 
       if (result.success && result.url) {
         // Insert the image at the current cursor position

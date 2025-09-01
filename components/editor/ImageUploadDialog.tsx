@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { Upload, Link2, X, Image as ImageIcon } from 'lucide-react'
 import { uploadFile, compressImage } from '@/lib/upload'
+import { useConvex } from 'convex/react'
 
 interface ImageUploadDialogProps {
   onImageSelect: (url: string) => void
@@ -18,6 +19,9 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Get Convex client for uploads
+  const convex = useConvex()
 
   if (!isOpen) return null
 
@@ -29,9 +33,15 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
     try {
       // Compress image before upload for better performance
       const compressedFile = await compressImage(file, 1200, 0.8)
-      const result = await uploadFile(compressedFile, (progress) => {
-        setUploadProgress(progress.percentage)
-      })
+      const result = await uploadFile(
+        compressedFile, 
+        convex,
+        'article_image',
+        undefined, // no specific article
+        (progress) => {
+          setUploadProgress(progress.percentage)
+        }
+      )
       
       if (result.success && result.url) {
         onImageSelect(result.url)
@@ -77,11 +87,70 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
     }
   }
 
-  const handleUrlSubmit = () => {
-    if (imageUrl.trim()) {
-      onImageSelect(imageUrl.trim())
-      onClose()
-      resetState()
+  const handleUrlSubmit = async () => {
+    if (!imageUrl.trim()) return
+    
+    setError('')
+    setIsUploading(true)
+    setUploadProgress(0)
+    
+    try {
+      // Fetch the image from the URL
+      setUploadProgress(20)
+      const response = await fetch(imageUrl)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch image from URL')
+      }
+      
+      const blob = await response.blob()
+      setUploadProgress(40)
+      
+      // Check if it's actually an image
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('URL does not point to a valid image')
+      }
+      
+      // Convert blob to File
+      const file = new File([blob], 'image-from-url', { type: blob.type })
+      setUploadProgress(60)
+      
+      // Compress and upload to Convex storage
+      const compressedFile = await compressImage(file, 1200, 0.8)
+      setUploadProgress(80)
+      
+      const result = await uploadFile(
+        compressedFile, 
+        convex,
+        'article_image',
+        undefined, // no specific article
+        (progress) => {
+          // Map the remaining progress from 80 to 100
+          setUploadProgress(80 + Math.floor(progress.percentage * 0.2))
+        }
+      )
+      
+      if (result.success && result.url) {
+        onImageSelect(result.url)
+        onClose()
+        resetState()
+      } else {
+        setError(result.error || 'Upload failed')
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        // Check for CORS errors
+        if (error.message.includes('Failed to fetch')) {
+          setError('Unable to fetch image from URL. The image may be protected by CORS policy.')
+        } else {
+          setError(error.message)
+        }
+      } else {
+        setError('Failed to process image from URL')
+      }
+      console.error('URL image upload error:', error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -206,26 +275,51 @@ export function ImageUploadDialog({ onImageSelect, onClose, isOpen }: ImageUploa
           {/* URL Input */}
           {uploadMethod === 'url' && (
             <div className="space-y-3">
-              <input
-                type="url"
-                placeholder="https://example.com/image.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleUrlSubmit()
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                autoFocus
-              />
-              <button
-                onClick={handleUrlSubmit}
-                disabled={!imageUrl.trim()}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add Image
-              </button>
+              {isUploading ? (
+                <div className="space-y-3">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                    <Upload className="w-6 h-6 text-blue-600 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 text-center">Processing image from URL...</p>
+                    <div className="mt-2">
+                      <div className="bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 text-center">{uploadProgress}%</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !isUploading) {
+                        handleUrlSubmit()
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleUrlSubmit}
+                    disabled={!imageUrl.trim() || isUploading}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Upload Image
+                  </button>
+                  <p className="text-xs text-gray-500 text-center">
+                    External images will be downloaded and stored in Convex
+                  </p>
+                </>
+              )}
             </div>
           )}
 

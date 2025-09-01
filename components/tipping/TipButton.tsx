@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useMutation } from 'convex/react';
+import { useAuth } from '@/components/providers/AuthContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Coins, Heart, Loader2 } from 'lucide-react';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
 
 interface TipButtonProps {
-  articleId: string;
+  articleId: Id<"articles">;
   authorName: string;
   className?: string;
 }
@@ -19,15 +22,17 @@ const TIP_AMOUNTS = [
 ];
 
 export function TipButton({ articleId, authorName, className = '' }: TipButtonProps) {
-  const { data: session } = useSession();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const sendTip = useMutation(api.tips.sendTip);
 
   const handleTip = async () => {
-    if (!session) {
+    if (!isAuthenticated) {
       toast.error('Please sign in to send tips');
       router.push('/auth/signin');
       return;
@@ -48,22 +53,10 @@ export function TipButton({ articleId, authorName, className = '' }: TipButtonPr
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/tips/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          articleId,
-          amountCents,
-        }),
+      await sendTip({
+        articleId,
+        amountUsd: amountCents / 100, // Convert cents to dollars
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send tip');
-      }
 
       toast.success(`Successfully tipped ${authorName} $${(amountCents / 100).toFixed(2)}!`);
       setIsOpen(false);

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useAuth } from '@/components/providers/AuthContext'
 
 /**
  * Register Form Component
@@ -22,6 +23,7 @@ export default function RegisterForm() {
   const [success, setSuccess] = useState(false)
   
   const router = useRouter()
+  const { signIn } = useAuth()
   
   const {
     register,
@@ -36,32 +38,22 @@ export default function RegisterForm() {
     setError(null)
     
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          username: data.username,
-          password: data.password,
-          name: data.name
-        }),
+      const result = await signIn('password', {
+        email: data.email,
+        password: data.password,
+        flow: 'signUp',
+        username: data.username,
+        ...(data.name && { name: data.name })
       })
-      
-      const result = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Registration failed')
-      }
       
       setSuccess(true)
       setTimeout(() => {
-        router.push('/login')
-      }, 2000)
+        router.push('/')  // Redirect to home page instead of non-existent dashboard
+        router.refresh()  // Refresh to update auth state
+      }, 1000)
       
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
+      setError(error instanceof Error ? error.message : 'Registration failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -72,7 +64,7 @@ export default function RegisterForm() {
       <div className="text-center space-y-4">
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-700">
-            Account created successfully! Redirecting to login page...
+            Account created successfully! Redirecting to dashboard...
           </p>
         </div>
       </div>

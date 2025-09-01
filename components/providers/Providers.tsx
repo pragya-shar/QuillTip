@@ -1,15 +1,17 @@
 'use client'
 
-import { SessionProvider } from 'next-auth/react'
-import { AuthProvider } from './AuthContext'
+import { ConvexAuthProvider } from '@convex-dev/auth/react'
+import { ConvexReactClient } from 'convex/react'
 
 /**
- * Providers Component
+ * Convex Client Provider
  * 
- * Wraps the application with all necessary providers for authentication
- * and session management. This ensures proper session persistence and
- * auth state management throughout the app.
+ * Wraps the application with ConvexAuthProvider for authentication
+ * and Convex database access. Provides real-time subscriptions and
+ * type-safe queries throughout the app.
  */
+
+const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -17,10 +19,8 @@ interface ProvidersProps {
 
 export default function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
-      <AuthProvider>
-        {children}
-      </AuthProvider>
-    </SessionProvider>
+    <ConvexAuthProvider client={convex}>
+      {children}
+    </ConvexAuthProvider>
   )
 }

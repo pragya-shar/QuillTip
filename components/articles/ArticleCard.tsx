@@ -1,27 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
+import { ArticleForDisplay } from '@/types/index'
 
 interface ArticleCardProps {
-  article: {
-    id: string
-    slug: string
-    title: string
-    excerpt?: string | null
-    coverImage?: string | null
-    publishedAt: Date | string | null
-    author: {
-      id: string
-      name?: string | null
-      username: string
-      avatar?: string | null
-    }
-    tags: Array<{
-      id: string
-      name: string
-      slug: string
-    }>
-  }
+  article: ArticleForDisplay
 }
 
 export default function ArticleCard({ article }: ArticleCardProps) {

@@ -1,66 +1,53 @@
 'use client'
 
-import { createContext, useContext, ReactNode } from 'react'
-import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
-import type { User } from 'next-auth'
+import { useAuthActions } from '@convex-dev/auth/react'
+import { useConvexAuth, useQuery } from 'convex/react'
+import { Value } from 'convex/values'
+import { api } from '@/convex/_generated/api'
 
 /**
- * Auth Context
+ * Custom hook for Convex authentication
  * 
- * Provides authentication state and methods throughout the application.
- * Integrates with NextAuth to manage user sessions and authentication status.
+ * Provides authentication state and methods using Convex Auth.
+ * Integrates with Convex backend for user management and sessions.
  */
+
+export interface User {
+  _id: string
+  username?: string
+  email?: string
+  name?: string | null
+  image?: string | null
+  isEmailVerified?: boolean
+  phone?: string
+  isAnonymous?: boolean
+}
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
+  signIn: (provider: string, params?: FormData | Record<string, Value>) => Promise<{ signingIn: boolean, redirect?: URL }>
   signOut: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-interface AuthProviderProps {
-  children: ReactNode
-}
-
-export function AuthProvider({ children }: AuthProviderProps) {
-  const { data: session, status } = useSession()
-
-  const signOut = async () => {
-    await nextAuthSignOut({ callbackUrl: '/' })
-  }
-
-  const value: AuthContextType = {
-    user: session?.user ? {
-      id: session.user.id,
-      username: session.user.username,
-      email: session.user.email!,
-      name: session.user.name || null,
-      image: session.user.image || null
-    } : null,
-    isLoading: status === 'loading',
-    isAuthenticated: !!session?.user,
+/**
+ * Custom hook to access Convex auth
+ * Uses Convex Auth hooks for authentication state and actions
+ */
+export function useAuth(): AuthContextType {
+  const { signIn, signOut } = useAuthActions()
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth()
+  const user = useQuery(api.users.getCurrentUser)
+  
+  // Loading is true if auth is loading or if we're authenticated but user data is still loading
+  const isLoading = authLoading || (isAuthenticated && user === undefined)
+  
+  return {
+    user: user || null,
+    isLoading,
+    isAuthenticated,
+    signIn,
     signOut
   }
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
-/**
- * Custom hook to access auth context
- * Must be used within AuthProvider
- */
-export function useAuth() {
-  const context = useContext(AuthContext)
-  
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  
-  return context
 }

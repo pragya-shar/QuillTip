@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth } from '@/components/providers/AuthContext'
 import { PenSquare, Home, User, LogOut, FileText, BookOpen } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export default function AppNavigation() {
-  const { data: session, status } = useSession()
+  const { user, isAuthenticated, signOut } = useAuth()
   const pathname = usePathname()
 
   const isActive = (path: string) => pathname === path
@@ -40,7 +40,7 @@ export default function AppNavigation() {
               <span>Articles</span>
             </Link>
             
-            {status === 'authenticated' ? (
+            {isAuthenticated ? (
               <>
                 <Link 
                   href="/write" 
@@ -61,16 +61,16 @@ export default function AppNavigation() {
                   <span>Drafts</span>
                 </Link>
                 <Link 
-                  href={`/${session.user?.username || 'profile'}`} 
+                  href={`/${user?.username || 'profile'}`} 
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
-                    pathname === `/${session.user?.username}` ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
+                    pathname === `/${user?.username}` ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
                   }`}
                 >
                   <User className="w-4 h-4" />
                   <span>Profile</span>
                 </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/' })}
+                  onClick={() => signOut()}
                   className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-red-600 transition"
                 >
                   <LogOut className="w-4 h-4" />

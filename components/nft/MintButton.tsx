@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Loader2, Sparkles } from 'lucide-react'
@@ -13,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 
 interface MintButtonProps {
-  articleId: string
+  articleId: string | Id<"articles">
   articleTitle: string
   totalTips: number // in dollars
   threshold: number // in dollars
@@ -31,6 +34,7 @@ export function MintButton({
 }: MintButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
+  const mintNFT = useMutation(api.nfts.mintNFT)
 
   const canMint = totalTips >= threshold && isAuthor
   const progress = Math.min(100, (totalTips / threshold) * 100)
@@ -38,22 +42,17 @@ export function MintButton({
   const handleMint = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/nft/mint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ articleId }),
+      const nftId = await mintNFT({ 
+        articleId: articleId as Id<"articles">
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to mint NFT')
+      if (nftId) {
+        toast.success(`NFT Minted Successfully! Your article "${articleTitle}" is now an NFT!`)
+        setShowDialog(false)
+        onMintSuccess?.()
+      } else {
+        throw new Error('Failed to mint NFT')
       }
-
-      toast.success(`NFT Minted Successfully! Your article "${articleTitle}" is now an NFT with token ID: ${data.nft.tokenId}`)
-
-      setShowDialog(false)
-      onMintSuccess?.()
     } catch (error) {
       console.error('Minting error:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to mint NFT')

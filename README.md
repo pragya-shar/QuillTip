@@ -36,3 +36,110 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 🚀 Convex Migration Status
+
+### 📊 API Migration Progress
+
+| API Category | Original Routes | Convex Status | Functions Implemented |
+|-------------|----------------|---------------|----------------------|
+| **Auth** | `/api/auth/register`<br>`/api/auth/[...nextauth]` | Complete | `auth.signIn`, `auth.signUp`, `auth.signOut` |
+| **Users** | `/api/users/[username]` | Complete | `getCurrentUser`, `getUserByUsername`, `updateProfile`, `getUserStats` |
+| **Articles** | `/api/articles` (POST)<br>`/api/articles/[id]` (GET)<br>`/api/articles/by-slug/[username]/[slug]`<br>`/api/articles/draft` (POST)<br>`/api/articles/drafts` (GET) | Complete | `listArticles`, `getArticleBySlug`, `getArticleById`, `getUserDrafts`, `createArticle`, `updateArticle`, `publishArticle`, `deleteArticle`, `saveDraft` |
+| **Tips** | `/api/tips/send` (POST)<br>`/api/tips/article/[id]` (GET) | Complete | `getArticleTips`, `getUserSentTips`, `getUserReceivedTips`, `sendTip`, `confirmTip` |
+| **Earnings** | `/api/earnings/balance` (GET)<br>`/api/earnings/withdraw` (POST) | Complete | `getAuthorEarnings`, `withdrawEarnings`, `confirmWithdrawal` |
+| **NFTs** | `/api/nft/mint` (POST)<br>`/api/nft/[articleId]` (GET)<br>`/api/nft/transfer` (POST)<br>`/api/nft/owned` (GET) | Complete | `mintNFT`, `getNFTByArticle`, `transferNFT`, `getNFTsByOwner`, `getNFTDetails`, `getUserMintedNFTs`, `checkMintingThreshold` |
+| **Highlights** | *(No API routes found)* | Complete | `getArticleHighlights`, `getUserHighlights`, `createHighlight`, `updateHighlight`, `deleteHighlight` |
+| **Uploads** | `/api/upload` (POST) | Complete | `generateUploadUrl`, `storeFileMetadata`, `getFileUrl`, `getUserUploads`, `deleteFile`, `updateUserAvatar`, `updateArticleCoverImage` |
+
+### Completed (Phase 1)
+
+- [x] **Convex Project Initialization**
+  - Installed Convex and @convex-dev/auth packages
+  - Configured environment variables (SITE_URL)
+  - Set up HTTP routes and auth configuration
+
+- [x] **Database Schema Migration**
+  - Migrated 8 core tables from Prisma schema
+  - Added auth tables from Convex Auth
+  - Added withdrawals and fileUploads tables
+  - Implemented proper indexes and search capabilities
+  - Denormalized data for optimal performance
+
+- [x] **API Functions Migration (100% Complete)**
+  - Authentication (register, login, logout)
+  - Users (profile, stats, username check)
+  - Articles (CRUD, drafts, search, pagination)
+  - Tips (send, receive, track earnings)
+  - NFTs (mint, transfer, ownership)
+  - Highlights (CRUD with user enrichment)
+  - Earnings (balance, withdrawal with Stellar integration)
+  - File uploads (storage, metadata, avatar/cover updates)
+
+### Backend Migration Complete
+
+All backend API functionality has been successfully migrated to Convex:
+
+- All database tables created (10 tables total)
+- All API endpoints migrated (100% coverage)
+- File storage implemented with Convex Storage API
+- Withdrawal functionality with Stellar integration ready
+
+### 📋 Next Steps
+
+- **Frontend Integration**
+  - [ ] Replace all API calls with Convex hooks
+  - [ ] Implement ConvexAuthProvider
+  - [ ] Update authentication flow UI
+  - [ ] Add real-time subscriptions for articles, tips, and highlights
+
+- **Real-time Features**
+  - [ ] Live article updates
+  - [ ] Real-time notifications
+  - [ ] Collaborative highlighting
+  - [ ] Live tip notifications
+
+- **Stellar Integration**
+  - [ ] Create Convex actions for blockchain operations
+  - [ ] Implement proper wallet connection
+  - [ ] Add smart contract interactions
+
+- **Cleanup & Optimization**
+  - [ ] Remove Prisma and Supabase dependencies
+  - [ ] Delete old API routes in `/app/api`
+  - [ ] Remove NextAuth configuration
+  - [ ] Optimize bundle size
+
+### 🏗️ Architecture Changes
+
+- **From**: Next.js API Routes → Prisma → PostgreSQL (Supabase)
+- **To**: Next.js → Convex Functions → Convex Database
+- **Benefits**: Real-time subscriptions, type-safe queries, automatic caching, simpler deployment
+
+### 🔧 Development Commands
+
+```bash
+# Start development (frontend + Convex)
+npm run dev
+
+# Deploy Convex functions
+npx convex deploy
+
+# Open Convex dashboard
+npx convex dashboard
+```
+
+### 📝 Environment Variables
+
+Required for Convex:
+
+- `CONVEX_DEPLOYMENT` (auto-generated)
+- `SITE_URL` (for auth redirects)
+
+### 🎯 Migration Benefits
+
+- **Real-time Updates**: Built-in subscriptions for live data
+- **Type Safety**: End-to-end TypeScript with generated types
+- **Simplified Stack**: No ORM, direct database access
+- **Better DX**: Hot reload, automatic migrations
+- **Performance**: Automatic query caching and optimization

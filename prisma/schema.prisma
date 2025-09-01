@@ -17,10 +17,14 @@ model User {
   bio             String?
   avatar          String?
   hashedPassword  String
+  stellarAddress  String?   // Stellar wallet address
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   articles        Article[]
   highlights      Highlight[]
+  tipsSent        Tip[]     @relation("TipsSent")
+  tipsReceived    Tip[]     @relation("TipsReceived")
+  earnings        AuthorEarnings?
 
   @@map("users")
 }
@@ -38,6 +42,7 @@ model Article {
   author          User      @relation(fields: [authorId], references: [id])
   authorId        String
   highlights      Highlight[]
+  tips            Tip[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -86,4 +91,68 @@ model Highlight {
   @@index([articleId, userId])
   @@index([articleId, isPublic])
   @@map("highlights")
+}
+
+enum TipStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+model Tip {
+  id              String    @id @default(cuid())
+  
+  // Content reference
+  articleId       String
+  article         Article   @relation(fields: [articleId], references: [id])
+  
+  // Blockchain data (optional for POC)
+  stellarTxId     String?   @unique
+  contractTipId   String?   @unique
+  
+  // Tip details
+  amountCents     Int       // Amount in cents
+  amountStroops   String?   // Amount in stroops
+  amountUsd       Decimal   // USD value at time of tip
+  
+  // Parties
+  tipperId        String
+  tipper          User      @relation("TipsSent", fields: [tipperId], references: [id])
+  authorId        String
+  author          User      @relation("TipsReceived", fields: [authorId], references: [id])
+  
+  // Status
+  status          TipStatus @default(PENDING)
+  platformFee     String?
+  authorShare     String?
+  
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime?
+  
+  @@index([articleId])
+  @@index([tipperId])
+  @@index([authorId])
+  @@index([stellarTxId])
+  @@map("tips")
+}
+
+model AuthorEarnings {
+  id              String    @id @default(cuid())
+  authorId        String    @unique
+  author          User      @relation(fields: [authorId], references: [id])
+  
+  // Earnings data
+  totalTips       Int       @default(0)
+  totalEarnedCents Int      @default(0) // In cents
+  totalEarnedStroops String? @default("0") // In stroops
+  totalEarnedUsd  Decimal   @default(0)
+  
+  // Pending withdrawal
+  pendingAmountCents Int    @default(0)
+  pendingAmountStroops String? @default("0")
+  lastWithdrawal  DateTime?
+  
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("author_earnings")
 }

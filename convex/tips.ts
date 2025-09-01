@@ -248,7 +248,7 @@ export const confirmTip = mutation({
       const topArticles = [...(earnings.topArticles || [])];
       const articleIndex = topArticles.findIndex(a => a.articleId === tip.articleId);
       
-      if (articleIndex >= 0) {
+      if (articleIndex >= 0 && topArticles[articleIndex]) {
         topArticles[articleIndex].earnings += tip.amountUsd;
         topArticles[articleIndex].tipCount += 1;
       } else {

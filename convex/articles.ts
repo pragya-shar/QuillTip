@@ -334,6 +334,40 @@ export const publishArticle = mutation({
     return args.id;
   },
 });
+// Unpublish article
+export const unpublishArticle = mutation({
+  args: {
+    id: v.id("articles"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    
+    const article = await ctx.db.get(args.id);
+    if (!article) throw new Error("Article not found");
+    if (article.authorId !== userId) throw new Error("Not authorized");
+    if (!article.published) throw new Error("Already unpublished");
+    
+    const now = Date.now();
+    
+    await ctx.db.patch(args.id, {
+      published: false,
+      publishedAt: undefined,
+      updatedAt: now,
+    });
+    
+    // Update user's article count
+    const user = await ctx.db.get(userId);
+    if (user) {
+      await ctx.db.patch(userId, {
+        articleCount: Math.max(0, (user.articleCount || 0) - 1),
+        updatedAt: now,
+      });
+    }
+    
+    return args.id;
+  },
+});
 
 // Delete article
 export const deleteArticle = mutation({

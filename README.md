@@ -19,7 +19,7 @@
 
 ## 🎥 Demo Video
 
-[![QuillTip Demo Video](https://cdn.loom.com/sessions/thumbnails/647b5117508d4dd8a6e31e27698fcf6a-with-play.gif)](https://www.loom.com/share/647b5117508d4dd8a6e31e27698fcf6a?sid=5dcee0cb-0786-4a0a-8cb5-544f93251ade)
+[![QuillTip Demo Video](./QuillTip_Cover.jpg)](https://www.loom.com/share/647b5117508d4dd8a6e31e27698fcf6a?sid=5dcee0cb-0786-4a0a-8cb5-544f93251ade)
 
 *Click the image above to watch the demo video*
 

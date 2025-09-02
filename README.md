@@ -17,6 +17,10 @@
 | **Email** | demo@example.com |
 | **Password** | Stellar123 |
 
+## 🎥 Demo Video
+
+<div style="position: relative; padding-bottom: 62.5%; height: 0;"><iframe src="https://www.loom.com/embed/647b5117508d4dd8a6e31e27698fcf6a?sid=5dcee0cb-0786-4a0a-8cb5-544f93251ade" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
 ## 🚀 Overview
 
 QuillTip is a decentralized publishing platform where writers can earn money through reader tips. Built with Next.js 15, Convex backend, and Stellar blockchain for payments. QuillTip enables writers to earn direct income from readers while providing an interactive, engaging reading experience.

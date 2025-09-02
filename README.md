@@ -1,183 +1,416 @@
-# QuillTip - Modern Writing Platform
+# QuillTip - Decentralized Publishing Platform
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
 
-## Getting Started
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-quilltip.me-blue?style=for-the-badge)](https://quilltip.me)
+[![Stellar Contract](https://img.shields.io/badge/Stellar%20Contract-View%20on%20Explorer-yellow?style=for-the-badge)](https://stellar.expert/explorer/testnet/contract/CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM)
 
-First, run the development server:
+</div>
+
+**🔗 Live Application:** [https://quilltip.me](https://quilltip.me)  
+**📜 Tipping Contract:** [`CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`](https://stellar.expert/explorer/testnet/contract/CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM)
+
+## 🎭 Demo Account
+
+| Field | Value |
+|-------|-------|
+| **Email** | demo@example.com |
+| **Password** | Stellar123 |
+
+## 🚀 Overview
+
+QuillTip is a decentralized publishing platform where writers can earn money through reader tips. Built with Next.js 15, Convex backend, and Stellar blockchain for payments. QuillTip enables writers to earn direct income from readers while providing an interactive, engaging reading experience.
+
+## 🎯 Key Features
+
+- **Direct Payments**: Authors receive 97.5% of tips via Stellar
+- **Free Access**: No subscription required to read or write
+- **Real-time Features**: Live tips and text highlights
+- **NFT Support**: Articles can be minted as NFTs
+- **Instant Payouts**: No minimum withdrawal amounts
+
+## 🏗️ Technical Stack
+
+### Frontend
+
+- **Next.js 15.4.5**: React framework with App Router
+- **TypeScript 5**: Type safety
+- **Tailwind CSS 4**: Styling
+- **Radix UI**: UI components
+- **TipTap 3**: Rich text editor
+- **Motion**: Animations
+- **Lucide React**: Icons
+
+### Backend
+
+- **Convex 1.26**: Real-time backend
+  - Type-safe APIs
+  - Real-time subscriptions
+  - Authentication (@convex-dev/auth)
+  - File storage
+  - Caching
+
+### Blockchain
+
+- **Stellar Network**: Payment processing
+- **Soroban Smart Contracts**: Rust contracts for:
+  - Tip distribution and fees
+  - NFT minting
+  - Peer-to-peer transfers
+
+### Database Schema
+
+```text
+// Core Tables (Convex)
+- users          // User profiles and authentication
+- articles       // Published content and drafts
+- tips           // Transaction records
+- highlights     // Interactive annotations
+- articleNFTs    // Minted article NFTs
+- earnings       // Author revenue tracking
+- fileUploads    // Media storage metadata
+- withdrawals    // Payout history
+- tags           // Content categorization
+- authTables     // Convex Auth system tables
+```
+
+## 📦 Project Structure
+
+```text
+QuillTip/
+├── app/                    # Next.js app directory
+│   ├── (auth)/            # Authentication pages
+│   ├── [username]/        # User profiles
+│   ├── articles/          # Article views
+│   ├── write/             # Editor interface
+│   └── drafts/            # Draft management
+├── components/            # React components
+│   ├── article/           # Article-specific components
+│   ├── editor/            # TipTap editor components
+│   ├── ui/                # Shared UI components
+│   └── user/              # User-related components
+├── convex/                # Backend functions
+│   ├── articles.ts        # Article CRUD operations
+│   ├── auth.ts            # Authentication logic
+│   ├── highlights.ts      # Highlight management
+│   ├── nfts.ts            # NFT operations
+│   ├── tips.ts            # Tipping transactions
+│   ├── uploads.ts         # File storage
+│   └── users.ts           # User management
+├── contracts/             # Stellar smart contracts
+│   ├── tipping/           # Tip distribution contract
+│   └── article-nft/       # NFT minting contract
+├── hooks/                 # Custom React hooks
+├── lib/                   # Utility functions
+└── types/                 # TypeScript definitions
+```
+
+## 🌟 Key Features
+
+### For Writers
+
+- **Rich Text Editor**
+  - Advanced formatting (headings, lists, code blocks)
+  - Image uploads with automatic compression
+  - YouTube video embeds
+  - Syntax highlighting for code
+  - Auto-save every 30 seconds
+  - Draft management system
+
+- **Analytics Dashboard**
+  - Real-time earnings tracking
+  - Article performance metrics
+  - Reader engagement statistics
+  - Tip history and trends
+
+- **NFT Minting**
+  - Automatic eligibility after tip threshold
+  - One-click minting process
+  - Full ownership and transfer rights
+
+### For Readers
+
+- **Interactive Reading**
+  - Text highlighting with notes
+  - Public/private annotations
+  - Color-coded highlights
+  - Persistent across sessions
+
+- **Microtipping**
+  - Support authors with $0.01 - $100
+  - Preset amounts ($1, $5, $10)
+  - Instant Stellar transactions
+  - Transaction history
+
+- **Content Discovery**
+  - Full-text search
+  - Tag-based filtering
+  - Author collections
+  - Trending articles
+
+### For Collectors
+
+- **Article NFTs**
+  - Unique digital collectibles
+  - Transferable ownership
+  - On-chain provenance
+  - Future marketplace integration
+
+## 🔧 Installation & Setup
+
+### Prerequisites
+
+- Node.js 20+ and npm/yarn
+- Git
+- Stellar wallet (for blockchain features)
+
+### Quick Start
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/yourusername/quilltip.git
+cd quilltip
+```
+
+1. **Install dependencies**
+
+```bash
+npm install
+```
+
+1. **Set up environment variables**
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local`:
+
+```env
+# Convex (auto-generated on first run)
+CONVEX_DEPLOYMENT=
+NEXT_PUBLIC_CONVEX_URL=
+
+# Site URL (for auth redirects)
+SITE_URL=http://localhost:3000
+
+# Stellar Configuration (optional for local dev)
+STELLAR_TIPPING_CONTRACT_ID=
+STELLAR_DEPLOYER_ADDRESS=
+STELLAR_NETWORK=testnet
+```
+
+1. **Initialize Convex**
+
+```bash
+npx convex dev
+```
+
+This will:
+
+- Create a new Convex project
+- Generate type definitions
+- Set up real-time sync
+
+1. **Deploy Stellar contracts (optional)**
+
+```bash
+cd contracts/tipping
+cargo build --target wasm32-unknown-unknown --release
+stellar contract deploy --wasm target/wasm32-unknown-unknown/release/tipping.wasm
+
+cd ../article-nft
+cargo build --target wasm32-unknown-unknown --release
+stellar contract deploy --wasm target/wasm32-unknown-unknown/release/article_nft.wasm
+```
+
+1. **Start development server**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## 🚀 Convex Migration Status
-
-### 📊 API Migration Progress
-
-| API Category | Original Routes | Convex Status | Functions Implemented |
-|-------------|----------------|---------------|----------------------|
-| **Auth** | `/api/auth/register`<br>`/api/auth/[...nextauth]` | Complete | `auth.signIn`, `auth.signUp`, `auth.signOut` |
-| **Users** | `/api/users/[username]` | Complete | `getCurrentUser`, `getUserByUsername`, `updateProfile`, `getUserStats` |
-| **Articles** | `/api/articles` (POST)<br>`/api/articles/[id]` (GET)<br>`/api/articles/by-slug/[username]/[slug]`<br>`/api/articles/draft` (POST)<br>`/api/articles/drafts` (GET) | Complete | `listArticles`, `getArticleBySlug`, `getArticleById`, `getUserDrafts`, `createArticle`, `updateArticle`, `publishArticle`, `deleteArticle`, `saveDraft` |
-| **Tips** | `/api/tips/send` (POST)<br>`/api/tips/article/[id]` (GET) | Complete | `getArticleTips`, `getUserSentTips`, `getUserReceivedTips`, `sendTip`, `confirmTip` |
-| **Earnings** | `/api/earnings/balance` (GET)<br>`/api/earnings/withdraw` (POST) | Complete | `getAuthorEarnings`, `withdrawEarnings`, `confirmWithdrawal` |
-| **NFTs** | `/api/nft/mint` (POST)<br>`/api/nft/[articleId]` (GET)<br>`/api/nft/transfer` (POST)<br>`/api/nft/owned` (GET) | Complete | `mintNFT`, `getNFTByArticle`, `transferNFT`, `getNFTsByOwner`, `getNFTDetails`, `getUserMintedNFTs`, `checkMintingThreshold` |
-| **Highlights** | *(No API routes found)* | Complete | `getArticleHighlights`, `getUserHighlights`, `createHighlight`, `updateHighlight`, `deleteHighlight` |
-| **Uploads** | `/api/upload` (POST) | Complete | `generateUploadUrl`, `storeFileMetadata`, `getFileUrl`, `getUserUploads`, `deleteFile`, `updateUserAvatar`, `updateArticleCoverImage` |
-
-### Completed (Phase 1)
-
-- [x] **Convex Project Initialization**
-  - Installed Convex and @convex-dev/auth packages
-  - Configured environment variables (SITE_URL)
-  - Set up HTTP routes and auth configuration
-
-- [x] **Database Schema Migration**
-  - Migrated 8 core tables from Prisma schema
-  - Added auth tables from Convex Auth
-  - Added withdrawals and fileUploads tables
-  - Implemented proper indexes and search capabilities
-  - Denormalized data for optimal performance
-
-- [x] **API Functions Migration (100% Complete)**
-  - Authentication (register, login, logout)
-  - Users (profile, stats, username check)
-  - Articles (CRUD, drafts, search, pagination)
-  - Tips (send, receive, track earnings)
-  - NFTs (mint, transfer, ownership)
-  - Highlights (CRUD with user enrichment)
-  - Earnings (balance, withdrawal with Stellar integration)
-  - File uploads (storage, metadata, avatar/cover updates)
-
-- **Frontend Integration**
-  - [x] Replace all API calls with Convex hooks
-  - [x] Implement ConvexAuthProvider
-  - [x] Update authentication flow UI
-  - [x] Add real-time subscriptions for articles, tips, and highlights
-  - [x] Fix authentication state persistence
-  - [x] Replace profile pages with Convex queries
-  - [x] Replace article pages with Convex queries
-  - [x] Update NFT components to use Convex mutations
-  - [x] Implement image uploads with Convex storage
-  - [x] Cover image uploads automatically stored in Convex
-  - [x] Complete earnings dashboard with withdrawal UI
-  - [x] Integrate dashboard components into user profile (tabs)
-  - [x] Add engagement sidebar to article pages
-
-- **Component Integration**
-  - [x] TipButton integrated in article sidebar
-  - [x] TipStats displayed on article pages
-  - [x] NFTIntegration in article engagement sidebar
-  - [x] EarningsDashboard in user profile (Earnings tab)
-  - [x] User stats in profile (Stats tab)
-  - [x] NFT collections display (owned & minted)
-  - [x] Article grid with pagination
-  - [x] Profile header with user stats
-
-- **Storage & Media**
-  - [x] Image compression and optimization
-  - [x] External URL images auto-uploaded to Convex
-  - [x] File uploads with progress tracking
-  - [x] Avatar and cover image management
-
-- **Real-time Features**
-  - [x] Live article updates (via Convex subscriptions)
-  - [x] Real-time tip data
-  - [x] Real-time earnings updates
-  - [x] Auto-save drafts with real-time sync
-  - [ ] Real-time notifications (planned)
-  - [ ] Collaborative highlighting (planned)
-
-- **Stellar Integration**
-  - [ ] Tip sending with Stellar blockchain (using mock transactions)
-  - [ ] NFT minting on blockchain (database records only)
-  - [ ] NFT transfer on blockchain (database records only)
-  - [x] Earnings tracking (database only)
-  - [ ] Withdrawal to Stellar wallet (mock transactions only)
-  - [x] Minimum withdrawal amount validation ($10)
-  - [ ] Stellar wallet connection UI (not implemented)
-  - [ ] Transaction history from blockchain (not implemented)
-  - [ ] Smart contract deployment (not done)
-  - [ ] Actual XLM transactions (not happening)
-
-- **UI/UX Features**
-  - [x] Tabbed user profile (Articles, NFTs, Earnings, Stats)
-  - [x] Article engagement sidebar
-  - [x] Responsive modal dialogs (tips, withdrawals)
-  - [x] Loading skeletons for better UX
-  - [x] Toast notifications for user feedback
-  - [ ] Dark mode support (planned)
-  - [ ] Mobile-optimized views (partial)
-
-- **Cleanup & Optimization**
-  - [x] Remove Prisma and Supabase dependencies
-  - [x] Delete old API routes in `/app/api`
-  - [x] Remove NextAuth configuration
-  - [x] Fix TypeScript errors
-  - [x] Fix build issues
-  - [x] Resolve all component prop mismatches
-  - [x] Delete Prisma schema and migrations
-  - [x] Remove lib/prisma.ts and lib/supabase.ts
-  - [ ] Performance optimization (lazy loading)
-  - [ ] SEO metadata optimization
-
-### 🏗️ Architecture Changes
-
-- **From**: Next.js API Routes → Prisma → PostgreSQL (Supabase)
-- **To**: Next.js → Convex Functions → Convex Database
-- **Benefits**: Real-time subscriptions, type-safe queries, automatic caching, simpler deployment
-
-### 🔧 Development Commands
+### Production Build
 
 ```bash
-# Start development (frontend + Convex)
-npm run dev
-
-# Deploy Convex functions
-npx convex deploy
-
-# Open Convex dashboard
-npx convex dashboard
+npm run build
+npm start
 ```
 
-### 📝 Environment Variables
+### Deploy to Vercel
 
-Required for Convex:
+```bash
+vercel
+```
 
-- `CONVEX_DEPLOYMENT` (auto-generated)
-- `SITE_URL` (for auth redirects)
+### Deploy Convex Functions
 
-### 🎯 Migration Benefits
+```bash
+npx convex deploy --prod
+```
 
-- **Real-time Updates**: Built-in subscriptions for live data
-- **Type Safety**: End-to-end TypeScript with generated types
-- **Simplified Stack**: No ORM, direct database access
-- **Better DX**: Hot reload, automatic migrations
-- **Performance**: Automatic query caching and optimization
+## 📝 Development Commands
+
+```bash
+# Development
+npm run dev              # Start frontend + Convex dev server
+npm run dev:frontend     # Frontend only
+npm run dev:backend      # Convex only
+
+# Testing
+npm test                 # Run tests with Vitest
+npm run test:coverage    # Generate coverage report
+npm run test:debug       # Debug tests
+
+# Code Quality
+npm run lint             # ESLint checks
+npm run typecheck        # TypeScript validation
+
+# Convex Management
+npx convex dashboard     # Open Convex dashboard
+npx convex deploy        # Deploy to production
+npx convex logs          # View function logs
+```
+
+## 🔐 Security Features
+
+- **Authentication**: Secure password hashing with Argon2
+- **Authorization**: Role-based access control
+- **Data Validation**: Zod schemas for all inputs
+- **XSS Protection**: Content sanitization
+- **CSRF Protection**: Built into Convex
+- **Rate Limiting**: API throttling
+- **Secure File Uploads**: Type validation and size limits
+
+## 🎨 UI Components
+
+The platform uses a comprehensive component library:
+
+- **Primitives**: Button, Input, Card, Dialog, Toast
+- **Article**: ArticleCard, ArticleGrid, ArticleViewer
+- **Editor**: RichTextEditor, ToolbarButton, ImageUpload
+- **User**: ProfileHeader, UserStats, EarningsDashboard
+- **Engagement**: TipButton, HighlightPopover, NFTCard
+
+## 📊 Real-time Features
+
+Powered by Convex subscriptions:
+
+- **Live Article Updates**: Content changes reflect instantly
+- **Real-time Tips**: See tips as they happen
+- **Active Highlights**: Watch readers engage with content
+- **Instant Notifications**: Toast messages for all actions
+- **Auto-save Sync**: Drafts saved across devices
+
+## 🌐 Stellar Integration
+
+### Tipping Contract
+
+- **Immediate Settlement**: Direct XLM transfers
+- **Fee Distribution**: 97.5% author, 2.5% platform
+- **Minimum Tip**: 0.01 XLM (~$0.001)
+- **Event Logging**: On-chain transaction history
+
+### NFT Contract
+
+- **Threshold Minting**: Requires minimum tip amount
+- **Unique Tokens**: One NFT per article
+- **Transfer Support**: Full ERC-721 compatibility
+- **Metadata Storage**: IPFS integration ready
+
+## 📈 Performance Optimizations
+
+- **Code Splitting**: Dynamic imports for routes
+- **Image Optimization**: Automatic compression and WebP
+- **Lazy Loading**: Components loaded on demand
+- **Caching Strategy**: Convex automatic query caching
+- **CDN Delivery**: Static assets via Vercel Edge
+- **Database Indexing**: Optimized query patterns
+
+## 🧪 Testing
+
+```bash
+# Unit Tests
+npm test
+
+# Integration Tests
+npm run test:integration
+
+# E2E Tests
+npm run test:e2e
+
+# Coverage Report
+npm run test:coverage
+```
+
+## 📚 API Documentation
+
+### Convex Functions
+
+#### Articles
+
+- `listArticles`: Paginated article feed
+- `getArticleBySlug`: Single article fetch
+- `createArticle`: New article creation
+- `updateArticle`: Edit existing article
+- `publishArticle`: Make article public
+- `deleteArticle`: Remove article
+
+#### Tips
+
+- `sendTip`: Process tip transaction
+- `getArticleTips`: Fetch tip history
+- `getUserEarnings`: Calculate revenue
+
+#### NFTs
+
+- `mintNFT`: Create article NFT
+- `transferNFT`: Change ownership
+- `getNFTDetails`: Fetch metadata
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+- Built with [Next.js](https://nextjs.org)
+- Powered by [Convex](https://convex.dev)
+- Payments via [Stellar](https://stellar.org)
+- UI components from [Radix UI](https://radix-ui.com)
+- Editor by [TipTap](https://tiptap.dev)
+
+## 📞 Support
+
+- **Documentation**: [docs.quilltip.io](https://docs.quilltip.io)
+- **Discord**: [discord.gg/quilltip](https://discord.gg/quilltip)
+- **Email**: <support@quilltip.io>
+- **Twitter**: [@quilltip](https://twitter.com/quilltip)
+
+## 🚦 Status
+
+- **Version**: 0.1.0 (Beta)
+- **Network**: Stellar Testnet
+- **Database**: Convex Cloud
+- **Hosting**: Vercel Edge
+
+---
+
+**QuillTip** - Empowering writers through decentralized monetization. Built with ❤️ for the creator economy on Stellar.

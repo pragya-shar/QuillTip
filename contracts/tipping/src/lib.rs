@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, vec, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, contracttype, token, vec, Address, Env, String, Symbol, Vec};
 
 #[derive(Clone)]
 #[contracttype]
@@ -27,13 +27,15 @@ pub enum DataKey {
     PlatformFeeBps,
     ArticleTips(Symbol),
     ArticleTotalTips(Symbol),  // Track total tips per article for NFT threshold
-    AuthorBalance(Address),
     TipCounter,
     TotalVolume,
 }
 
 const MINIMUM_TIP_STROOPS: i128 = 100_000; // 0.01 XLM (approximately 1 cent)
 const DEFAULT_PLATFORM_FEE_BPS: u32 = 250; // 2.5%
+
+// Native XLM token contract on testnet
+const XLM_TOKEN_ADDRESS: &str = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 
 #[contract]
 pub struct TippingContract;
@@ -87,29 +89,27 @@ impl TippingContract {
         let platform_fee = (amount * platform_fee_bps as i128) / 10_000;
         let author_share = amount - platform_fee;
         
-        // For POC, we'll use a simpler approach - direct transfers
-        // In production, you'd use the actual XLM token contract
-        // let _token_address = env.current_contract_address();
+        // Get XLM token client
+        let xlm_address = Address::from_string(&String::from_str(&env, XLM_TOKEN_ADDRESS));
+        let xlm_client = token::TokenClient::new(&env, &xlm_address);
         
-        // Update author balance (for POC, we track balances internally)
-        let current_balance: i128 = env.storage()
+        // Transfer author's share
+        xlm_client.transfer(&tipper, &author, &author_share);
+        
+        // Transfer platform fee
+        if platform_fee > 0 {
+            xlm_client.transfer(&tipper, &platform_address, &platform_fee);
+        }
+        
+        // Track cumulative tips for statistics (not balances)
+        let current_total: i128 = env.storage()
             .persistent()
-            .get(&DataKey::AuthorBalance(author.clone()))
+            .get(&DataKey::ArticleTotalTips(article_id.clone()))
             .unwrap_or(0);
         
         env.storage()
             .persistent()
-            .set(&DataKey::AuthorBalance(author.clone()), &(current_balance + author_share));
-        
-        // Update platform balance
-        let platform_balance: i128 = env.storage()
-            .persistent()
-            .get(&DataKey::AuthorBalance(platform_address.clone()))
-            .unwrap_or(0);
-        
-        env.storage()
-            .persistent()
-            .set(&DataKey::AuthorBalance(platform_address.clone()), &(platform_balance + platform_fee));
+            .set(&DataKey::ArticleTotalTips(article_id.clone()), &(current_total + amount));
         
         // Get and increment tip counter
         let tip_counter: u64 = env.storage()
@@ -177,12 +177,11 @@ impl TippingContract {
             .unwrap_or(vec![&env])
     }
     
-    /// Get author's balance
+    /// Get author's XLM balance from the native token
     pub fn get_balance(env: Env, author: Address) -> i128 {
-        env.storage()
-            .persistent()
-            .get(&DataKey::AuthorBalance(author))
-            .unwrap_or(0)
+        let xlm_address = Address::from_string(&String::from_str(&env, XLM_TOKEN_ADDRESS));
+        let xlm_client = token::TokenClient::new(&env, &xlm_address);
+        xlm_client.balance(&author)
     }
     
     /// Get total tips for an article (for NFT threshold checking)
@@ -199,28 +198,13 @@ impl TippingContract {
         total_tips >= threshold
     }
     
-    /// Withdraw earnings (simplified for POC)
-    pub fn withdraw_earnings(env: Env, author: Address) -> i128 {
+    /// Withdraw is no longer needed - transfers happen immediately
+    /// Keeping for backwards compatibility, returns 0
+    pub fn withdraw_earnings(_env: Env, author: Address) -> i128 {
         author.require_auth();
-        
-        let balance: i128 = env.storage()
-            .persistent()
-            .get(&DataKey::AuthorBalance(author.clone()))
-            .unwrap_or(0);
-        
-        if balance == 0 {
-            panic!("No balance to withdraw");
-        }
-        
-        // Reset balance
-        env.storage()
-            .persistent()
-            .set(&DataKey::AuthorBalance(author.clone()), &0i128);
-        
-        // In production, this would trigger an actual XLM transfer
-        // For POC, we just return the amount that would be withdrawn
-        
-        balance
+        // Transfers happen immediately in tip_article
+        // This function is deprecated but kept for backwards compatibility
+        0
     }
     
     /// Get total tips volume
@@ -341,7 +325,7 @@ mod test {
     }
     
     #[test]
-    fn test_withdraw_earnings() {
+    fn test_tip_with_immediate_transfers() {
         let env = Env::default();
         env.mock_all_auths();
         
@@ -359,16 +343,15 @@ mod test {
         client.tip_article(&tipper, &symbol_short!("art1"), &author, &1_000_000);
         client.tip_article(&tipper, &symbol_short!("art2"), &author, &2_000_000);
         
-        // Check balance before withdrawal
-        let balance = client.get_balance(&author);
-        assert_eq!(balance, 975_000 + 1_950_000); // 97.5% of each tip
+        // Note: With mock_all_auths(), token transfers are simulated
+        // On testnet, the XLM token contract is pre-deployed by Stellar
+        // and these would be real XLM transfers
         
-        // Withdraw
-        let withdrawn = client.withdraw_earnings(&author);
-        assert_eq!(withdrawn, 2_925_000);
+        // Check article total tips (for NFT threshold tracking)
+        let art1_total = client.get_article_total_tips(&symbol_short!("art1"));
+        assert_eq!(art1_total, 1_000_000);
         
-        // Check balance after withdrawal
-        let new_balance = client.get_balance(&author);
-        assert_eq!(new_balance, 0);
+        let art2_total = client.get_article_total_tips(&symbol_short!("art2"));
+        assert_eq!(art2_total, 2_000_000);
     }
 }

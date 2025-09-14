@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthContext'
 import { PenSquare, Home, User, LogOut, FileText, BookOpen } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { WalletConnectButton } from '@/components/stellar'
 
 export default function AppNavigation() {
   const { user, isAuthenticated, signOut } = useAuth()
@@ -70,8 +69,6 @@ export default function AppNavigation() {
                   <User className="w-4 h-4" />
                   <span>Profile</span>
                 </Link>
-                <div className="border-r border-gray-200 h-8 mx-2" />
-                <WalletConnectButton size="sm" variant="outline" />
                 <button
                   onClick={() => signOut()}
                   className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-red-600 transition"
@@ -82,8 +79,6 @@ export default function AppNavigation() {
               </>
             ) : (
               <>
-                <WalletConnectButton size="sm" variant="outline" />
-                <div className="border-r border-gray-200 h-8 mx-2" />
                 <Link
                   href="/login"
                   className="text-gray-600 hover:text-brand-blue transition"

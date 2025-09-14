@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useWallet } from '@/components/providers/WalletProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, Wallet, RefreshCw } from 'lucide-react';
+import { Copy, ExternalLink, Wallet, RefreshCw, Loader2, Power } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WalletStatusProps {
@@ -15,12 +16,39 @@ export function WalletStatus({ className }: WalletStatusProps) {
   const {
     isInstalled,
     isConnected,
+    isLoading,
     publicKey,
     network,
     networkPassphrase,
     error,
+    connect,
+    disconnect,
     refreshConnection
   } = useWallet();
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnect = async () => {
+    if (!isInstalled) {
+      window.open('https://freighter.app/', '_blank');
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      await connect();
+      toast.success('Wallet connected successfully!');
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      toast.error('Failed to connect wallet');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+    toast.success('Wallet disconnected');
+  };
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -94,6 +122,23 @@ export function WalletStatus({ className }: WalletStatusProps) {
                 Connect your Freighter wallet to start tipping authors
               </p>
             </div>
+            <Button
+              onClick={handleConnect}
+              disabled={isConnecting || isLoading}
+              className="w-full max-w-xs"
+            >
+              {isConnecting || isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Wallet className="w-4 h-4 mr-2" />
+                  Connect Wallet
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -168,10 +213,16 @@ export function WalletStatus({ className }: WalletStatusProps) {
           )}
         </div>
 
-        <Button variant="outline" size="sm" onClick={refreshConnection} className="w-full">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Connection
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={refreshConnection} className="flex-1">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh Connection
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleDisconnect} className="flex-1">
+            <Power className="w-4 h-4 mr-2" />
+            Disconnect
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

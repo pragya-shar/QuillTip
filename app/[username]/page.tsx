@@ -11,7 +11,8 @@ import ProfileHeader from '@/components/profile/ProfileHeader'
 import ArticleGrid from '@/components/articles/ArticleGrid'
 import Pagination from '@/components/articles/Pagination'
 import { EarningsDashboard } from '@/components/dashboard/EarningsDashboard'
-import { BookOpen, DollarSign, Image, ChartBar, Trophy } from 'lucide-react'
+import { WalletStatus } from '@/components/stellar'
+import { BookOpen, DollarSign, Image, ChartBar, Trophy, Wallet } from 'lucide-react'
 
 interface ProfilePageProps {
   params: Promise<{
@@ -19,7 +20,7 @@ interface ProfilePageProps {
   }>
 }
 
-type TabType = 'articles' | 'nfts' | 'earnings' | 'stats'
+type TabType = 'articles' | 'nfts' | 'earnings' | 'stats' | 'wallet'
 
 export default function ProfilePage({ params }: ProfilePageProps) {
   const searchParams = useSearchParams()
@@ -135,6 +136,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     ...(isOwnProfile ? [
       { id: 'earnings' as TabType, label: 'Earnings', icon: DollarSign, count: null },
       { id: 'stats' as TabType, label: 'Stats', icon: ChartBar, count: null },
+      { id: 'wallet' as TabType, label: 'Wallet', icon: Wallet, count: null },
     ] : []),
   ]
   
@@ -342,6 +344,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* Wallet Tab (Only for own profile) */}
+          {activeTab === 'wallet' && isOwnProfile && (
+            <div>
+              <WalletStatus />
             </div>
           )}
         </div>

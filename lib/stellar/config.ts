@@ -4,18 +4,18 @@ export const STELLAR_CONFIG = {
   HORIZON_URL: process.env.NEXT_PUBLIC_HORIZON_URL || 'https://horizon-testnet.stellar.org',
   SOROBAN_RPC_URL: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
   NETWORK_PASSPHRASE: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || 'Test SDF Network ; September 2015',
-  
-  // Contract addresses (will be set after deployment)
-  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || '',
-  
+
+  // Contract addresses (deployed tipping contract)
+  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || 'CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM',
+
   // Platform settings
   PLATFORM_ADDRESS: process.env.NEXT_PUBLIC_PLATFORM_ADDRESS || '',
   PLATFORM_FEE_BPS: 250, // 2.5% platform fee
-  
+
   // Tipping settings
   MINIMUM_TIP_STROOPS: 100000, // 0.01 XLM (approximately 1 cent)
   MINIMUM_TIP_CENTS: 1, // 1 cent minimum
-  
+
   // Conversion rates (will be fetched dynamically in production)
   XLM_TO_USD_RATE: 0.12, // Default rate, should be fetched from price oracle
 } as const;

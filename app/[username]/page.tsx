@@ -11,7 +11,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader'
 import ArticleGrid from '@/components/articles/ArticleGrid'
 import Pagination from '@/components/articles/Pagination'
 import { EarningsDashboard } from '@/components/dashboard/EarningsDashboard'
-import { WalletStatus } from '@/components/stellar'
+import { AuthorWalletSettings, ReaderWalletSettings } from '@/components/stellar'
 import { BookOpen, DollarSign, Image, ChartBar, Trophy, Wallet } from 'lucide-react'
 
 interface ProfilePageProps {
@@ -349,8 +349,39 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
           {/* Wallet Tab (Only for own profile) */}
           {activeTab === 'wallet' && isOwnProfile && (
-            <div>
-              <WalletStatus />
+            <div className="space-y-8">
+              {/* Page Header */}
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Wallet Management</h2>
+                <p className="text-gray-600">
+                  Manage your wallets for sending and receiving tips on the Stellar network.
+                </p>
+              </div>
+
+              {/* Author Wallet - For Receiving Tips */}
+              <div>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Author Wallet</h3>
+                  <p className="text-sm text-gray-600">
+                    Set up your wallet address and connect to Freighter to receive tips from readers.
+                  </p>
+                </div>
+                <AuthorWalletSettings
+                  authorAddress={user?.stellarAddress}
+                  isOwnProfile={isOwnProfile}
+                />
+              </div>
+
+              {/* Reader Wallet - For Sending Tips */}
+              <div>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Reader Wallet</h3>
+                  <p className="text-sm text-gray-600">
+                    Set your wallet address and connect to Freighter for sending tips to authors.
+                  </p>
+                </div>
+                <ReaderWalletSettings />
+              </div>
             </div>
           )}
         </div>

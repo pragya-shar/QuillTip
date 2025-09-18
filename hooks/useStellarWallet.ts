@@ -16,6 +16,7 @@ export interface StellarWalletState {
   isConnected: boolean;
   isLoading: boolean;
   publicKey: string | null;
+  readerWalletAddress: string | null;  // Separate reader wallet address
   network: string | null;
   networkPassphrase: string | null;
   error: string | null;
@@ -26,6 +27,7 @@ export interface StellarWalletActions {
   disconnect: () => void;
   signTransaction: (xdr: string) => Promise<string>;
   refreshConnection: () => Promise<void>;
+  setReaderWalletAddress: (address: string | null) => void;  // Method to update reader wallet
 }
 
 export function useStellarWallet(): StellarWalletState & StellarWalletActions {
@@ -34,6 +36,7 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
     isConnected: false,
     isLoading: true,
     publicKey: null,
+    readerWalletAddress: null,
     network: null,
     networkPassphrase: null,
     error: null,
@@ -64,7 +67,8 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
           throw new Error(networkResult.error);
         }
 
-        setState({
+        setState(prev => ({
+          ...prev,
           isInstalled: true,
           isConnected: true,
           isLoading: false,
@@ -72,9 +76,10 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
           network: networkResult.network,
           networkPassphrase: networkResult.networkPassphrase,
           error: null,
-        });
+        }));
       } else {
-        setState({
+        setState(prev => ({
+          ...prev,
           isInstalled: walletInstalled,
           isConnected: false,
           isLoading: false,
@@ -82,7 +87,7 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
           network: null,
           networkPassphrase: null,
           error: walletInstalled ? null : 'Freighter wallet not installed',
-        });
+        }));
       }
     } catch (error) {
       setState(prev => ({
@@ -129,7 +134,8 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
 
   // Disconnect wallet (clear local state)
   const disconnect = useCallback(() => {
-    setState({
+    setState(prev => ({
+      ...prev,
       isInstalled: true,
       isConnected: false,
       isLoading: false,
@@ -137,7 +143,7 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
       network: null,
       networkPassphrase: null,
       error: null,
-    });
+    }));
   }, []);
 
   // Sign transaction
@@ -157,14 +163,30 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
     return result.signedTxXdr;
   }, [state.isConnected, state.networkPassphrase]);
 
+  // Set reader wallet address
+  const setReaderWalletAddress = useCallback((address: string | null) => {
+    setState(prev => ({ ...prev, readerWalletAddress: address }));
+    // Persist to localStorage
+    if (address) {
+      localStorage.setItem('readerWalletAddress', address);
+    } else {
+      localStorage.removeItem('readerWalletAddress');
+    }
+  }, []);
+
   // Refresh connection status
   const refreshConnection = useCallback(async () => {
     await checkWalletStatus();
   }, [checkWalletStatus]);
 
-  // Initialize wallet check on mount
+  // Initialize wallet check on mount and load reader wallet
   useEffect(() => {
     checkWalletStatus();
+    // Load reader wallet address from localStorage
+    const savedReaderWallet = localStorage.getItem('readerWalletAddress');
+    if (savedReaderWallet) {
+      setState(prev => ({ ...prev, readerWalletAddress: savedReaderWallet }));
+    }
   }, [checkWalletStatus]);
 
   // Watch for wallet changes
@@ -193,5 +215,6 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
     disconnect,
     signTransaction: signTransactionXDR,
     refreshConnection,
+    setReaderWalletAddress,
   };
 }

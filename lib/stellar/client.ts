@@ -199,14 +199,36 @@ export class StellarClient {
     // Submit transaction
     const result = await this.sorobanServer.sendTransaction(transaction)
 
+    console.log('Transaction submission result:', {
+      status: result.status,
+      hash: result.hash,
+      errorResult: result.errorResult,
+      // Additional debug properties if available
+      ...((result as unknown as Record<string, unknown>).errorResultXdr ? {
+        errorResultXdr: (result as unknown as Record<string, unknown>).errorResultXdr
+      } : {})
+    })
+
     if (result.status === 'PENDING') {
       // Wait for transaction to be included in ledger
       let txResult = await this.sorobanServer.getTransaction(result.hash)
+      let retries = 0
+      const maxRetries = 30 // 30 seconds timeout
 
-      while (txResult.status === 'NOT_FOUND') {
+      while (txResult.status === 'NOT_FOUND' && retries < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 1000))
         txResult = await this.sorobanServer.getTransaction(result.hash)
+        retries++
       }
+
+      console.log('Transaction result after polling:', {
+        status: txResult.status,
+        retries,
+        // Additional debug properties if available
+        ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
+          resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
+        } : {})
+      })
 
       if (txResult.status === 'SUCCESS') {
         // Parse the return value from contract
@@ -220,16 +242,51 @@ export class StellarClient {
             amountSent: receipt.amount_sent,
             authorReceived: receipt.author_received,
             platformFee: receipt.platform_fee,
-            timestamp: new Date(receipt.timestamp * 1000),
+            timestamp: new Date(Number(receipt.timestamp) * 1000),
             transactionHash: result.hash,
           }
         }
-      } else {
-        throw new Error(`Transaction failed: ${txResult.resultXdr}`)
+      } else if (txResult.status === 'FAILED') {
+        // Parse the error for better debugging
+        const errorDetails = {
+          status: txResult.status,
+          // Additional error properties if available
+          ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
+            resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
+          } : {}),
+          ...((txResult as unknown as Record<string, unknown>).resultMetaXdr ? {
+            resultMetaXdr: (txResult as unknown as Record<string, unknown>).resultMetaXdr
+          } : {}),
+        }
+        console.error('Transaction failed with details:', errorDetails)
+        throw new Error(`Transaction failed: ${JSON.stringify(errorDetails, null, 2)}`)
+      } else if (txResult.status === 'NOT_FOUND' && retries >= maxRetries) {
+        throw new Error('Transaction timeout: Could not confirm transaction after 30 seconds')
       }
     }
 
-    throw new Error(`Transaction submission failed: ${result.errorResult}`)
+    // Handle various error cases
+    console.error('Transaction submission failed:', {
+      status: result.status,
+      errorResult: result.errorResult,
+    })
+
+    // Extract meaningful error message
+    let errorMessage = 'Transaction submission failed'
+
+    if (result.errorResult) {
+      if (typeof result.errorResult === 'string') {
+        errorMessage = result.errorResult
+      } else if (typeof result.errorResult === 'object' && result.errorResult !== null) {
+        errorMessage = `Transaction failed with status: ${result.status}. Details: ${JSON.stringify(result.errorResult, null, 2)}`
+      } else {
+        errorMessage = `Transaction failed with status: ${result.status}. Error: ${String(result.errorResult)}`
+      }
+    } else {
+      errorMessage = `Transaction failed with status: ${result.status}`
+    }
+
+    throw new Error(errorMessage)
   }
 
   /**

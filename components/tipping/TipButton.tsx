@@ -26,7 +26,7 @@ const TIP_AMOUNTS = [
 
 export function TipButton({ articleId, authorName, authorStellarAddress, className = '' }: TipButtonProps) {
   const { isAuthenticated } = useAuth();
-  const { isConnected, publicKey, signTransaction } = useWallet();
+  const { isConnected, publicKey, readerWalletAddress, signTransaction } = useWallet();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -43,8 +43,15 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
       return;
     }
 
-    if (!isConnected || !publicKey) {
-      toast.error('Please connect your Stellar wallet');
+    // Use reader wallet address if set, otherwise use connected wallet
+    const senderAddress = readerWalletAddress || publicKey;
+
+    if (!isConnected || !senderAddress) {
+      if (!readerWalletAddress) {
+        toast.error('Please set your reader wallet address or connect your Stellar wallet');
+      } else {
+        toast.error('Please connect your Stellar wallet to sign transactions');
+      }
       return;
     }
 
@@ -85,9 +92,9 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
     setIsLoading(true);
 
     try {
-      // Build Stellar transaction
-      const transactionData = await stellarClient.buildTipTransaction(publicKey, {
-        tipper: publicKey,
+      // Build Stellar transaction using reader's wallet address
+      const transactionData = await stellarClient.buildTipTransaction(senderAddress, {
+        tipper: senderAddress,
         articleId: articleId.toString(),
         authorAddress: authorStellarAddress,
         amountCents,
@@ -100,40 +107,43 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
       const receipt = await stellarClient.submitTipTransaction(signedXDR);
 
       // Record tip in Convex for analytics/UI (with Stellar transaction hash)
-      await sendTip({
-        articleId,
-        amountUsd: amountCents / 100,
-        message: `Stellar tip: ${receipt.transactionHash}`,
-      });
+        await sendTip({
+          articleId,
+          amountUsd: amountCents / 100,
+          message: `Stellar tip: ${receipt.transactionHash}`,
+        });
 
-      toast.success(
-        `Successfully tipped ${authorName} $${(amountCents / 100).toFixed(2)} via Stellar!`,
-        {
-          description: receipt.transactionHash ? `Transaction: ${receipt.transactionHash.slice(0, 8)}...` : undefined,
-          action: receipt.transactionHash ? {
-            label: 'View',
-            onClick: () => window.open(
-              `https://stellar.expert/explorer/testnet/tx/${receipt.transactionHash}`,
-              '_blank'
-            ),
-          } : undefined,
-        }
-      );
+        toast.success(
+          `Successfully tipped ${authorName} $${(amountCents / 100).toFixed(2)} via Stellar!`,
+          {
+            description: receipt.transactionHash ? `Transaction: ${receipt.transactionHash.slice(0, 8)}...` : undefined,
+            action: receipt.transactionHash ? {
+              label: 'View',
+              onClick: () => window.open(
+                `https://stellar.expert/explorer/testnet/tx/${receipt.transactionHash}`,
+                '_blank'
+              ),
+            } : undefined,
+          }
+        );
 
-      setIsOpen(false);
-      setSelectedAmount(null);
-      setCustomAmount('');
+        setIsOpen(false);
+        setSelectedAmount(null);
+        setCustomAmount('');
     } catch (error) {
       console.error('Stellar tip error:', error);
+
       const errorMessage = error instanceof Error ? error.message : 'Failed to send tip';
 
       // Check for specific Freighter errors
       if (errorMessage.includes('User declined') || errorMessage.includes('rejected')) {
         toast.error('Transaction cancelled by user');
-      } else if (errorMessage.includes('insufficient')) {
-        toast.error('Insufficient XLM balance');
+        // Reset state for user cancellation
       } else {
-        toast.error(`Tip failed: ${errorMessage}`);
+        // Show error toast
+        toast.error('Transaction failed', {
+          description: errorMessage,
+        });
       }
     } finally {
       setIsLoading(false);
@@ -249,12 +259,17 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
               </button>
             </div>
 
+
             {/* Wallet Connection Status */}
-            {isConnected && publicKey ? (
+            {isConnected && (readerWalletAddress || publicKey) ? (
               <div className="text-xs text-green-600 text-center mt-4 space-y-1">
                 <p className="flex items-center justify-center gap-1">
                   <Wallet className="w-3 h-3" />
-                  Connected: {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
+                  {readerWalletAddress ? (
+                    <>Reader Wallet: {readerWalletAddress.slice(0, 6)}...{readerWalletAddress.slice(-6)}</>
+                  ) : (
+                    <>Connected: {publicKey?.slice(0, 6)}...{publicKey?.slice(-6)}</>
+                  )}
                 </p>
                 <p>
                   {authorStellarAddress ? 'Direct Stellar payment' : 'Mock payment (no author wallet)'}
@@ -262,7 +277,7 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
               </div>
             ) : (
               <div className="text-xs text-amber-600 text-center mt-4">
-                <p>Connect Stellar wallet for direct payments</p>
+                <p>Set reader wallet address or connect Stellar wallet for direct payments</p>
               </div>
             )}
 

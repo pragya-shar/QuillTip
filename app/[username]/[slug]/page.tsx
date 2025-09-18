@@ -145,6 +145,7 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                   <TipButton
                     articleId={article._id}
                     authorName={article.author.name || article.author.username}
+                    authorStellarAddress={article.author.stellarAddress}
                   />
                   <div className="mt-4 pt-4 border-t">
                     <TipStats articleId={article._id} />

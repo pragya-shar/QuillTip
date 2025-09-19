@@ -188,6 +188,7 @@ export class StellarClient {
       authorReceived,
       platformFee,
     }
+
   }
 
   /**

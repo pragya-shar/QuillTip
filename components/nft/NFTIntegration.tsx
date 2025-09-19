@@ -17,6 +17,7 @@ import { ArrowRight, Trophy, TrendingUp, Users, Zap } from 'lucide-react'
 interface NFTIntegrationProps {
   articleId: Id<"articles">
   articleTitle: string
+  articleSlug: string
   authorId: Id<"users">
   currentUserId?: Id<"users">
   currentUserAddress?: string
@@ -36,6 +37,7 @@ interface NFTStatus {
 export function NFTIntegration({
   articleId,
   articleTitle,
+  articleSlug,
   authorId,
   currentUserId,
   currentUserAddress
@@ -225,6 +227,7 @@ export function NFTIntegration({
                 <MintButton
                   articleId={articleId}
                   articleTitle={articleTitle}
+                  articleSlug={articleSlug}
                   totalTips={nftStatus.totalTips / 100} // Convert cents to dollars
                   threshold={nftStatus.tipThreshold / 100} // Convert cents to dollars
                   isAuthor={isAuthor}

@@ -53,33 +53,86 @@ export const getNFTByArticle = query({
     articleId: v.id("articles"),
   },
   handler: async (ctx, args) => {
+    const article = await ctx.db.get(args.articleId);
+    if (!article) return null;
+
+    // Get existing NFT if it exists
     const nft = await ctx.db
       .query("articleNFTs")
       .withIndex("by_article", (q) => q.eq("articleId", args.articleId))
       .first();
-    
-    if (!nft) return null;
-    
-    const [owner, minter] = await Promise.all([
-      ctx.db.get(nft.currentOwner),
-      ctx.db.get(nft.mintedBy),
-    ]);
-    
-    return {
-      ...nft,
-      owner: owner ? {
-        id: owner._id,
-        name: owner.name,
-        username: owner.username,
-        avatar: owner.avatar,
-      } : null,
-      minter: minter ? {
-        id: minter._id,
-        name: minter.name,
-        username: minter.username,
-        avatar: minter.avatar,
-      } : null,
-    };
+
+    // Get total tips for the article
+    const tips = await ctx.db
+      .query("tips")
+      .withIndex("by_article", (q) => q.eq("articleId", args.articleId))
+      .filter((q) => q.eq(q.field("status"), "CONFIRMED"))
+      .collect();
+
+    const totalTipsUsd = tips.reduce((sum, tip) => sum + tip.amountUsd, 0);
+    const totalTipsCents = Math.round(totalTipsUsd * 100);
+    const thresholdCents = 1000; // $10 threshold in cents
+
+    if (nft) {
+      // NFT exists - return full NFT data with status
+      const [owner, minter] = await Promise.all([
+        ctx.db.get(nft.currentOwner),
+        ctx.db.get(nft.mintedBy),
+      ]);
+
+      // Count transfers
+      const transfers = await ctx.db
+        .query("nftTransfers")
+        .withIndex("by_nft", (q) => q.eq("nftId", nft._id))
+        .collect();
+
+      // Calculate rarity based on total tips at mint
+      let rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' = 'common';
+      const tipAmount = nft.totalTipsAtMint || totalTipsCents;
+      if (tipAmount >= 10000) rarity = 'legendary'; // $100+
+      else if (tipAmount >= 5000) rarity = 'epic'; // $50+
+      else if (tipAmount >= 2500) rarity = 'rare'; // $25+
+      else if (tipAmount >= 1500) rarity = 'uncommon'; // $15+
+
+      return {
+        // Spread NFT data first to include _id and other fields
+        ...nft,
+        // Add status fields
+        isMinted: true as const,
+        isEligible: true,
+        totalTips: totalTipsCents,
+        tipThreshold: thresholdCents,
+        owner: owner?.stellarAddress || owner?.username || 'Unknown',
+        mintedAt: new Date(nft.mintedAt).toISOString(),
+        transferCount: transfers.length,
+        rarity,
+        ownerInfo: owner ? {
+          id: owner._id,
+          name: owner.name,
+          username: owner.username,
+          avatar: owner.avatar,
+          stellarAddress: owner.stellarAddress,
+        } : null,
+        minterInfo: minter ? {
+          id: minter._id,
+          name: minter.name,
+          username: minter.username,
+          avatar: minter.avatar,
+        } : null,
+      };
+    } else {
+      // No NFT - return status for minting
+      const isEligible = totalTipsCents >= thresholdCents;
+
+      return {
+        isMinted: false as const,
+        isEligible,
+        totalTips: totalTipsCents,
+        tipThreshold: thresholdCents,
+        transferCount: 0,
+        rarity: 'common' as const,
+      };
+    }
   },
 });
 
@@ -344,30 +397,65 @@ export const checkMintingThreshold = query({
   handler: async (ctx, args) => {
     const article = await ctx.db.get(args.articleId);
     if (!article) return { eligible: false, totalTips: 0, threshold: 0 };
-    
+
     // Check if NFT already exists
     const existingNft = await ctx.db
       .query("articleNFTs")
       .withIndex("by_article", (q) => q.eq("articleId", args.articleId))
       .first();
-    
+
     if (existingNft) {
-      return { 
-        eligible: false, 
+      return {
+        eligible: false,
         totalTips: article.totalTipsUsd || 0,
         threshold: args.threshold || 10,
-        alreadyMinted: true 
+        alreadyMinted: true
       };
     }
-    
+
     const totalTipsUsd = article.totalTipsUsd || 0;
     const thresholdUsd = args.threshold || 10; // Default $10
-    
+
     return {
       eligible: totalTipsUsd >= thresholdUsd,
       totalTips: totalTipsUsd,
       threshold: thresholdUsd,
       alreadyMinted: false,
+    };
+  },
+});
+
+// Generate NFT metadata for an article
+export const generateNFTMetadata = query({
+  args: {
+    articleId: v.id("articles"),
+  },
+  handler: async (ctx, args) => {
+    const article = await ctx.db.get(args.articleId);
+    if (!article) return null;
+
+    // Get total tips for the article
+    const tips = await ctx.db
+      .query("tips")
+      .withIndex("by_article", (q) => q.eq("articleId", args.articleId))
+      .filter((q) => q.eq(q.field("status"), "CONFIRMED"))
+      .collect();
+
+    const totalTipsUsd = tips.reduce((sum, tip) => sum + tip.amountUsd, 0);
+    const tipAmountInStroops = Math.floor((totalTipsUsd / 0.12) * 10_000_000); // Convert to stroops
+
+    // Generate NFT metadata following OpenSea/standard format
+    return {
+      name: `QuillTip Article: ${article.title}`,
+      description: article.excerpt || `An article by ${article.authorUsername} on QuillTip`,
+      image: article.coverImage || "https://quilltip.com/default-nft-image.png",
+      external_url: `https://quilltip.com/${article.authorUsername}/${article.slug}`,
+      attributes: {
+        author: article.authorUsername,
+        tipAmount: tipAmountInStroops,
+        mintDate: new Date().toISOString(),
+        articleSlug: article.slug,
+      }
     };
   },
 });

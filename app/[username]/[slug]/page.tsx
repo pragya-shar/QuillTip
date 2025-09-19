@@ -158,10 +158,13 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                     <Trophy className="w-5 h-5 text-purple-500" />
                     NFT Collection
                   </h3>
-                  <NFTIntegration 
+                  <NFTIntegration
                     articleId={article._id}
                     articleTitle={article.title}
+                    articleSlug={article.slug}
                     authorId={article.author.id}
+                    currentUserId={user?._id as Id<'users'> | undefined}
+                    currentUserAddress={user?.stellarAddress}
                   />
                 </div>
                 

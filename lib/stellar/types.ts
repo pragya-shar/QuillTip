@@ -51,6 +51,43 @@ export interface XLMPriceData {
   timestamp: Date;
 }
 
+// NFT-related types
+export interface NFTMetadata {
+  name: string;              // Article title
+  description: string;       // Article excerpt
+  image: string;            // Article cover image URL
+  external_url: string;     // Link back to article
+  attributes: {
+    author: string;         // Author username
+    tipAmount: number;      // Tips in stroops when minted
+    mintDate: string;       // ISO date string
+    articleSlug: string;    // Article slug for URL
+  };
+}
+
+export interface MintNFTParams {
+  authorAddress: string;    // Author's Stellar address
+  articleId: string;        // Article ID (Symbol format for contract)
+  tipAmount: number;        // Current tip amount in stroops
+  metadataUrl: string;      // URL where NFT metadata is stored
+}
+
+export interface NFTOwnership {
+  tokenId: number;          // Contract token ID
+  owner: string;           // Current owner address
+  minter: string;          // Original minter address
+  articleId: string;       // Article ID
+  mintedAt: Date;          // When it was minted
+  tipAmount: number;       // Tips at mint time in stroops
+}
+
+export interface NFTTransactionResult {
+  success: boolean;
+  tokenId?: number;        // Token ID if successful
+  transactionHash?: string;
+  error?: string;
+}
+
 export interface TipStatistics {
   totalTips: number;
   totalVolume: number; // in stroops

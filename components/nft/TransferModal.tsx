@@ -50,7 +50,7 @@ export function TransferModal({
     !nftId ? { articleId: articleId as Id<"articles"> } : 'skip'
   )
   
-  const actualNftId = nftId || nftData?._id
+  const actualNftId = nftId || (nftData && nftData.isMinted ? nftData._id : null)
 
   const validateUsername = (username: string): boolean => {
     // Basic username validation

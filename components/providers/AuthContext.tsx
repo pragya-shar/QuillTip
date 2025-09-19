@@ -21,6 +21,11 @@ export interface User {
   isEmailVerified?: boolean
   phone?: string
   isAnonymous?: boolean
+  stellarAddress?: string
+  bio?: string
+  avatar?: string
+  nftsCreated?: number
+  nftsOwned?: number
 }
 
 interface AuthContextType {

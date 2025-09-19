@@ -24,6 +24,22 @@ Based on thorough analysis of the QuillTip codebase, approximately **60% of the 
 
 ## 📋 Implementation Phases
 
+### Development vs Production Considerations
+
+For **testnet/development**, we'll focus on core functionality:
+- Single RPC endpoint (sufficient for testing)
+- Basic IPFS integration (free tier: Pinata/Infura)
+- Simple local indexing for development
+- No gas optimization needed (testnet gas is free)
+- Basic error handling
+
+**Production optimizations** (add later for mainnet):
+- Gas optimization/batching
+- Backup RPC endpoints
+- Robust indexing service
+- Rate limiting strategies
+- Advanced error handling and monitoring
+
 ### Phase 1: Contract Deployment & Enhanced NFT System (2-3 days)
 
 #### 1.1 Deploy Existing NFT Contract to Stellar

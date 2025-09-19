@@ -11,10 +11,12 @@ import type {
 
 export class StellarClient {
   private server: StellarSdk.Horizon.Server
+  private sorobanServer: StellarSdk.rpc.Server
   private networkPassphrase: string
 
   constructor() {
     this.server = new StellarSdk.Horizon.Server(STELLAR_CONFIG.HORIZON_URL)
+    this.sorobanServer = new StellarSdk.rpc.Server(STELLAR_CONFIG.SOROBAN_RPC_URL)
     this.networkPassphrase = STELLAR_CONFIG.NETWORK_PASSPHRASE
   }
 
@@ -138,40 +140,191 @@ export class StellarClient {
   }
 
   /**
-   * Call the tipping smart contract (simplified for POC)
-   * In production, this would use Soroban contract calls
+   * Build transaction for tipping smart contract
+   * Returns XDR that needs to be signed by Freighter wallet
    */
-  async tipArticle(params: TipParams): Promise<TipReceipt> {
+  async buildTipTransaction(
+    tipperPublicKey: string,
+    params: TipParams
+  ): Promise<{
+    xdr: string
+    stroops: number
+    authorReceived: number
+    platformFee: number
+  }> {
     const stroops = await this.convertCentsToStroops(params.amountCents)
-
-    // Calculate fees
-    const platformFee = Math.floor(
-      (stroops * STELLAR_CONFIG.PLATFORM_FEE_BPS) / 10_000
-    )
+    const platformFee = Math.floor((stroops * STELLAR_CONFIG.PLATFORM_FEE_BPS) / 10_000)
     const authorReceived = stroops - platformFee
 
-    // For POC, return mock receipt
-    // In production, this would call the actual smart contract
-    const receipt: TipReceipt = {
-      tipId: `tip_${Date.now()}`,
-      amountSent: stroops,
+    // Load the tipper's account
+    const account = await this.server.loadAccount(tipperPublicKey)
+
+    // Create contract instance
+    const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID)
+
+    // Build the transaction
+    const transaction = new StellarSdk.TransactionBuilder(account, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: this.networkPassphrase,
+    })
+      .addOperation(
+        contract.call(
+          'tip_article',
+          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }), // tipper
+          StellarSdk.nativeToScVal(params.articleId, { type: 'symbol' }), // article_id
+          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }), // author
+          StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
+        )
+      )
+      .setTimeout(30)
+      .build()
+
+    // Prepare transaction for Soroban
+    const preparedTransaction = await this.sorobanServer.prepareTransaction(transaction)
+
+    return {
+      xdr: preparedTransaction.toXDR(),
+      stroops,
       authorReceived,
       platformFee,
-      timestamp: new Date(),
-      transactionHash: `mock_tx_${Date.now()}`,
     }
-
-    return receipt
   }
 
   /**
-   * Get article tips (mock for POC)
+   * Submit signed transaction to network
    */
-  async getArticleTips() // _articleId: string
-  : Promise<TipData[]> {
-    // In production, this would query the smart contract
-    // For POC, return empty array or mock data
-    return []
+  async submitTipTransaction(signedXDR: string): Promise<TipReceipt> {
+    const transaction = StellarSdk.TransactionBuilder.fromXDR(signedXDR, this.networkPassphrase)
+
+    // Submit transaction
+    const result = await this.sorobanServer.sendTransaction(transaction)
+
+    console.log('Transaction submission result:', {
+      status: result.status,
+      hash: result.hash,
+      errorResult: result.errorResult,
+      // Additional debug properties if available
+      ...((result as unknown as Record<string, unknown>).errorResultXdr ? {
+        errorResultXdr: (result as unknown as Record<string, unknown>).errorResultXdr
+      } : {})
+    })
+
+    if (result.status === 'PENDING') {
+      // Wait for transaction to be included in ledger
+      let txResult = await this.sorobanServer.getTransaction(result.hash)
+      let retries = 0
+      const maxRetries = 30 // 30 seconds timeout
+
+      while (txResult.status === 'NOT_FOUND' && retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        txResult = await this.sorobanServer.getTransaction(result.hash)
+        retries++
+      }
+
+      console.log('Transaction result after polling:', {
+        status: txResult.status,
+        retries,
+        // Additional debug properties if available
+        ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
+          resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
+        } : {})
+      })
+
+      if (txResult.status === 'SUCCESS') {
+        // Parse the return value from contract
+        const returnValue = txResult.returnValue
+        if (returnValue) {
+          // The contract returns a TipReceipt struct
+          const receipt = StellarSdk.scValToNative(returnValue)
+
+          return {
+            tipId: receipt.tip_id.toString(),
+            amountSent: receipt.amount_sent,
+            authorReceived: receipt.author_received,
+            platformFee: receipt.platform_fee,
+            timestamp: new Date(Number(receipt.timestamp) * 1000),
+            transactionHash: result.hash,
+          }
+        }
+      } else if (txResult.status === 'FAILED') {
+        // Parse the error for better debugging
+        const errorDetails = {
+          status: txResult.status,
+          // Additional error properties if available
+          ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
+            resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
+          } : {}),
+          ...((txResult as unknown as Record<string, unknown>).resultMetaXdr ? {
+            resultMetaXdr: (txResult as unknown as Record<string, unknown>).resultMetaXdr
+          } : {}),
+        }
+        console.error('Transaction failed with details:', errorDetails)
+        throw new Error(`Transaction failed: ${JSON.stringify(errorDetails, null, 2)}`)
+      } else if (txResult.status === 'NOT_FOUND' && retries >= maxRetries) {
+        throw new Error('Transaction timeout: Could not confirm transaction after 30 seconds')
+      }
+    }
+
+    // Handle various error cases
+    console.error('Transaction submission failed:', {
+      status: result.status,
+      errorResult: result.errorResult,
+    })
+
+    // Extract meaningful error message
+    let errorMessage = 'Transaction submission failed'
+
+    if (result.errorResult) {
+      if (typeof result.errorResult === 'string') {
+        errorMessage = result.errorResult
+      } else if (typeof result.errorResult === 'object' && result.errorResult !== null) {
+        errorMessage = `Transaction failed with status: ${result.status}. Details: ${JSON.stringify(result.errorResult, null, 2)}`
+      } else {
+        errorMessage = `Transaction failed with status: ${result.status}. Error: ${String(result.errorResult)}`
+      }
+    } else {
+      errorMessage = `Transaction failed with status: ${result.status}`
+    }
+
+    throw new Error(errorMessage)
+  }
+
+  /**
+   * Get article tips from smart contract
+   */
+  async getArticleTips(articleId: string): Promise<TipData[]> {
+    try {
+      const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID)
+
+      // Create a dummy account for simulation (we just need to read data)
+      const account = new StellarSdk.Account('GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF', '0')
+
+      const transaction = new StellarSdk.TransactionBuilder(account, {
+        fee: StellarSdk.BASE_FEE,
+        networkPassphrase: this.networkPassphrase,
+      })
+        .addOperation(
+          contract.call('get_article_tips', StellarSdk.nativeToScVal(articleId, { type: 'symbol' }))
+        )
+        .setTimeout(30)
+        .build()
+
+      const result = await this.sorobanServer.simulateTransaction(transaction)
+
+      if (StellarSdk.rpc.Api.isSimulationSuccess(result) && result.result?.retval) {
+        const tips = StellarSdk.scValToNative(result.result.retval)
+        return tips.map((tip: { tipper: string; amount: number; timestamp: number }) => ({
+          tipper: tip.tipper,
+          amount: tip.amount,
+          timestamp: new Date(tip.timestamp * 1000),
+        }))
+      }
+
+      return []
+    } catch (error) {
+      console.error('Error getting article tips:', error)
+      return []
+    }
   }
 
   /**

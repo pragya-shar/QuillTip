@@ -79,14 +79,14 @@ export default function AppNavigation() {
               </>
             ) : (
               <>
-                <Link 
-                  href="/login" 
+                <Link
+                  href="/login"
                   className="text-gray-600 hover:text-brand-blue transition"
                 >
                   Sign In
                 </Link>
-                <Link 
-                  href="/register" 
+                <Link
+                  href="/register"
                   className="bg-brand-blue text-white px-4 py-2 rounded-lg hover:bg-brand-accent transition"
                 >
                   Get Started

@@ -2,13 +2,14 @@
 
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { ConvexReactClient } from 'convex/react'
+import { WalletProvider } from './WalletProvider'
 
 /**
- * Convex Client Provider
- * 
- * Wraps the application with ConvexAuthProvider for authentication
- * and Convex database access. Provides real-time subscriptions and
- * type-safe queries throughout the app.
+ * Global Providers
+ *
+ * Wraps the application with ConvexAuthProvider for authentication,
+ * Convex database access, and Stellar wallet connection.
+ * Provides real-time subscriptions and type-safe queries throughout the app.
  */
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
@@ -20,7 +21,9 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <ConvexAuthProvider client={convex}>
-      {children}
+      <WalletProvider>
+        {children}
+      </WalletProvider>
     </ConvexAuthProvider>
   )
 }

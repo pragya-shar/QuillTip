@@ -2,20 +2,27 @@ export const STELLAR_CONFIG = {
   // Network configuration
   NETWORK: process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'TESTNET',
   HORIZON_URL: process.env.NEXT_PUBLIC_HORIZON_URL || 'https://horizon-testnet.stellar.org',
-  SOROBAN_RPC_URL: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
+  SOROBAN_RPC_URL: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://soroban-rpc.testnet.stellar.gateway.fm',
   NETWORK_PASSPHRASE: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || 'Test SDF Network ; September 2015',
-  
-  // Contract addresses (will be set after deployment)
-  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || '',
-  
+
+  // Contract addresses
+  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || 'CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM',
+  NFT_CONTRACT_ID: process.env.NEXT_PUBLIC_NFT_CONTRACT_ID || 'CAOWOEKBL5VX4BHN4QT2RQN4QEEBEJZLVKNRQ7UAVGOX3W4UMSSQTTC5',
+
   // Platform settings
   PLATFORM_ADDRESS: process.env.NEXT_PUBLIC_PLATFORM_ADDRESS || '',
   PLATFORM_FEE_BPS: 250, // 2.5% platform fee
-  
+
   // Tipping settings
   MINIMUM_TIP_STROOPS: 100000, // 0.01 XLM (approximately 1 cent)
   MINIMUM_TIP_CENTS: 1, // 1 cent minimum
-  
+
+  // NFT settings
+  NFT_TIP_THRESHOLD_XLM: 10, // 10 XLM minimum tips to mint NFT
+  NFT_TIP_THRESHOLD_STROOPS: 100_000_000, // 10 XLM in stroops
+  NFT_METADATA_BASE_URL: process.env.NEXT_PUBLIC_NFT_METADATA_URL || 'https://quilltip.com/api/nft/metadata',
+  NFT_ROYALTY_BPS: 500, // 5% royalty in basis points
+
   // Conversion rates (will be fetched dynamically in production)
   XLM_TO_USD_RATE: 0.12, // Default rate, should be fetched from price oracle
 } as const;

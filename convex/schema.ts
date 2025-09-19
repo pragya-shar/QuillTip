@@ -158,10 +158,18 @@ export default defineSchema({
     
     // Blockchain data
     stellarTxId: v.optional(v.string()),
+    stellarNetwork: v.optional(v.string()), // TESTNET or MAINNET
+    stellarLedger: v.optional(v.number()), // Ledger number
+    stellarFeeCharged: v.optional(v.string()), // Network fee in XLM
+    stellarMemo: v.optional(v.string()), // Transaction memo
+    stellarSourceAccount: v.optional(v.string()), // Sender's Stellar address
+    stellarDestinationAccount: v.optional(v.string()), // Receiver's Stellar address
+    stellarAmountXlm: v.optional(v.string()), // Amount in XLM
     contractTipId: v.optional(v.string()),
-    
+
     // Status
-    status: v.string(), // PENDING, CONFIRMED, FAILED
+    status: v.string(), // PENDING, CONFIRMING, CONFIRMED, FAILED
+    failureReason: v.optional(v.string()), // Error message if failed
     platformFee: v.optional(v.number()),
     authorShare: v.optional(v.number()),
     
@@ -271,10 +279,15 @@ export default defineSchema({
     stellarAddress: v.string(),
     
     // Status
-    status: v.string(), // PENDING, COMPLETED, FAILED
-    
+    status: v.string(), // PENDING, PROCESSING, COMPLETED, FAILED
+    failureReason: v.optional(v.string()),
+
     // Transaction data
     stellarTxId: v.optional(v.string()),
+    stellarNetwork: v.optional(v.string()), // TESTNET or MAINNET
+    stellarLedger: v.optional(v.number()),
+    stellarFeeCharged: v.optional(v.string()),
+    stellarAmountXlm: v.optional(v.string()),
     
     // Timestamps
     completedAt: v.optional(v.number()),

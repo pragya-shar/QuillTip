@@ -15,13 +15,12 @@ import {
   AlertCircle,
   DollarSign,
   ArrowUpRight,
-  Settings,
-  Key,
   Loader2,
-  PlugZap
+  PlugZap,
+  Power
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useWallet } from '@/components/providers/WalletProvider'
+import { useAuthorWallet } from '@/hooks/useAuthorWallet'
 
 interface AuthorWalletSettingsProps {
   authorAddress?: string
@@ -37,12 +36,13 @@ export function AuthorWalletSettings({
   className = ''
 }: AuthorWalletSettingsProps) {
   const updateProfile = useMutation(api.users.updateProfile)
-  const { isConnected, isLoading, publicKey, connect } = useWallet()
-  const [isEditing, setIsEditing] = useState(false)
-  const [newAddress, setNewAddress] = useState(authorAddress || '')
+  const {
+    isConnecting: authorWalletConnecting,
+    error: authorWalletError,
+    connectForAuthor,
+    resetConnection
+  } = useAuthorWallet()
   const [isCopied, setIsCopied] = useState(false)
-  const [isValidating, setIsValidating] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
 
   const handleCopy = async () => {
     if (!authorAddress) return
@@ -57,65 +57,37 @@ export function AuthorWalletSettings({
     }
   }
 
-  const validateStellarAddress = (address: string): boolean => {
-    // Basic Stellar address validation
-    // Stellar addresses are 56 characters and start with 'G' (for public keys)
-    const stellarAddressRegex = /^G[A-Z2-7]{55}$/
-    return stellarAddressRegex.test(address)
-  }
-
-  const handleConnectWallet = async () => {
-    setIsConnecting(true)
+  const handleConnectAuthorWallet = async () => {
     try {
-      const success = await connect()
-      if (success) {
-        toast.success('Wallet connected successfully')
-        // Optionally set the connected address as the new address
-        if (publicKey) {
-          setNewAddress(publicKey)
-        }
+      const result = await connectForAuthor()
+      if (result.success && result.address) {
+        // Automatically save the connected address
+        await updateProfile({
+          stellarAddress: result.address
+        })
+
+        onAddressChange?.(result.address)
+        toast.success('Author wallet connected and saved successfully!')
+        resetConnection()
+      } else {
+        toast.error('Failed to connect wallet')
       }
     } catch {
-      toast.error('Failed to connect wallet')
-    } finally {
-      setIsConnecting(false)
+      toast.error('Failed to connect and save wallet address')
     }
   }
 
-  const handleUseConnectedWallet = () => {
-    if (publicKey) {
-      setNewAddress(publicKey)
-      toast.success('Using connected wallet address')
-    }
-  }
-
-  const handleSaveAddress = async () => {
-    if (!newAddress) {
-      toast.error('Please enter a wallet address')
-      return
-    }
-
-    if (!validateStellarAddress(newAddress)) {
-      toast.error('Invalid Stellar address format')
-      return
-    }
-
-    setIsValidating(true)
-
+  const handleDisconnectAuthorWallet = async () => {
     try {
-      // Save to backend via Convex
       await updateProfile({
-        stellarAddress: newAddress
+        stellarAddress: undefined
       })
 
-      onAddressChange?.(newAddress)
-      toast.success('Author wallet address updated successfully')
-      setIsEditing(false)
-    } catch (error) {
-      console.error('Failed to update wallet address:', error)
-      toast.error('Failed to update wallet address')
-    } finally {
-      setIsValidating(false)
+      onAddressChange?.('')
+      resetConnection()
+      toast.success('Author wallet disconnected')
+    } catch {
+      toast.error('Failed to disconnect wallet')
     }
   }
 
@@ -147,142 +119,113 @@ export function AuthorWalletSettings({
       <CardContent className="space-y-4">
         {isOwnProfile ? (
           <>
-            {!isEditing ? (
+            {!authorAddress ? (
               <div className="space-y-4">
-                {authorAddress ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Your Wallet Address</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          value={authorAddress}
-                          readOnly
-                          className="font-mono text-xs"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleCopy}
-                        >
-                          {isCopied ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Connect your Freighter wallet to receive tips from readers
+                  </AlertDescription>
+                </Alert>
 
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Change Address
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => window.open(`https://stellar.expert/explorer/testnet/account/${authorAddress}`, '_blank')}
-                      >
-                        <ArrowUpRight className="h-4 w-4 mr-2" />
-                        View on Explorer
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8 space-y-4">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                      <Key className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">No Wallet Connected</h3>
-                      <p className="text-sm text-gray-600">
-                        Add your Stellar wallet address to receive tips directly
-                      </p>
-                    </div>
-                    <Button onClick={() => setIsEditing(true)}>
-                      Add Wallet Address
-                    </Button>
-                  </div>
+                <Button
+                  onClick={handleConnectAuthorWallet}
+                  disabled={authorWalletConnecting}
+                  className="w-full"
+                  size="lg"
+                >
+                  {authorWalletConnecting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Connecting to Freighter...
+                    </>
+                  ) : (
+                    <>
+                      <PlugZap className="w-4 h-4 mr-2" />
+                      Connect Freighter Wallet
+                    </>
+                  )}
+                </Button>
+
+                {authorWalletError && (
+                  <Alert className="bg-red-50 border-red-200">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800">
+                      {authorWalletError}
+                    </AlertDescription>
+                  </Alert>
                 )}
+
+                <div className="text-center text-sm text-muted-foreground">
+                  Don&apos;t have Freighter?{' '}
+                  <a
+                    href="https://freighter.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    Install it here
+                  </a>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Stellar Wallet Address</Label>
-                  <Input
-                    value={newAddress}
-                    onChange={(e) => setNewAddress(e.target.value)}
-                    placeholder="G..."
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Enter your Stellar public key (starts with &apos;G&apos;)
-                  </p>
+                {/* Connected State */}
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-sm font-medium">Author Wallet Connected</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Your Wallet Address</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={authorAddress || ''}
+                        readOnly
+                        className="font-mono text-xs"
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCopy}
+                      >
+                        {isCopied ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Wallet Connection Options */}
-                <div className="space-y-2">
-                  {!isConnected ? (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleConnectWallet}
-                      disabled={isConnecting || isLoading}
-                    >
-                      {isConnecting || isLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <PlugZap className="h-4 w-4 mr-2" />
-                          Connect Freighter Wallet
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="space-y-2">
-                      <Alert className="py-2">
-                        <Check className="h-4 w-4" />
-                        <AlertDescription className="text-xs">
-                          Wallet connected: {publicKey?.slice(0, 6)}...{publicKey?.slice(-6)}
-                        </AlertDescription>
-                      </Alert>
-                      {publicKey !== newAddress && (
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={handleUseConnectedWallet}
-                        >
-                          <Wallet className="h-4 w-4 mr-2" />
-                          Use Connected Wallet
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <Alert>
+                  <DollarSign className="h-4 w-4" />
+                  <AlertDescription>
+                    Tips will be sent directly to this wallet address. You can change it anytime by disconnecting and connecting a different account.
+                  </AlertDescription>
+                </Alert>
 
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setIsEditing(false)
-                      setNewAddress(authorAddress || '')
-                    }}
-                    disabled={isValidating}
+                    className="flex-1"
+                    onClick={() => authorAddress && window.open(`https://stellar.expert/explorer/testnet/account/${authorAddress}`, '_blank')}
+                    disabled={!authorAddress}
                   >
-                    Cancel
+                    <ArrowUpRight className="h-4 w-4 mr-2" />
+                    View on Explorer
                   </Button>
                   <Button
-                    onClick={handleSaveAddress}
-                    disabled={isValidating || !newAddress}
+                    onClick={handleDisconnectAuthorWallet}
+                    variant="outline"
+                    className="flex-1"
                   >
-                    {isValidating ? 'Validating...' : 'Save Address'}
+                    <Power className="w-4 h-4 mr-2" />
+                    Disconnect
                   </Button>
                 </div>
               </div>
@@ -294,7 +237,7 @@ export function AuthorWalletSettings({
               <Label>Author&apos;s Wallet Address</Label>
               <div className="flex gap-2">
                 <Input
-                  value={authorAddress}
+                  value={authorAddress || ''}
                   readOnly
                   className="font-mono text-xs"
                 />
@@ -315,7 +258,8 @@ export function AuthorWalletSettings({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.open(`https://stellar.expert/explorer/testnet/account/${authorAddress}`, '_blank')}
+              onClick={() => authorAddress && window.open(`https://stellar.expert/explorer/testnet/account/${authorAddress}`, '_blank')}
+              disabled={!authorAddress}
             >
               <ArrowUpRight className="h-4 w-4 mr-2" />
               View on Stellar Explorer

@@ -442,7 +442,7 @@ export const generateNFTMetadata = query({
       .collect();
 
     const totalTipsUsd = tips.reduce((sum, tip) => sum + tip.amountUsd, 0);
-    const tipAmountInStroops = Math.floor((totalTipsUsd / 0.12) * 10_000_000); // Convert to stroops
+    const tipAmountInStroops = Math.floor((totalTipsUsd / 0.3831) * 10_000_000); // Convert to stroops
 
     // Generate NFT metadata following OpenSea/standard format
     return {

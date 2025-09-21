@@ -14,7 +14,7 @@ export const STELLAR_CONFIG = {
   PLATFORM_FEE_BPS: 250, // 2.5% platform fee
 
   // Tipping settings
-  MINIMUM_TIP_STROOPS: 100000, // 0.01 XLM (approximately 1 cent)
+  MINIMUM_TIP_STROOPS: 261000, // 0.0261 XLM (approximately 1 cent at $0.3831/XLM)
   MINIMUM_TIP_CENTS: 1, // 1 cent minimum
 
   // NFT settings
@@ -24,7 +24,7 @@ export const STELLAR_CONFIG = {
   NFT_ROYALTY_BPS: 500, // 5% royalty in basis points
 
   // Conversion rates (will be fetched dynamically in production)
-  XLM_TO_USD_RATE: 0.12, // Default rate, should be fetched from price oracle
+  XLM_TO_USD_RATE: 0.3831, // Default rate, should be fetched from price oracle
 } as const;
 
 export const TIP_AMOUNTS = [

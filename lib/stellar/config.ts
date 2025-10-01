@@ -2,7 +2,7 @@ export const STELLAR_CONFIG = {
   // Network configuration
   NETWORK: process.env.NEXT_PUBLIC_STELLAR_NETWORK || 'TESTNET',
   HORIZON_URL: process.env.NEXT_PUBLIC_HORIZON_URL || 'https://horizon-testnet.stellar.org',
-  SOROBAN_RPC_URL: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://horizon-testnet.stellar.org',
+  SOROBAN_RPC_URL: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
   NETWORK_PASSPHRASE: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || 'Test SDF Network ; September 2015',
 
   // Contract addresses

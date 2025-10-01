@@ -19,8 +19,8 @@ export default defineSchema({
     // Authentication
     hashedPassword: v.optional(v.string()),
     
-    // Stellar integration
-    stellarAddress: v.optional(v.string()),
+    // Stellar integration (optional, can be null to explicitly clear)
+    stellarAddress: v.optional(v.union(v.string(), v.null())),
     
     // Stats (denormalized for performance)
     articleCount: v.optional(v.number()),

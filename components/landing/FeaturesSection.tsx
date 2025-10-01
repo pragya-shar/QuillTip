@@ -1,129 +1,160 @@
 'use client';
 
-import Link from 'next/link';
-import { 
-  Edit3, 
-  DollarSign, 
-  Sparkles,
+import {
+  Edit3,
+  DollarSign,
   Shield,
   Zap,
   MessageSquare,
   TrendingUp
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useInView } from 'framer-motion';
+import { useRef } from 'react';
 
 export default function FeaturesSection() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+
   const features = [
     {
       icon: Edit3,
-      title: "Professional Editor",
-      description: "Rich text editing with code blocks, media embeds, and markdown support. Everything you need to create stunning content.",
-      gradient: "from-blue-500 to-cyan-500"
+      title: "Rich Editor",
+      description: "Professional writing tools with code blocks, media embeds, and full markdown support.",
+      gradient: "from-neutral-700 to-neutral-800"
     },
     {
       icon: DollarSign,
-      title: "Instant Micropayments",
-      description: "Readers can tip as little as $0.01 using Stellar blockchain. Get paid instantly with minimal fees.",
-      gradient: "from-green-500 to-emerald-500"
+      title: "Instant Tips",
+      description: "Receive payments in 3 seconds via Stellar blockchain with near-zero fees.",
+      gradient: "from-neutral-800 to-neutral-900"
     },
     {
       icon: MessageSquare,
-      title: "Highlight & Discuss",
-      description: "Readers highlight text and leave contextual comments. Turn your content into a conversation.",
-      gradient: "from-purple-500 to-pink-500"
+      title: "Interactive Reading",
+      description: "Engage readers with highlight-to-tip functionality and rich commenting.",
+      gradient: "from-neutral-600 to-neutral-700"
     },
     {
       icon: Shield,
-      title: "Own Your Content",
-      description: "100% ownership of your work. No platform lock-in. Export anytime. Your content, your rules.",
-      gradient: "from-orange-500 to-red-500"
+      title: "100% Ownership",
+      description: "Full control of your content. No platform lock-in, ever.",
+      gradient: "from-neutral-700 to-neutral-800"
     },
     {
       icon: TrendingUp,
-      title: "Analytics That Matter",
-      description: "See which parts resonate most. Track tips, highlights, and engagement in real-time.",
-      gradient: "from-indigo-500 to-purple-500"
+      title: "Real-Time Analytics",
+      description: "Track earnings, engagement metrics, and audience growth in real time.",
+      gradient: "from-neutral-800 to-neutral-900"
     },
     {
       icon: Zap,
-      title: "Lightning Fast",
-      description: "3-5 second payment settlement. No waiting weeks for payouts. Money flows as fast as ideas.",
-      gradient: "from-yellow-500 to-orange-500"
+      title: "No Minimums",
+      description: "Withdraw any amount instantly. No thresholds, no waiting periods.",
+      gradient: "from-neutral-900 to-black"
     }
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut" as const
+      }
+    }
+  };
+
   return (
-    <section id="features" className="py-24 px-8 bg-white">
-      <div className="container mx-auto max-w-7xl">
+    <section id="features" className="py-32 px-8 bg-gradient-to-b from-white via-neutral-50/30 to-white relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-br from-neutral-100/40 to-transparent rounded-full filter blur-3xl" />
+
+      <div className="container mx-auto max-w-7xl relative z-10" ref={ref}>
         {/* Section Header */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full border border-blue-200 mb-6">
-            <Sparkles className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Core Features
+        <motion.div
+          className="text-center mb-20"
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.8 }}
+        >
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100/80 backdrop-blur-sm rounded-full border border-neutral-200/60 mb-6"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Zap className="w-4 h-4 text-neutral-700" />
+            <span className="text-sm font-medium text-neutral-700 tracking-wide">
+              POWERFUL FEATURES
             </span>
-          </div>
-          <h2 className="text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Everything You Need to
+          </motion.div>
+
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-6 leading-tight">
+            <span className="text-neutral-900">
+              Built for Writers,
             </span>
             <br />
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Create, Publish & Earn
+            <span className="text-neutral-700">
+              Designed for Readers
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            A complete platform designed for the modern creator economy
+          <p className="text-base text-neutral-700 max-w-2xl mx-auto leading-relaxed">
+            Everything you need to create, publish, and monetize your content on a decentralized platform
           </p>
-        </div>
+        </motion.div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-3 gap-8">
+        <motion.div
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+        >
           {features.map((feature, index) => (
-            <div 
+            <motion.div
               key={index}
-              className="group relative bg-white rounded-2xl p-8 border border-gray-200 hover:border-transparent hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              variants={itemVariants}
+              className="group relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-neutral-200/60 hover:border-neutral-300 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
             >
               {/* Gradient background on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`} />
-              
+              <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-[0.02] rounded-2xl transition-opacity duration-500`} />
+
               {/* Icon */}
-              <div className={`relative w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+              <motion.div
+                className={`relative w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center mb-6 shadow-lg`}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 10 }}
+              >
                 <feature.icon className="w-7 h-7 text-white" />
-              </div>
-              
+              </motion.div>
+
               {/* Content */}
-              <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+              <h3 className="text-lg font-bold text-neutral-900 mb-3 group-hover:text-neutral-700 transition-colors duration-300">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-neutral-700 text-sm leading-relaxed">
                 {feature.description}
               </p>
-            </div>
-          ))}
-        </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-20 text-center">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-12 border border-blue-100">
-            <h3 className="text-3xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Ready to Transform Your Writing Career?
-              </span>
-            </h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join the next generation of writers who are building sustainable careers on their own terms.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Link 
-                href="/register"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
-              >
-                Start Your Journey
-                <Zap className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              </Link>
-            </div>
-          </div>
-        </div>
+              {/* Decorative corner accent */}
+              <div className="absolute top-4 right-4 w-2 h-2 bg-neutral-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </motion.div>
+          ))}
+        </motion.div>
+
       </div>
     </section>
   );

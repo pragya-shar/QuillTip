@@ -10,7 +10,7 @@ export interface User {
   name?: string
   bio?: string
   avatar?: string
-  stellarAddress?: string
+  stellarAddress?: string | null
   articleCount?: number
   highlightCount?: number
   tipsSentCount?: number

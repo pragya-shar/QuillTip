@@ -1,13 +1,15 @@
 'use client';
 
-import { 
-  Twitter, 
-  Github, 
-  Linkedin, 
+import {
+  Twitter,
+  Github,
+  Linkedin,
   Mail,
   ExternalLink,
-  Heart
+  Heart,
+  PenTool
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -46,151 +48,217 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-quill-900 text-white">
-      <div className="container mx-auto max-w-6xl px-4">
+    <footer className="bg-gradient-to-b from-neutral-900 to-black text-white relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.03),transparent_50%)]" />
+
+      <div className="container mx-auto max-w-7xl px-8 relative z-10">
         {/* Main Footer Content */}
-        <div className="py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
+        <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="mb-4">
-              <h3 className="text-2xl font-bold font-handwritten">QuillTip</h3>
-              <p className="text-quill-400 mt-2">
-                Empowering writers with blockchain-powered micro-tipping and 
-                revolutionary content monetization.
+            <motion.div
+              className="mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 bg-gradient-to-br from-white to-neutral-400 rounded-lg flex items-center justify-center shadow-lg">
+                  <PenTool className="w-5 h-5 text-neutral-900" />
+                </div>
+                <h3 className="text-2xl font-semibold">QuillTip</h3>
+              </div>
+              <p className="text-neutral-400 leading-relaxed">
+                Empowering writers with blockchain-powered micro-tipping and revolutionary content monetization.
               </p>
-            </div>
-            <div className="flex space-x-4 mt-6">
-              {socialLinks.map((social) => (
-                <a
+            </motion.div>
+
+            <motion.div
+              className="flex gap-3"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              {socialLinks.map((social, index) => (
+                <motion.a
                   key={social.name}
                   href={social.href}
-                  className="bg-quill-800 hover:bg-quill-700 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
+                  className="bg-white/5 hover:bg-white/10 rounded-lg w-10 h-10 flex items-center justify-center transition-all duration-300 border border-white/10 hover:border-white/20"
                   aria-label={social.name}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
                 >
-                  <social.icon className="w-5 h-5" />
-                </a>
+                  <social.icon className="w-4 h-4" />
+                </motion.a>
               ))}
-            </div>
+            </motion.div>
           </div>
 
           {/* Product Links */}
-          <div>
-            <h4 className="font-semibold mb-4 text-quill-200">Product</h4>
-            <ul className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <h4 className="font-bold mb-4 text-white">Product</h4>
+            <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.name}>
-                  <a 
+                  <a
                     href={link.href}
-                    className="text-quill-400 hover:text-white transition-colors text-sm"
+                    className="text-neutral-400 hover:text-white transition-colors text-sm inline-flex items-center group"
                   >
-                    {link.name}
+                    <span className="group-hover:translate-x-1 transition-transform duration-300">
+                      {link.name}
+                    </span>
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Company Links */}
-          <div>
-            <h4 className="font-semibold mb-4 text-quill-200">Company</h4>
-            <ul className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <h4 className="font-bold mb-4 text-white">Company</h4>
+            <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a 
+                  <a
                     href={link.href}
-                    className="text-quill-400 hover:text-white transition-colors text-sm"
+                    className="text-neutral-400 hover:text-white transition-colors text-sm inline-flex items-center group"
                   >
-                    {link.name}
+                    <span className="group-hover:translate-x-1 transition-transform duration-300">
+                      {link.name}
+                    </span>
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Resources Links */}
-          <div>
-            <h4 className="font-semibold mb-4 text-quill-200">Resources</h4>
-            <ul className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <h4 className="font-bold mb-4 text-white">Resources</h4>
+            <ul className="space-y-3">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
-                  <a 
+                  <a
                     href={link.href}
-                    className="text-quill-400 hover:text-white transition-colors text-sm flex items-center gap-1"
+                    className="text-neutral-400 hover:text-white transition-colors text-sm inline-flex items-center gap-1 group"
                   >
-                    {link.name}
+                    <span className="group-hover:translate-x-1 transition-transform duration-300">
+                      {link.name}
+                    </span>
                     {link.name === 'API' && <ExternalLink className="w-3 h-3" />}
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
 
           {/* Legal Links */}
-          <div>
-            <h4 className="font-semibold mb-4 text-quill-200">Legal</h4>
-            <ul className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            <h4 className="font-bold mb-4 text-white">Legal</h4>
+            <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.name}>
-                  <a 
+                  <a
                     href={link.href}
-                    className="text-quill-400 hover:text-white transition-colors text-sm"
+                    className="text-neutral-400 hover:text-white transition-colors text-sm inline-flex items-center group"
                   >
-                    {link.name}
+                    <span className="group-hover:translate-x-1 transition-transform duration-300">
+                      {link.name}
+                    </span>
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </motion.div>
         </div>
 
         {/* Newsletter Section */}
-        <div className="py-8 border-t border-quill-800">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <motion.div
+          className="py-8 border-t border-white/10"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h4 className="font-semibold text-quill-200 mb-1">Stay Updated</h4>
-              <p className="text-quill-400 text-sm">
+              <h4 className="font-bold text-white mb-2">Stay Updated</h4>
+              <p className="text-neutral-400 text-sm">
                 Get the latest updates on QuillTip development and launches
               </p>
             </div>
-            <div className="flex gap-2">
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-quill-500" />
+            <div className="flex gap-2 w-full md:w-auto">
+              <div className="relative flex-1 md:flex-initial">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-500" />
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="bg-quill-800 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm"
+                  className="w-full md:w-64 bg-white/5 text-white pl-10 pr-4 py-3 rounded-lg border border-white/10 focus:outline-none focus:border-white/30 transition-colors text-sm font-light placeholder:text-neutral-500"
                 />
               </div>
-              <button className="bg-brand-blue hover:bg-brand-blue/90 text-white font-medium px-4 py-2 rounded-lg transition-colors text-sm">
+              <button className="bg-white text-neutral-900 hover:bg-neutral-100 font-medium px-6 py-3 rounded-lg transition-colors text-sm whitespace-nowrap">
                 Subscribe
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Bottom Bar */}
-        <div className="py-6 border-t border-quill-800">
+        <motion.div
+          className="py-8 border-t border-white/10"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-1 text-quill-400 text-sm">
+            <div className="flex items-center gap-2 text-neutral-400 text-sm">
               <span>© {currentYear} QuillTip. Built with</span>
-              <Heart className="w-4 h-4 text-red-500 fill-current" />
+              <Heart className="w-4 h-4 text-red-500 fill-current animate-pulse" />
               <span>for writers everywhere</span>
             </div>
             <div className="flex items-center gap-6 text-sm">
-              <a href="#" className="text-quill-400 hover:text-white transition-colors">
+              <a href="#" className="text-neutral-400 hover:text-white transition-colors font-medium">
                 System Status
               </a>
-              <span className="text-quill-600">•</span>
-              <a href="#" className="text-quill-400 hover:text-white transition-colors">
+              <span className="text-neutral-600">•</span>
+              <a href="#" className="text-neutral-400 hover:text-white transition-colors font-medium">
                 Changelog
               </a>
-              <span className="text-quill-600">•</span>
-              <a href="#" className="text-quill-400 hover:text-white transition-colors">
+              <span className="text-neutral-600">•</span>
+              <a href="#" className="text-neutral-400 hover:text-white transition-colors font-medium">
                 Contact
               </a>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </footer>
   );

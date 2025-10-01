@@ -3,6 +3,7 @@ import { Inter, Caveat } from 'next/font/google'
 import './globals.css'
 import './highlights.css'
 import Providers from '@/components/providers/Providers'
+import { Analytics } from '@vercel/analytics/react'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,6 +32,7 @@ export default function RootLayout({
         className={`${inter.variable} ${caveat.variable} font-sans antialiased bg-brand-cream`}
       >
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   )

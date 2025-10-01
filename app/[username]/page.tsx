@@ -11,7 +11,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader'
 import ArticleGrid from '@/components/articles/ArticleGrid'
 import Pagination from '@/components/articles/Pagination'
 import { EarningsDashboard } from '@/components/dashboard/EarningsDashboard'
-import { AuthorWalletSettings, ReaderWalletSettings } from '@/components/stellar'
+import { WalletSettings } from '@/components/stellar'
 import { BookOpen, DollarSign, Image, ChartBar, Trophy, Wallet } from 'lucide-react'
 
 interface ProfilePageProps {
@@ -27,18 +27,26 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const { user: currentUser } = useAuth()
   const [username, setUsername] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('articles')
+  const [localWalletAddress, setLocalWalletAddress] = useState<string | null | undefined>()
   const page = parseInt(searchParams?.get('page') || '1', 10)
   
   // Get username from params
   useEffect(() => {
     params.then(p => setUsername(p.username))
   }, [params])
-  
+
   // Fetch user profile
   const user = useQuery(
     api.users.getUserByUsername,
     username ? { username } : 'skip'
   )
+
+  // Sync local wallet address with user data
+  useEffect(() => {
+    if (user?.stellarAddress !== localWalletAddress) {
+      setLocalWalletAddress(user?.stellarAddress)
+    }
+  }, [user?.stellarAddress, localWalletAddress])
   
   // Fetch user stats
   const userStats = useQuery(
@@ -133,10 +141,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const tabs = [
     { id: 'articles' as TabType, label: 'Articles', icon: BookOpen, count: userWithStats.articleCount },
     { id: 'nfts' as TabType, label: 'NFTs', icon: Image, count: userWithStats.nftsOwned },
+    { id: 'wallet' as TabType, label: 'Wallet', icon: Wallet, count: null },
     ...(isOwnProfile ? [
       { id: 'earnings' as TabType, label: 'Earnings', icon: DollarSign, count: null },
       { id: 'stats' as TabType, label: 'Stats', icon: ChartBar, count: null },
-      { id: 'wallet' as TabType, label: 'Wallet', icon: Wallet, count: null },
     ] : []),
   ]
   
@@ -156,6 +164,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                data-tab={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
                   flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors
@@ -347,40 +356,31 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             </div>
           )}
 
-          {/* Wallet Tab (Only for own profile) */}
-          {activeTab === 'wallet' && isOwnProfile && (
+          {/* Wallet Tab */}
+          {activeTab === 'wallet' && (
             <div className="space-y-8">
               {/* Page Header */}
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Wallet Management</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  {isOwnProfile ? 'Wallet Management' : `${user?.name}'s Wallet`}
+                </h2>
                 <p className="text-gray-600">
-                  Manage your wallets for sending and receiving tips on the Stellar network.
+                  {isOwnProfile
+                    ? 'Manage your Stellar wallet for sending and receiving tips on the network.'
+                    : 'View wallet address for sending tips to this user.'}
                 </p>
               </div>
 
-              {/* Author Wallet - For Receiving Tips */}
-              <div>
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Author Wallet</h3>
-                  <p className="text-sm text-gray-600">
-                    Set up your wallet address and connect to Freighter to receive tips from readers.
-                  </p>
-                </div>
-                <AuthorWalletSettings
-                  authorAddress={user?.stellarAddress}
+              {/* Wallet Settings */}
+              <div className="max-w-2xl">
+                <WalletSettings
+                  walletAddress={localWalletAddress ?? user?.stellarAddress}
                   isOwnProfile={isOwnProfile}
+                  onAddressChange={(address) => {
+                    // Immediately update local state for instant UI feedback
+                    setLocalWalletAddress(address || undefined)
+                  }}
                 />
-              </div>
-
-              {/* Reader Wallet - For Sending Tips */}
-              <div>
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Reader Wallet</h3>
-                  <p className="text-sm text-gray-600">
-                    Set your wallet address and connect to Freighter for sending tips to authors.
-                  </p>
-                </div>
-                <ReaderWalletSettings />
               </div>
             </div>
           )}

@@ -144,7 +144,7 @@ export class NFTClient {
             StellarSdk.nativeToScVal(params.metadataUrl, { type: 'string' }) // metadata_url
           )
         )
-        .setTimeout(30)
+        .setTimeout(180)
         .build()
 
       // Prepare transaction for Soroban
@@ -169,6 +169,16 @@ export class NFTClient {
       // Submit transaction
       const result = await this.sorobanServer.sendTransaction(transaction)
 
+      console.log('Transaction submission result:', {
+        status: result.status,
+        hash: result.hash,
+        errorResult: result.errorResult,
+        // Additional debug properties if available
+        ...((result as unknown as Record<string, unknown>).errorResultXdr ? {
+          errorResultXdr: (result as unknown as Record<string, unknown>).errorResultXdr
+        } : {})
+      })
+
       if (result.status === 'PENDING') {
         // Wait for transaction to be included in ledger
         let txResult = await this.sorobanServer.getTransaction(result.hash)
@@ -180,6 +190,15 @@ export class NFTClient {
           txResult = await this.sorobanServer.getTransaction(result.hash)
           retries++
         }
+
+        console.log('Transaction result after polling:', {
+          status: txResult.status,
+          retries,
+          // Additional debug properties if available
+          ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
+            resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
+          } : {})
+        })
 
         if (txResult.status === 'SUCCESS') {
           // Parse the return value from contract (token ID)
@@ -194,16 +213,54 @@ export class NFTClient {
             transactionHash: result.hash,
           }
         } else if (txResult.status === 'FAILED') {
+          // Parse the error for better debugging
+          const errorDetails = {
+            status: txResult.status,
+            // Additional error properties if available
+            ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
+              resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
+            } : {}),
+            ...((txResult as unknown as Record<string, unknown>).resultMetaXdr ? {
+              resultMetaXdr: (txResult as unknown as Record<string, unknown>).resultMetaXdr
+            } : {}),
+          }
+          console.error('Transaction failed with details:', errorDetails)
           return {
             success: false,
-            error: 'Transaction failed on blockchain',
+            error: `Transaction failed: ${JSON.stringify(errorDetails, null, 2)}`,
+          }
+        } else if (txResult.status === 'NOT_FOUND' && retries >= maxRetries) {
+          return {
+            success: false,
+            error: 'Transaction timeout: Could not confirm transaction after 30 seconds',
           }
         }
       }
 
+      // Handle various error cases
+      console.error('Transaction submission failed:', {
+        status: result.status,
+        errorResult: result.errorResult,
+      })
+
+      // Extract meaningful error message
+      let errorMessage = 'Transaction submission failed'
+
+      if (result.errorResult) {
+        if (typeof result.errorResult === 'string') {
+          errorMessage = result.errorResult
+        } else if (typeof result.errorResult === 'object' && result.errorResult !== null) {
+          errorMessage = `Transaction failed with status: ${result.status}. Details: ${JSON.stringify(result.errorResult, null, 2)}`
+        } else {
+          errorMessage = `Transaction failed with status: ${result.status}. Error: ${String(result.errorResult)}`
+        }
+      } else {
+        errorMessage = `Transaction failed with status: ${result.status}`
+      }
+
       return {
         success: false,
-        error: `Transaction submission failed with status: ${result.status}`,
+        error: errorMessage,
       }
     } catch (error) {
       console.error('Error submitting mint transaction:', error)

@@ -157,6 +157,11 @@ mark[data-highlight-id] mark[data-highlight-id] {
 
 @custom-variant dark (&:is(.dark *));
 
+/* Custom utility classes */
+.font-handwritten {
+  font-family: var(--font-handwritten);
+}
+
 :root {
   --font-sans: 'Inter', sans-serif;
   --font-handwritten: 'Caveat', cursive;

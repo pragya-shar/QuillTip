@@ -176,7 +176,7 @@ export class StellarClient {
           StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
         )
       )
-      .setTimeout(30)
+      .setTimeout(180)
       .build()
 
     // Prepare transaction for Soroban

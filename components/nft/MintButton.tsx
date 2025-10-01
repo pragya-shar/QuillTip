@@ -20,7 +20,7 @@ import { STELLAR_CONFIG } from '@/lib/stellar/config'
 import { ConvexHttpClient } from 'convex/browser'
 
 interface MintButtonProps {
-  articleId: string | Id<"articles">
+  articleId: string | Id<'articles'>
   articleTitle: string
   articleSlug: string
   totalTips: number // in dollars
@@ -44,7 +44,9 @@ export function MintButton({
 }: MintButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showDialog, setShowDialog] = useState(false)
-  const [mintingStep, setMintingStep] = useState<'checking' | 'wallet' | 'blockchain' | 'database'>('checking')
+  const [mintingStep, setMintingStep] = useState<
+    'checking' | 'wallet' | 'blockchain' | 'database'
+  >('checking')
 
   const mintNFT = useMutation(api.nfts.mintNFT)
   const wallet = useStellarWallet()
@@ -53,7 +55,9 @@ export function MintButton({
   const progress = Math.min(100, (totalTips / threshold) * 100)
 
   // Convert USD to stroops for contract
-  const tipAmountInStroops = Math.floor((totalTips / STELLAR_CONFIG.XLM_TO_USD_RATE) * 10_000_000)
+  const tipAmountInStroops = Math.floor(
+    (totalTips / STELLAR_CONFIG.XLM_TO_USD_RATE) * 10_000_000
+  )
 
   // Initialize Convex HTTP client for async calls
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
@@ -69,15 +73,20 @@ export function MintButton({
 
     try {
       // Step 1: Check eligibility on blockchain
-      const eligibility = await nftClient.checkEligibility(articleId as string, tipAmountInStroops)
+      const eligibility = await nftClient.checkEligibility(
+        articleId as string,
+        tipAmountInStroops
+      )
       if (!eligibility.eligible) {
-        throw new Error(eligibility.reason || 'Article not eligible for minting')
+        throw new Error(
+          eligibility.reason || 'Article not eligible for minting'
+        )
       }
 
       // Step 2: Generate metadata using Convex
       setMintingStep('wallet')
       const metadata = await convex.query(api.nfts.generateNFTMetadata, {
-        articleId: articleId as Id<"articles">
+        articleId: articleId as Id<'articles'>,
       })
 
       if (!metadata) {
@@ -96,7 +105,7 @@ export function MintButton({
         metadataUrl,
       })
 
-      // Step 4: Sign transaction with Freighter
+      // Step 4: Sign transaction with wallet
       const signedXDR = await wallet.signTransaction(xdr)
 
       // Step 5: Submit to blockchain
@@ -110,36 +119,29 @@ export function MintButton({
       // Step 6: Update Convex database
       setMintingStep('database')
       const nftId = await mintNFT({
-        articleId: articleId as Id<"articles">,
-        tipThreshold: threshold
+        articleId: articleId as Id<'articles'>,
+        tipThreshold: threshold,
       })
 
       if (nftId) {
-        toast.success(
-          `🎉 NFT Minted Successfully!\n` +
-          `Your article "${articleTitle}" is now on the Stellar blockchain!`
-        )
+        toast.success('NFT minted successfully!')
         setShowDialog(false)
         onMintSuccess?.()
       } else {
         // Blockchain succeeded but database failed - this is a consistency issue
         console.warn('Blockchain mint succeeded but database update failed')
-        toast.warning('NFT minted on blockchain but database sync failed. Please refresh the page.')
+        toast.warning(
+          'NFT minted on blockchain but database sync failed. Please refresh the page.'
+        )
       }
-
     } catch (error) {
       console.error('Minting error:', error)
 
-      // Provide specific error messages based on the step
       let errorMessage = 'Failed to mint NFT'
-      if (mintingStep === 'checking') {
-        errorMessage = 'Failed to verify minting eligibility'
-      } else if (mintingStep === 'wallet') {
-        errorMessage = 'Failed to sign transaction. Please check your wallet.'
+      if (mintingStep === 'wallet') {
+        errorMessage = 'Transaction cancelled or wallet error'
       } else if (mintingStep === 'blockchain') {
-        errorMessage = 'Blockchain transaction failed. Please try again.'
-      } else if (mintingStep === 'database') {
-        errorMessage = 'NFT minted but failed to update database. Please refresh.'
+        errorMessage = 'Blockchain transaction failed. Please try again'
       }
 
       toast.error(error instanceof Error ? error.message : errorMessage)
@@ -158,7 +160,9 @@ export function MintButton({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">NFT Minting Progress</span>
-          <span className="font-medium">${totalTips.toFixed(2)} / ${threshold.toFixed(2)}</span>
+          <span className="font-medium">
+            ${totalTips.toFixed(2)} / ${threshold.toFixed(2)}
+          </span>
         </div>
         <div className="w-full bg-secondary rounded-full h-2">
           <div
@@ -167,7 +171,7 @@ export function MintButton({
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          Receive ${(threshold - totalTips).toFixed(2)} more in tips to mint as NFT
+          ${(threshold - totalTips).toFixed(2)} more to mint NFT
         </p>
       </div>
     )
@@ -177,12 +181,12 @@ export function MintButton({
     <>
       <Button
         onClick={() => setShowDialog(true)}
-        disabled={!canMint || !wallet.isConnected}
+        disabled={!canMint}
         className="w-full"
         variant="default"
       >
         <Sparkles className="mr-2 h-4 w-4" />
-        {!wallet.isConnected ? 'Connect Wallet to Mint' : 'Mint as NFT'}
+        Mint NFT
       </Button>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
@@ -195,6 +199,13 @@ export function MintButton({
           </DialogHeader>
 
           <div className="space-y-4">
+            {!wallet.isConnected && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p className="text-sm text-amber-900">
+                  Connect your wallet to mint this article as an NFT.
+                </p>
+              </div>
+            )}
             <div className="bg-secondary p-4 rounded-lg space-y-2">
               <h4 className="font-medium">{articleTitle}</h4>
               <div className="text-sm space-y-1">
@@ -206,17 +217,21 @@ export function MintButton({
                   <span className="text-muted-foreground">Threshold Met:</span>
                   <span className="font-medium text-green-600">✓ Yes</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Wallet Status:</span>
-                  <span className={`font-medium ${wallet.isConnected ? 'text-green-600' : 'text-orange-600'}`}>
-                    {wallet.isConnected ? '✓ Connected' : '⚠ Not Connected'}
-                  </span>
-                </div>
-                {wallet.isConnected && wallet.publicKey && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Address:</span>
-                    <span className="font-mono text-xs">
-                      {`${wallet.publicKey.slice(0, 4)}...${wallet.publicKey.slice(-4)}`}
+                {wallet.isConnected && wallet.publicKey ? (
+                  <div className="bg-green-50 border border-green-200 rounded p-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-green-900 font-medium">
+                        ✓ Wallet Connected
+                      </span>
+                      <span className="font-mono text-green-700">
+                        {`${wallet.publicKey.slice(0, 4)}...${wallet.publicKey.slice(-4)}`}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 border border-amber-200 rounded p-2">
+                    <span className="text-xs text-amber-900">
+                      ⚠ Wallet not connected
                     </span>
                   </div>
                 )}
@@ -230,10 +245,10 @@ export function MintButton({
                   <span className="font-medium">Minting in Progress...</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {mintingStep === 'checking' && 'Checking eligibility on blockchain...'}
-                  {mintingStep === 'wallet' && 'Please sign the transaction in your wallet...'}
-                  {mintingStep === 'blockchain' && 'Submitting to Stellar network...'}
-                  {mintingStep === 'database' && 'Updating database...'}
+                  {mintingStep === 'checking' && 'Verifying eligibility...'}
+                  {mintingStep === 'wallet' && 'Sign in your wallet...'}
+                  {mintingStep === 'blockchain' && 'Minting NFT...'}
+                  {mintingStep === 'database' && 'Finalizing...'}
                 </div>
               </div>
             )}
@@ -241,7 +256,9 @@ export function MintButton({
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>By minting this NFT:</p>
               <ul className="list-disc list-inside space-y-1">
-                <li>You&apos;ll create a unique token representing ownership</li>
+                <li>
+                  You&apos;ll create a unique token representing ownership
+                </li>
                 <li>The NFT can be transferred or traded</li>
                 <li>You&apos;ll retain authorship attribution</li>
                 <li>This action cannot be undone</li>
@@ -281,7 +298,7 @@ export function MintButton({
                   ) : (
                     <>
                       <Sparkles className="mr-2 h-4 w-4" />
-                      Confirm Mint
+                      Mint NFT
                     </>
                   )}
                 </Button>

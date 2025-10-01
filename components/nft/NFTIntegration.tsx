@@ -20,7 +20,7 @@ interface NFTIntegrationProps {
   articleSlug: string
   authorId: Id<"users">
   currentUserId?: Id<"users">
-  currentUserAddress?: string
+  currentUserAddress?: string | null
 }
 
 interface NFTStatus {

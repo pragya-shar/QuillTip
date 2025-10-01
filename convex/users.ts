@@ -30,20 +30,28 @@ export const updateProfile = mutation({
     name: v.optional(v.string()),
     bio: v.optional(v.string()),
     avatar: v.optional(v.string()),
-    stellarAddress: v.optional(v.string()),
+    stellarAddress: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
-    const updates: any = {};
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.bio !== undefined) updates.bio = args.bio;
-    if (args.avatar !== undefined) updates.avatar = args.avatar;
-    if (args.stellarAddress !== undefined) updates.stellarAddress = args.stellarAddress;
-    
+
+    const updates: {
+      name?: string;
+      bio?: string;
+      avatar?: string;
+      stellarAddress?: string | null;
+      updatedAt?: number;
+    } = {};
+    // Use 'in' operator to check if property exists in args
+    // This allows setting fields to null (needed for wallet disconnect)
+    if ('name' in args) updates.name = args.name;
+    if ('bio' in args) updates.bio = args.bio;
+    if ('avatar' in args) updates.avatar = args.avatar;
+    if ('stellarAddress' in args) updates.stellarAddress = args.stellarAddress;
+
     updates.updatedAt = Date.now();
-    
+
     await ctx.db.patch(userId, updates);
     return await ctx.db.get(userId);
   },

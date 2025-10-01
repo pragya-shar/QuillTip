@@ -17,17 +17,12 @@ export function WalletConnectButton({
   size = 'default',
   variant = 'default'
 }: WalletConnectButtonProps) {
-  const { isInstalled, isConnected, isLoading, publicKey, network, error, connect, disconnect } = useWallet();
+  const { isConnected, isLoading, publicKey, network, error, selectedWallet, connect, disconnect } = useWallet();
   const [isConnecting, setIsConnecting] = useState(false);
 
   const handleConnect = async () => {
     if (isConnected) {
       disconnect();
-      return;
-    }
-
-    if (!isInstalled) {
-      window.open('https://freighter.app/', '_blank');
       return;
     }
 
@@ -55,15 +50,8 @@ export function WalletConnectButton({
     );
   }
 
-  // Show install prompt if wallet not installed
-  if (!isInstalled) {
-    return (
-      <Button onClick={handleConnect} size={size} variant={variant} className={className}>
-        <Wallet className="w-4 h-4 mr-2" />
-        Install Freighter
-      </Button>
-    );
-  }
+  // Wallet selection will happen via modal, no need for install check
+  // The modal will show available wallets
 
   // Show error state
   if (error) {
@@ -82,11 +70,11 @@ export function WalletConnectButton({
         <CheckCircle className="w-4 h-4 text-green-600" />
         <div className="flex flex-col items-start">
           <span className="text-sm font-medium">{formatAddress(publicKey)}</span>
-          {network && (
-            <span className="text-xs text-muted-foreground capitalize">
-              {network.toLowerCase()}
-            </span>
-          )}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            {selectedWallet && <span>{selectedWallet.name}</span>}
+            {network && selectedWallet && <span>•</span>}
+            {network && <span className="capitalize">{network.toLowerCase()}</span>}
+          </div>
         </div>
       </Button>
     );

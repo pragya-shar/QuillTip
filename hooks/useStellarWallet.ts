@@ -1,25 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  isConnected,
-  setAllowed,
-  getAddress,
-  signTransaction,
-  getNetwork,
-  getNetworkDetails,
-  WatchWalletChanges
-} from '@stellar/freighter-api';
+import { walletAdapter, WalletInfo } from '@/lib/stellar/wallet-adapter';
 
 export interface StellarWalletState {
   isInstalled: boolean;
   isConnected: boolean;
   isLoading: boolean;
   publicKey: string | null;
-  readerWalletAddress: string | null;  // Separate reader wallet address
   network: string | null;
   networkPassphrase: string | null;
   error: string | null;
+  selectedWallet: WalletInfo | null;  // Currently selected wallet info
 }
 
 export interface StellarWalletActions {
@@ -27,7 +19,6 @@ export interface StellarWalletActions {
   disconnect: () => void;
   signTransaction: (xdr: string) => Promise<string>;
   refreshConnection: () => Promise<void>;
-  setReaderWalletAddress: (address: string | null) => void;  // Method to update reader wallet
 }
 
 export function useStellarWallet(): StellarWalletState & StellarWalletActions {
@@ -36,47 +27,56 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
     isConnected: false,
     isLoading: true,
     publicKey: null,
-    readerWalletAddress: null,
     network: null,
     networkPassphrase: null,
     error: null,
+    selectedWallet: null,
   });
 
   // Check if wallet is installed and connected
+  // NOTE: This is a passive check that won't trigger wallet popups
   const checkWalletStatus = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Check if Freighter is installed
-      const connectionCheck = await isConnected();
-      const walletInstalled = !connectionCheck.error;
-      const walletConnected = connectionCheck.isConnected;
+      // Check if any wallet is available
+      const walletInstalled = await walletAdapter.isInstalled();
+      const walletConnected = await walletAdapter.isConnected();
 
       if (walletInstalled && walletConnected) {
-        // Get public key and network details
-        const [publicKeyResult, networkResult] = await Promise.all([
-          getAddress(),
-          getNetworkDetails()
-        ]);
+        // Wallet was previously connected AND has cached details
+        // Get cached details to avoid triggering wallet popups
+        const selectedWallet = walletAdapter.getSelectedWallet();
+        const cachedConnection = walletAdapter.getCachedConnection();
 
-        if (publicKeyResult.error) {
-          throw new Error(publicKeyResult.error);
+        if (cachedConnection) {
+          // We have cached details, show as fully connected
+          setState(prev => ({
+            ...prev,
+            isInstalled: true,
+            isConnected: true,
+            isLoading: false,
+            publicKey: cachedConnection.publicKey,
+            network: cachedConnection.network,
+            networkPassphrase: cachedConnection.networkPassphrase,
+            selectedWallet,
+            error: null,
+          }));
+        } else {
+          // No cached details, treat as disconnected to avoid popups
+          // User will need to explicitly reconnect
+          setState(prev => ({
+            ...prev,
+            isInstalled: walletInstalled,
+            isConnected: false,
+            isLoading: false,
+            publicKey: null,
+            network: null,
+            networkPassphrase: null,
+            selectedWallet: null,
+            error: null,
+          }));
         }
-
-        if (networkResult.error) {
-          throw new Error(networkResult.error);
-        }
-
-        setState(prev => ({
-          ...prev,
-          isInstalled: true,
-          isConnected: true,
-          isLoading: false,
-          publicKey: publicKeyResult.address,
-          network: networkResult.network,
-          networkPassphrase: networkResult.networkPassphrase,
-          error: null,
-        }));
       } else {
         setState(prev => ({
           ...prev,
@@ -86,7 +86,8 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
           publicKey: null,
           network: null,
           networkPassphrase: null,
-          error: walletInstalled ? null : 'Freighter wallet not installed',
+          selectedWallet: null,
+          error: null,
         }));
       }
     } catch (error) {
@@ -98,30 +99,30 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
     }
   }, []);
 
-  // Connect to wallet
+  // Connect to wallet (opens wallet selection modal)
   const connect = useCallback(async (): Promise<boolean> => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Check if wallet is installed first
-      const connectionCheck = await isConnected();
-      if (connectionCheck.error) {
-        throw new Error('Freighter wallet not installed');
-      }
+      // Connect via wallet adapter (opens modal for wallet selection)
+      const result = await walletAdapter.connect();
 
-      // Request access
-      const allowResult = await setAllowed();
-      if (allowResult.error) {
-        throw new Error(allowResult.error);
-      }
+      // Update state with connection result
+      const selectedWallet = walletAdapter.getSelectedWallet();
 
-      if (allowResult.isAllowed) {
-        // Refresh wallet status after successful connection
-        await checkWalletStatus();
-        return true;
-      } else {
-        throw new Error('Wallet connection denied');
-      }
+      setState(prev => ({
+        ...prev,
+        isInstalled: true,
+        isConnected: true,
+        isLoading: false,
+        publicKey: result.publicKey,
+        network: result.network,
+        networkPassphrase: result.networkPassphrase,
+        selectedWallet,
+        error: null,
+      }));
+
+      return true;
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -130,10 +131,12 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
       }));
       return false;
     }
-  }, [checkWalletStatus]);
+  }, []);
 
   // Disconnect wallet (clear local state)
   const disconnect = useCallback(() => {
+    walletAdapter.disconnect();
+
     setState(prev => ({
       ...prev,
       isInstalled: true,
@@ -142,6 +145,7 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
       publicKey: null,
       network: null,
       networkPassphrase: null,
+      selectedWallet: null,
       error: null,
     }));
   }, []);
@@ -152,60 +156,50 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
       throw new Error('Wallet not connected');
     }
 
-    const result = await signTransaction(xdr, {
-      networkPassphrase: state.networkPassphrase,
-    });
-
-    if (result.error) {
-      throw new Error(result.error);
-    }
-
-    return result.signedTxXdr;
+    const signedXdr = await walletAdapter.signTransaction(xdr, state.networkPassphrase);
+    return signedXdr;
   }, [state.isConnected, state.networkPassphrase]);
-
-  // Set reader wallet address
-  const setReaderWalletAddress = useCallback((address: string | null) => {
-    setState(prev => ({ ...prev, readerWalletAddress: address }));
-    // Persist to localStorage
-    if (address) {
-      localStorage.setItem('readerWalletAddress', address);
-    } else {
-      localStorage.removeItem('readerWalletAddress');
-    }
-  }, []);
 
   // Refresh connection status
   const refreshConnection = useCallback(async () => {
     await checkWalletStatus();
   }, [checkWalletStatus]);
 
-  // Initialize wallet check on mount and load reader wallet
+  // Initialize wallet check on mount
   useEffect(() => {
     checkWalletStatus();
-    // Load reader wallet address from localStorage
-    const savedReaderWallet = localStorage.getItem('readerWalletAddress');
-    if (savedReaderWallet) {
-      setState(prev => ({ ...prev, readerWalletAddress: savedReaderWallet }));
-    }
   }, [checkWalletStatus]);
 
-  // Watch for wallet changes
+  // NOTE: Removed automatic wallet detail fetching to prevent unwanted popups
+  // Wallet details are now only fetched:
+  // 1. From cache during initial checkWalletStatus()
+  // 2. When user explicitly clicks connect()
+  // This ensures no popups appear without user interaction
+
+  // Watch for wallet changes (account and network)
   useEffect(() => {
     if (!state.isInstalled || !state.isConnected) return;
 
-    const watcher = new WatchWalletChanges();
-
-    watcher.watch((walletState) => {
+    // Watch for account changes
+    const cleanupAccount = walletAdapter.watchAccountChanges((address) => {
       setState(prev => ({
         ...prev,
-        publicKey: walletState.address,
-        network: walletState.network,
-        networkPassphrase: walletState.networkPassphrase,
+        publicKey: address,
+      }));
+    });
+
+    // Watch for network changes
+    const cleanupNetwork = walletAdapter.watchNetworkChanges((network) => {
+      setState(prev => ({
+        ...prev,
+        network: network.network,
+        networkPassphrase: network.networkPassphrase,
       }));
     });
 
     return () => {
-      watcher.stop();
+      cleanupAccount();
+      cleanupNetwork();
     };
   }, [state.isInstalled, state.isConnected]);
 
@@ -215,6 +209,5 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
     disconnect,
     signTransaction: signTransactionXDR,
     refreshConnection,
-    setReaderWalletAddress,
   };
 }

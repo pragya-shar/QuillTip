@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Coins, TrendingUp, Clock, DollarSign, Loader2, Wallet } from 'lucide-react';
+import { Coins, TrendingUp, Clock, DollarSign, Loader2, Wallet, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useWallet } from '@/components/providers/WalletProvider';
-import { WalletStatus } from '@/components/stellar';
+import { useAuth } from '@/components/providers/AuthContext';
 
 export function EarningsDashboard() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -14,12 +13,18 @@ export function EarningsDashboard() {
   const [stellarAddress, setStellarAddress] = useState('');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
-  const { isConnected, publicKey } = useWallet();
+  const { user: currentUser } = useAuth();
 
   // Fetch earnings data
   const earnings = useQuery(api.tips.getAuthorEarnings, {});
   const recentTips = useQuery(api.tips.getUserReceivedTips, {});
-  
+
+  // Fetch user profile to get stored wallet address
+  const userProfile = useQuery(
+    api.users.getUserByUsername,
+    currentUser?.username ? { username: currentUser.username } : 'skip'
+  );
+
   // Withdrawal mutations
   const withdrawEarnings = useMutation(api.tips.withdrawEarnings);
 
@@ -97,16 +102,32 @@ export function EarningsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Wallet Status Card */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold">Stellar Wallet</h3>
-          <p className="text-sm text-gray-600">
-            Connect your wallet to withdraw earnings directly to your Stellar address
-          </p>
+      {/* Wallet Setup Notice */}
+      {userProfile && !userProfile.stellarAddress && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-yellow-900 mb-1">
+                Stellar Wallet Not Configured
+              </h3>
+              <p className="text-sm text-yellow-800 mb-3">
+                Please set up your Stellar wallet in the Wallet tab to enable withdrawals.
+              </p>
+              <button
+                onClick={() => {
+                  // Navigate to wallet tab
+                  const walletTab = document.querySelector('[data-tab="wallet"]') as HTMLButtonElement;
+                  if (walletTab) walletTab.click();
+                }}
+                className="text-sm font-medium text-yellow-900 hover:text-yellow-700 underline"
+              >
+                Go to Wallet Settings →
+              </button>
+            </div>
+          </div>
         </div>
-        <WalletStatus />
-      </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -132,12 +153,21 @@ export function EarningsDashboard() {
             ${earnings.availableBalanceUsd.toFixed(2)}
           </p>
           <button
-            onClick={() => setShowWithdrawModal(true)}
-            disabled={earnings.availableBalanceUsd < 10 || !isConnected}
+            onClick={() => {
+              if (!userProfile?.stellarAddress) {
+                // Navigate to wallet tab
+                const walletTab = document.querySelector('[data-tab="wallet"]') as HTMLButtonElement;
+                if (walletTab) walletTab.click();
+              } else {
+                setStellarAddress(userProfile.stellarAddress);
+                setShowWithdrawModal(true);
+              }
+            }}
+            disabled={earnings.availableBalanceUsd < 10}
             className="mt-3 w-full px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-sm rounded-lg hover:from-yellow-500 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Wallet className="w-4 h-4" />
-            {!isConnected ? 'Connect Wallet' : 'Withdraw'}
+            {!userProfile?.stellarAddress ? 'Set Up Wallet' : 'Withdraw'}
           </button>
         </div>
 
@@ -287,15 +317,16 @@ export function EarningsDashboard() {
                 </label>
                 <input
                   type="text"
-                  value={stellarAddress || publicKey || ''}
+                  value={stellarAddress || userProfile?.stellarAddress || ''}
                   onChange={(e) => setStellarAddress(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                  placeholder={publicKey || "G..."}
+                  placeholder="G..."
+                  readOnly={!!userProfile?.stellarAddress}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {isConnected
-                    ? 'Using connected wallet address (you can change it if needed)'
-                    : 'Your Stellar wallet address starting with G'
+                  {userProfile?.stellarAddress
+                    ? 'Using your saved wallet address from Wallet settings'
+                    : 'Enter your Stellar wallet address'
                   }
                 </p>
               </div>

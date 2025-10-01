@@ -21,7 +21,7 @@ export interface User {
   isEmailVerified?: boolean
   phone?: string
   isAnonymous?: boolean
-  stellarAddress?: string
+  stellarAddress?: string | null
   bio?: string
   avatar?: string
   nftsCreated?: number

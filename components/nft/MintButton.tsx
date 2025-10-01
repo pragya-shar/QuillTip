@@ -96,7 +96,7 @@ export function MintButton({
         metadataUrl,
       })
 
-      // Step 4: Sign transaction with Freighter
+      // Step 4: Sign transaction with wallet
       const signedXDR = await wallet.signTransaction(xdr)
 
       // Step 5: Submit to blockchain

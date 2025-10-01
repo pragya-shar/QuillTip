@@ -14,12 +14,12 @@ interface WalletStatusProps {
 
 export function WalletStatus({ className }: WalletStatusProps) {
   const {
-    isInstalled,
     isConnected,
     isLoading,
     publicKey,
     network,
     networkPassphrase,
+    selectedWallet,
     error,
     connect,
     disconnect,
@@ -28,11 +28,6 @@ export function WalletStatus({ className }: WalletStatusProps) {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const handleConnect = async () => {
-    if (!isInstalled) {
-      window.open('https://freighter.app/', '_blank');
-      return;
-    }
-
     setIsConnecting(true);
     try {
       await connect();
@@ -66,27 +61,7 @@ export function WalletStatus({ className }: WalletStatusProps) {
     window.open(explorerUrl, '_blank');
   };
 
-  if (!isInstalled) {
-    return (
-      <Card className={className}>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <Wallet className="w-12 h-12 text-muted-foreground" />
-            <div>
-              <h3 className="font-semibold">Freighter Wallet Required</h3>
-              <p className="text-sm text-muted-foreground">
-                Install Freighter to connect your Stellar wallet
-              </p>
-            </div>
-            <Button onClick={() => window.open('https://freighter.app/', '_blank')}>
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Install Freighter
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Wallet selection will happen via modal
 
   if (error) {
     return (
@@ -119,7 +94,10 @@ export function WalletStatus({ className }: WalletStatusProps) {
             <div>
               <h3 className="font-semibold">Wallet Not Connected</h3>
               <p className="text-sm text-muted-foreground">
-                Connect your Freighter wallet to start tipping authors
+                Connect your Stellar wallet to start tipping authors
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Supports Freighter, xBull, Albedo, Rabet, and more
               </p>
             </div>
             <Button
@@ -152,7 +130,14 @@ export function WalletStatus({ className }: WalletStatusProps) {
           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
             <Wallet className="w-4 h-4 text-green-600" />
           </div>
-          Wallet Connected
+          <div className="flex flex-col">
+            <span>Wallet Connected</span>
+            {selectedWallet && (
+              <span className="text-sm font-normal text-muted-foreground">
+                via {selectedWallet.name}
+              </span>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

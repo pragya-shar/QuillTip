@@ -14,7 +14,7 @@ import { stellarClient } from '@/lib/stellar/client';
 interface TipButtonProps {
   articleId: Id<"articles">;
   authorName: string;
-  authorStellarAddress?: string; // Author's Stellar address for direct tips
+  authorStellarAddress?: string | null; // Author's Stellar address for direct tips
   className?: string;
 }
 
@@ -26,7 +26,7 @@ const TIP_AMOUNTS = [
 
 export function TipButton({ articleId, authorName, authorStellarAddress, className = '' }: TipButtonProps) {
   const { isAuthenticated } = useAuth();
-  const { isConnected, publicKey, readerWalletAddress, signTransaction } = useWallet();
+  const { isConnected, publicKey, signTransaction } = useWallet();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -43,15 +43,8 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
       return;
     }
 
-    // Use reader wallet address if set, otherwise use connected wallet
-    const senderAddress = readerWalletAddress || publicKey;
-
-    if (!isConnected || !senderAddress) {
-      if (!readerWalletAddress) {
-        toast.error('Please set your reader wallet address or connect your Stellar wallet');
-      } else {
-        toast.error('Please connect your Stellar wallet to sign transactions');
-      }
+    if (!isConnected || !publicKey) {
+      toast.error('Please connect your Stellar wallet to send tips');
       return;
     }
 
@@ -92,15 +85,15 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
     setIsLoading(true);
 
     try {
-      // Build Stellar transaction using reader's wallet address
-      const transactionData = await stellarClient.buildTipTransaction(senderAddress, {
-        tipper: senderAddress,
+      // Build Stellar transaction using user's wallet address
+      const transactionData = await stellarClient.buildTipTransaction(publicKey, {
+        tipper: publicKey,
         articleId: articleId.toString(),
         authorAddress: authorStellarAddress,
         amountCents,
       });
 
-      // Sign transaction with Freighter
+      // Sign transaction with wallet
       const signedXDR = await signTransaction(transactionData.xdr);
 
       // Submit transaction to Stellar network
@@ -135,7 +128,7 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
 
       const errorMessage = error instanceof Error ? error.message : 'Failed to send tip';
 
-      // Check for specific Freighter errors
+      // Check for wallet signature rejection
       if (errorMessage.includes('User declined') || errorMessage.includes('rejected')) {
         toast.error('Transaction cancelled by user');
         // Reset state for user cancellation
@@ -261,15 +254,11 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
 
 
             {/* Wallet Connection Status */}
-            {isConnected && (readerWalletAddress || publicKey) ? (
+            {isConnected && publicKey ? (
               <div className="text-xs text-green-600 text-center mt-4 space-y-1">
                 <p className="flex items-center justify-center gap-1">
                   <Wallet className="w-3 h-3" />
-                  {readerWalletAddress ? (
-                    <>Reader Wallet: {readerWalletAddress.slice(0, 6)}...{readerWalletAddress.slice(-6)}</>
-                  ) : (
-                    <>Connected: {publicKey?.slice(0, 6)}...{publicKey?.slice(-6)}</>
-                  )}
+                  Connected: {publicKey.slice(0, 6)}...{publicKey.slice(-6)}
                 </p>
                 <p>
                   {authorStellarAddress ? 'Direct Stellar payment' : 'Mock payment (no author wallet)'}
@@ -277,7 +266,7 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
               </div>
             ) : (
               <div className="text-xs text-amber-600 text-center mt-4">
-                <p>Set reader wallet address or connect Stellar wallet for direct payments</p>
+                <p>Connect your Stellar wallet for direct payments</p>
               </div>
             )}
 

@@ -20,35 +20,31 @@ import {
   Power
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { useAuthorWallet } from '@/hooks/useAuthorWallet'
+import { useWallet } from '@/components/providers/WalletProvider'
 
-interface AuthorWalletSettingsProps {
-  authorAddress?: string
+interface WalletSettingsProps {
+  walletAddress?: string | null
   onAddressChange?: (address: string) => void
   isOwnProfile: boolean
   className?: string
 }
 
-export function AuthorWalletSettings({
-  authorAddress,
+export function WalletSettings({
+  walletAddress,
   onAddressChange,
   isOwnProfile,
   className = ''
-}: AuthorWalletSettingsProps) {
+}: WalletSettingsProps) {
   const updateProfile = useMutation(api.users.updateProfile)
-  const {
-    isConnecting: authorWalletConnecting,
-    error: authorWalletError,
-    connectForAuthor,
-    resetConnection
-  } = useAuthorWallet()
+  const { isLoading, connect, disconnect } = useWallet()
   const [isCopied, setIsCopied] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
 
   const handleCopy = async () => {
-    if (!authorAddress) return
+    if (!walletAddress) return
 
     try {
-      await navigator.clipboard.writeText(authorAddress)
+      await navigator.clipboard.writeText(walletAddress)
       setIsCopied(true)
       toast.success('Wallet address copied to clipboard')
       setTimeout(() => setIsCopied(false), 2000)
@@ -57,46 +53,82 @@ export function AuthorWalletSettings({
     }
   }
 
-  const handleConnectAuthorWallet = async () => {
+  const handleConnectWallet = async () => {
+    setIsConnecting(true)
     try {
-      const result = await connectForAuthor()
-      if (result.success && result.address) {
-        // Automatically save the connected address
-        await updateProfile({
-          stellarAddress: result.address
-        })
+      const success = await connect()
+      if (success) {
+        // Get publicKey from wallet adapter after successful connection
+        const { walletAdapter } = await import('@/lib/stellar/wallet-adapter')
+        const connectedKey = await walletAdapter.getPublicKey()
 
-        onAddressChange?.(result.address)
-        toast.success('Author wallet connected and saved successfully!')
-        resetConnection()
+        if (connectedKey) {
+          await updateProfile({
+            stellarAddress: connectedKey
+          })
+          onAddressChange?.(connectedKey)
+          toast.success('Wallet connected and saved successfully!')
+        }
       } else {
         toast.error('Failed to connect wallet')
       }
     } catch {
       toast.error('Failed to connect and save wallet address')
+    } finally {
+      setIsConnecting(false)
     }
   }
 
-  const handleDisconnectAuthorWallet = async () => {
+  const handleDisconnectWallet = async () => {
+    // Prevent double-click
+    if (isConnecting) return
+
+    setIsConnecting(true)
+
     try {
+      // Step 1: Update database FIRST (ensures source of truth is updated)
       await updateProfile({
-        stellarAddress: undefined
+        stellarAddress: null
       })
 
+      // Step 2: Clear local wallet state AFTER DB confirms
+      disconnect()
+
+      // Step 3: Notify parent component for immediate UI update
       onAddressChange?.('')
-      resetConnection()
-      toast.success('Author wallet disconnected')
-    } catch {
-      toast.error('Failed to disconnect wallet')
+
+      toast.success('Wallet disconnected successfully')
+
+    } catch (error) {
+      console.error('[WalletSettings] Failed to disconnect wallet:', error)
+
+      // Provide specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Not authenticated')) {
+          toast.error('Session expired. Please refresh and try again.')
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          toast.error('Network error. Check your connection and try again.')
+        } else {
+          toast.error(`Disconnect failed: ${error.message}`)
+        }
+      } else {
+        toast.error('Failed to disconnect wallet. Please try again.')
+      }
+
+      // Don't clear local state if DB update failed
+      // This keeps UI in sync with actual DB state
+
+    } finally {
+      setIsConnecting(false)
     }
   }
 
-  if (!isOwnProfile && !authorAddress) {
+  if (!isOwnProfile && !walletAddress) {
     return (
       <Alert className={className}>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          This author hasn&apos;t set up their Stellar wallet yet.
+          This user hasn&apos;t set up their Stellar wallet yet.
         </AlertDescription>
       </Alert>
     )
@@ -111,60 +143,51 @@ export function AuthorWalletSettings({
         </CardTitle>
         <CardDescription>
           {isOwnProfile
-            ? 'Manage your Stellar wallet for receiving tips'
-            : 'Send tips directly to this author&apos;s Stellar wallet'
+            ? 'Manage your Stellar wallet for sending and receiving tips'
+            : 'Send tips directly to this user&apos;s Stellar wallet'
           }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isOwnProfile ? (
           <>
-            {!authorAddress ? (
+            {!walletAddress ? (
               <div className="space-y-4">
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Connect your Freighter wallet to receive tips from readers
+                    Connect your Stellar wallet to send and receive tips
                   </AlertDescription>
                 </Alert>
 
                 <Button
-                  onClick={handleConnectAuthorWallet}
-                  disabled={authorWalletConnecting}
+                  onClick={handleConnectWallet}
+                  disabled={isConnecting || isLoading}
                   className="w-full"
                   size="lg"
                 >
-                  {authorWalletConnecting ? (
+                  {isConnecting ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Connecting to Freighter...
+                      Connecting Wallet...
                     </>
                   ) : (
                     <>
                       <PlugZap className="w-4 h-4 mr-2" />
-                      Connect Freighter Wallet
+                      Connect Stellar Wallet
                     </>
                   )}
                 </Button>
 
-                {authorWalletError && (
-                  <Alert className="bg-red-50 border-red-200">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                    <AlertDescription className="text-red-800">
-                      {authorWalletError}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
                 <div className="text-center text-sm text-muted-foreground">
-                  Don&apos;t have Freighter?{' '}
+                  Need a wallet?{' '}
                   <a
-                    href="https://freighter.app"
+                    href="https://stellar.org/ecosystem/wallets"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
                   >
-                    Install it here
+                    View supported wallets
                   </a>
                 </div>
               </div>
@@ -175,7 +198,7 @@ export function AuthorWalletSettings({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      <span className="text-sm font-medium">Author Wallet Connected</span>
+                      <span className="text-sm font-medium">Wallet Connected</span>
                     </div>
                   </div>
 
@@ -183,7 +206,7 @@ export function AuthorWalletSettings({
                     <Label className="text-xs text-muted-foreground">Your Wallet Address</Label>
                     <div className="flex gap-2">
                       <Input
-                        value={authorAddress || ''}
+                        value={walletAddress || ''}
                         readOnly
                         className="font-mono text-xs"
                       />
@@ -205,7 +228,7 @@ export function AuthorWalletSettings({
                 <Alert>
                   <DollarSign className="h-4 w-4" />
                   <AlertDescription>
-                    Tips will be sent directly to this wallet address. You can change it anytime by disconnecting and connecting a different account.
+                    You can send and receive tips with this wallet. You can change it anytime by disconnecting and connecting a different account.
                   </AlertDescription>
                 </Alert>
 
@@ -213,19 +236,29 @@ export function AuthorWalletSettings({
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => authorAddress && window.open(`https://stellar.expert/explorer/testnet/account/${authorAddress}`, '_blank')}
-                    disabled={!authorAddress}
+                    onClick={() => walletAddress && window.open(`https://stellar.expert/explorer/testnet/account/${walletAddress}`, '_blank')}
+                    disabled={!walletAddress}
                   >
                     <ArrowUpRight className="h-4 w-4 mr-2" />
                     View on Explorer
                   </Button>
                   <Button
-                    onClick={handleDisconnectAuthorWallet}
+                    onClick={handleDisconnectWallet}
+                    disabled={isConnecting}
                     variant="outline"
                     className="flex-1"
                   >
-                    <Power className="w-4 h-4 mr-2" />
-                    Disconnect
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Disconnecting...
+                      </>
+                    ) : (
+                      <>
+                        <Power className="w-4 h-4 mr-2" />
+                        Disconnect
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -234,10 +267,10 @@ export function AuthorWalletSettings({
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Author&apos;s Wallet Address</Label>
+              <Label>User&apos;s Wallet Address</Label>
               <div className="flex gap-2">
                 <Input
-                  value={authorAddress || ''}
+                  value={walletAddress || ''}
                   readOnly
                   className="font-mono text-xs"
                 />
@@ -258,8 +291,8 @@ export function AuthorWalletSettings({
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => authorAddress && window.open(`https://stellar.expert/explorer/testnet/account/${authorAddress}`, '_blank')}
-              disabled={!authorAddress}
+              onClick={() => walletAddress && window.open(`https://stellar.expert/explorer/testnet/account/${walletAddress}`, '_blank')}
+              disabled={!walletAddress}
             >
               <ArrowUpRight className="h-4 w-4 mr-2" />
               View on Stellar Explorer
@@ -268,7 +301,7 @@ export function AuthorWalletSettings({
             <Alert>
               <DollarSign className="h-4 w-4" />
               <AlertDescription>
-                Tips sent to this wallet go directly to the author with minimal platform fees.
+                Tips sent to this wallet go directly to the user with minimal platform fees.
               </AlertDescription>
             </Alert>
           </div>

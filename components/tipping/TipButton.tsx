@@ -25,8 +25,8 @@ const TIP_AMOUNTS = [
 ];
 
 export function TipButton({ articleId, authorName, authorStellarAddress, className = '' }: TipButtonProps) {
-  const { isAuthenticated } = useAuth();
-  const { isConnected, publicKey, signTransaction } = useWallet();
+  const { isAuthenticated, user } = useAuth();
+  const { isConnected, publicKey, signTransaction, connect } = useWallet();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -168,9 +168,17 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
               </button>
             </div>
 
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Show your appreciation with a micro-tip. 97.5% goes directly to the author!
             </p>
+
+            {/* Wallet Setup Guide (shown when not connected) */}
+            {!isConnected && !user?.stellarAddress && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                <p className="font-medium mb-1">💡 First time tipping?</p>
+                <p>You&apos;ll need a Stellar wallet to send tips. Click &quot;Set Up Wallet&quot; below to get started!</p>
+              </div>
+            )}
 
             {/* Preset Amounts */}
             <div className="grid grid-cols-3 gap-3 mb-4">
@@ -264,9 +272,43 @@ export function TipButton({ articleId, authorName, authorStellarAddress, classNa
                   {authorStellarAddress ? 'Direct Stellar payment' : 'Mock payment (no author wallet)'}
                 </p>
               </div>
+            ) : user?.stellarAddress ? (
+              // User has saved wallet in profile but extension not connected
+              <div className="text-xs text-amber-600 text-center mt-4 space-y-2">
+                <p className="flex items-center justify-center gap-1">
+                  <Wallet className="w-3 h-3" />
+                  Wallet saved but not connected
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      await connect();
+                      toast.success('Wallet connected successfully!');
+                    } catch {
+                      toast.error('Failed to connect wallet');
+                    }
+                  }}
+                  className="text-xs px-3 py-1.5 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                >
+                  Connect Wallet Extension
+                </button>
+                <p className="text-gray-500">
+                  Connect your wallet extension to send tips
+                </p>
+              </div>
             ) : (
-              <div className="text-xs text-amber-600 text-center mt-4">
-                <p>Connect your Stellar wallet for direct payments</p>
+              // No wallet at all
+              <div className="text-xs text-amber-600 text-center mt-4 space-y-2">
+                <p>Set up your Stellar wallet to send tips</p>
+                <button
+                  onClick={() => {
+                    router.push(`/${user?.username}?tab=wallet`);
+                    setIsOpen(false);
+                  }}
+                  className="text-xs px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                >
+                  Set Up Wallet
+                </button>
               </div>
             )}
 

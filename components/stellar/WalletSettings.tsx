@@ -149,6 +149,16 @@ export function WalletSettings({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {isOwnProfile && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              <strong>This wallet is for receiving tips.</strong> When readers tip your articles, payments come here.
+              To send tips to other authors, you&apos;ll connect your wallet extension directly on their articles.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {isOwnProfile ? (
           <>
             {!walletAddress ? (

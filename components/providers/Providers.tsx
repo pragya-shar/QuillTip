@@ -3,6 +3,7 @@
 import { ConvexAuthProvider } from '@convex-dev/auth/react'
 import { ConvexReactClient } from 'convex/react'
 import { WalletProvider } from './WalletProvider'
+import { Toaster } from '@/components/ui/sonner'
 
 /**
  * Global Providers
@@ -23,6 +24,7 @@ export default function Providers({ children }: ProvidersProps) {
     <ConvexAuthProvider client={convex}>
       <WalletProvider>
         {children}
+        <Toaster />
       </WalletProvider>
     </ConvexAuthProvider>
   )

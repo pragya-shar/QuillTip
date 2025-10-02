@@ -14,7 +14,7 @@ export default function FAQSection() {
   const faqs = [
     {
       question: "What is QuillTip and what problem does it solve?",
-      answer: "QuillTip lets writers earn money directly from readers without ads, subscriptions, or gatekeepers taking large cuts. Think Medium meets crypto payments: anyone can publish articles for free, readers tip writers instantly with cryptocurrency, and writers keep 97.5% of every tip. All payments happen through Stellar blockchain smart contracts in 3-5 seconds with no intermediaries. Writers own their content permanently through NFTs (digital certificates of ownership), and readers never pay to access articles - tipping is always voluntary to reward quality content."
+      answer: "QuillTip lets writers earn money directly from readers without ads, subscriptions, or gatekeepers taking large cuts. Anyone can publish articles for free, readers tip writers instantly with cryptocurrency, and writers keep 97.5% of every tip. All payments happen through Stellar blockchain smart contracts in 3-5 seconds with no intermediaries. Writers own their content permanently through NFTs (digital certificates of ownership), and readers never pay to access articles - tipping is always voluntary."
     },
     {
       question: "How does the tipping mechanism work?",
@@ -22,7 +22,7 @@ export default function FAQSection() {
     },
     {
       question: "What's QuillTip's business model and revenue split?",
-      answer: "Writers keep 97.5% of all tips. QuillTip takes 2.5% to cover infrastructure costs (hosting, Arweave storage fees, platform development). Unlike traditional platforms that take 30-50% or require expensive subscriptions, this model prioritizes creator earnings while keeping the platform sustainable. There are no subscription fees, hosting costs, or hidden charges for writers or readers."
+      answer: "Writers keep 97.5% of all tips. QuillTip takes 2.5% to cover infrastructure costs (hosting, Arweave storage fees, platform development). There are no subscription fees, hosting costs, or hidden charges for writers or readers."
     },
     {
       question: "Is QuillTip live on mainnet or testnet? When can I use it with real money?",
@@ -30,19 +30,19 @@ export default function FAQSection() {
     },
     {
       question: "What does it cost to use QuillTip as a writer or reader?",
-      answer: "Reading articles: completely free, no wallet needed. Tipping writers: pay only the Stellar network fee (0.00001 XLM, less than $0.0001) plus your chosen tip amount. Publishing articles: free, no hosting fees or subscriptions. Minting article NFTs: requires reaching a tip threshold (currently 10 XLM in total tips received), then pay minimal Stellar network fee for minting (approximately 0.0001 XLM). Editing published articles: free, unlimited edits. When you update an article that's been minted as an NFT, the blockchain preserves the original version while displaying your latest edits to readers."
+      answer: "Reading articles: completely free, no wallet needed. Tipping writers: pay only the Stellar network fee (0.05 XLM, less than $0.01) plus your chosen tip amount. Publishing articles: free, no hosting fees or subscriptions. Minting article NFTs: requires reaching a tip threshold (currently 10 XLM in total tips received), then pay minimal Stellar network fee for minting (approximately 0.05 XLM). Editing published articles: free, unlimited edits. When you update an article that's been minted as an NFT, the blockchain preserves the original version while displaying your latest edits to readers."
     },
     {
       question: "What barriers prevent mainstream users from adopting QuillTip?",
-      answer: "Currently requires a Stellar wallet to tip or publish, which can intimidate non-crypto users. We're addressing this by: (1) Supporting four popular wallets through Stellar Wallet Kit for maximum compatibility, (2) Providing wallet setup guides and testnet XLM for new users, (3) Making all articles readable without any wallet, (4) Planning USDC support so users can tip with stablecoins instead of volatile XLM. Future roadmap includes social login options and custodial wallet integration to eliminate the \"download a wallet\" barrier entirely."
+      answer: "Currently requires a Stellar wallet to tip or publish, which can intimidate non-crypto users. We're addressing this by: (1) Supporting four popular wallets through Stellar Wallet Kit for maximum compatibility, (2) Providing wallet setup guides and testnet XLM for new users, (3) Making all articles readable without any wallet, (4) Planning USDC support so users can tip with stablecoins instead of volatile XLM. Future roadmap includes social login options and custodial wallet integration."
     },
     {
       question: "How does QuillTip ensure my content survives long-term, even if the platform shuts down?",
-      answer: "Two-layer permanence: (1) Arweave integration (launching October 2025) stores your articles on decentralized, permanent storage that exists independently of QuillTip. Pay once, store forever - no recurring fees. (2) Article NFTs minted on Stellar blockchain create immutable proof of ownership and authorship. Even if QuillTip disappears, your content persists on Arweave and your ownership rights exist on Stellar. Unlike traditional platforms where your content vanishes if the company fails, QuillTip makes you truly own your work."
+      answer: "Two-layer permanence: (1) Arweave integration (launching October 2025) stores articles on decentralized, permanent storage that exists independently of QuillTip, with no recurring storage fees. (2) Article NFTs minted on Stellar blockchain create immutable proof of ownership and authorship. If QuillTip disappears, content persists on Arweave and ownership rights exist on Stellar."
     },
     {
       question: "How does QuillTip handle content moderation while remaining decentralized?",
-      answer: "QuillTip removes illegal content and violations of community guidelines from the platform interface - we're not a free-for-all. However, once Arweave integration launches, articles are stored on a decentralized network beyond our control, meaning censorship-resistant copies may persist. This balances platform safety with writer freedom: we curate the QuillTip experience while writers retain true ownership. Think of it like a library removing a book from shelves while the book itself still exists elsewhere."
+      answer: "QuillTip removes illegal content and violations of community guidelines from the platform interface. However, once Arweave integration launches, articles are stored on a decentralized network beyond our control, meaning censorship-resistant copies may persist. This balances platform safety with writer freedom: we curate the QuillTip experience while writers retain true ownership. Think of it like a library removing a book from shelves while the book itself still exists elsewhere."
     }
   ];
 

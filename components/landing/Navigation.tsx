@@ -20,8 +20,24 @@ export default function Navigation() {
   const navLinks = [
     { href: '#features', label: 'Features' },
     { href: '#how-it-works', label: 'How It Works' },
+    { href: '#faq', label: 'FAQs' },
     { href: '/login', label: 'Sign In' }
   ];
+
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      if (element) {
+        const offsetTop = element.getBoundingClientRect().top + window.pageYOffset - 80;
+        window.scrollTo({
+          top: offsetTop,
+          behavior: 'smooth'
+        });
+      }
+      setIsOpen(false);
+    }
+  };
 
   return (
     <motion.nav
@@ -56,6 +72,7 @@ export default function Navigation() {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={(e) => handleSmoothScroll(e, link.href)}
                 className="text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors duration-300 relative group"
               >
                 {link.label}
@@ -114,7 +131,7 @@ export default function Navigation() {
                     <Link
                       href={link.href}
                       className="block text-neutral-600 hover:text-neutral-900 font-medium transition-colors py-2"
-                      onClick={() => setIsOpen(false)}
+                      onClick={(e) => handleSmoothScroll(e, link.href)}
                     >
                       {link.label}
                     </Link>

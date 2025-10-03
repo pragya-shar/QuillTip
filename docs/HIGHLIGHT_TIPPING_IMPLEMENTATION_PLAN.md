@@ -1,25 +1,80 @@
 # 🎯 Implementation Plan: Granular Highlight Tipping System
-### Deliverable 1 - Tranche 1 - MVP (Weeks 1-3)
+### Deliverable 1 - Tranche 1 - MVP (Weeks 1-4) - UPDATED FOR CURRENT CODEBASE
 
-Based on the complete **Technical Architecture** with payment channels and the existing codebase analysis, here's the definitive implementation plan:
+**IMPORTANT: This plan has been adjusted based on existing wallet infrastructure implementation.**
 
-## 🏗️ Architecture Overview
+## 🔄 What's Already Implemented (Foundation Complete!)
 
-### **Payment Channel Architecture for Highlight Micropayments**
-The key innovation is using Stellar payment channels to enable ultra-low tips ($0.01) without transaction fees eating the value:
+### ✅ **Stellar Wallet Kit Integration** - PRODUCTION READY
+- Multi-wallet support: Freighter, xBull, Albedo, Rabet, Hana, HOT Wallet
+- `WalletProvider` with React context at `/components/providers/WalletProvider.tsx`
+- `useStellarWallet()` hook at `/hooks/useStellarWallet.ts`
+- `walletAdapter` singleton at `/lib/stellar/wallet-adapter.ts`
+- UI components: `WalletConnectButton`, `WalletStatus`, `WalletSettings`
+- Features: Connection caching, retry logic, account/network watchers
+- **No need to rebuild this - just use it!**
+
+### ✅ **Article-Level Tipping Contract** - FULLY FUNCTIONAL
+- Soroban smart contract at `/contracts/tipping/src/lib.rs`
+- `tip_article()` function with direct XLM transfers
+- Platform fee calculation (2.5%)
+- NFT threshold tracking via `ArticleTotalTips`
+- Deployed contract ID: `CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`
+- **Keep this as-is, extend for highlights**
+
+### ✅ **Convex Database Schema** - WELL-DESIGNED
+- `users` table with `stellarAddress` field
+- `tips` table with Stellar transaction tracking
+- `highlights` table (text selection only, ready for tipping)
+- `authorEarnings` for analytics
+- **Extend with highlight tip tables**
+
+### ✅ **Stellar Client Infrastructure**
+- Transaction builder at `/lib/stellar/client.ts`
+- `TipButton` component with wallet integration
+- Network configuration at `/lib/stellar/config.ts`
+- **Reuse for highlight transactions**
+
+---
+
+Based on the complete **Technical Architecture** with payment channels and the existing codebase analysis, here's the adjusted implementation plan:
+
+## 🏗️ Adjusted Architecture Overview
+
+### **Hybrid Tipping Strategy**
+The key innovation is using payment channels **ONLY for micropayments** while keeping direct transactions for larger tips:
 
 ```
+ARTICLE TIPS ($1-$100):
+User clicks tip → Existing wallet popup → Direct Stellar transfer → Author receives instantly
+✅ Already working via existing TipButton component
+
+HIGHLIGHT TIPS (< $0.10):
 User deposits $5 → Opens payment channel → Tips accumulate off-chain →
 Batch settlement every 100 tips or 24 hours → Authors receive funds
+🔨 New system to implement
+
+HIGHLIGHT TIPS (>= $0.10):
+User clicks tip → Existing wallet popup → Direct Stellar transfer → Author receives instantly
+🔨 New button, existing infrastructure
 ```
 
-## 📋 Phased Implementation Plan
+### **Why This Hybrid Approach?**
+1. **Leverage existing wallet infrastructure** - Don't rebuild what works
+2. **Payment channels only where needed** - Micropayments < $0.10
+3. **Simpler for users** - Familiar flow for larger tips
+4. **Cost-efficient** - No fees on micro-tips, direct transfers for larger amounts
 
-### **Phase 1: Soroban Contract Enhancement**
+## 📋 Adjusted Implementation Phases
 
-#### 1.1 Upgrade Tipping Contract for Highlights
+### **Phase 1: Extend Existing Soroban Contract**
+
+#### 1.1 Extend Existing Tipping Contract for Highlights
+**Location:** `/contracts/tipping/src/lib.rs`
+**Strategy:** Add new functions alongside existing `tip_article()` - DO NOT modify existing code
+
 ```rust
-// contracts/tipping/src/lib.rs - Add to existing contract
+// contracts/tipping/src/lib.rs - ADD to existing contract (keep tip_article unchanged!)
 
 #[derive(Clone)]
 #[contracttype]
@@ -106,9 +161,34 @@ impl TippingContract {
 }
 ```
 
-#### 1.2 Implement Highlight ID Generation
+#### 1.2 Add Direct Highlight Tipping Function (for tips >= $0.10)
+```rust
+// contracts/tipping/src/lib.rs - ADD this function
+
+/// Tip a highlight directly (for larger tips, no channel needed)
+pub fn tip_highlight_direct(
+    env: Env,
+    tipper: Address,
+    highlight_id: String,
+    article_id: Symbol,
+    author: Address,
+    amount: i128,
+) -> TipReceipt {
+    tipper.require_auth();
+
+    // Similar to tip_article but tracks highlight_id
+    // Use existing fee calculation and transfer logic
+    // Store in HighlightTips(highlight_id) key
+
+    // ... implementation using existing tip_article logic
+}
+```
+
+#### 1.3 Implement Highlight ID Generation
+**Location:** `/lib/stellar/highlight-utils.ts` (NEW FILE)
+
 ```typescript
-// lib/stellar/highlight-utils.ts
+// lib/stellar/highlight-utils.ts - CREATE this file
 import { createHash } from 'crypto';
 
 export function generateHighlightId(
@@ -141,11 +221,127 @@ export async function storeHighlightMapping(
 }
 ```
 
-### **Phase 2: Payment Channel Infrastructure**
+### **Phase 2: Frontend Integration (Leverage Existing Infrastructure)**
 
-#### 2.1 Payment Channel Manager Service
+#### 2.1 Create Highlight Tip Button Component
+**Location:** `/components/highlights/HighlightTipButton.tsx` (NEW FILE)
+**Strategy:** Reuse existing wallet infrastructure
+
 ```typescript
-// services/payment-channel-manager.ts
+// components/highlights/HighlightTipButton.tsx - CREATE this file
+import { useWallet } from '@/components/providers/WalletProvider'; // ✅ EXISTING
+import { stellarClient } from '@/lib/stellar/client'; // ✅ EXISTING
+
+export function HighlightTipButton({
+  highlightId,
+  highlightText,
+  articleId,
+  authorAddress
+}: Props) {
+  // ✅ Use EXISTING wallet hook (already implemented!)
+  const { isConnected, publicKey, signTransaction } = useWallet();
+  const { channel } = usePaymentChannel(); // 🔨 NEW: for micropayments
+
+  const tipHighlight = async (amountCents: number) => {
+    if (!isConnected) {
+      // ✅ Use EXISTING connect flow from WalletProvider
+      return;
+    }
+
+    if (amountCents >= 10) {
+      // DIRECT TIP: Use existing Stellar client
+      const txData = await stellarClient.buildHighlightTipTransaction(
+        publicKey!,
+        { highlightId, authorAddress, amountCents }
+      );
+
+      // ✅ Use EXISTING signTransaction from useWallet hook
+      const signedXDR = await signTransaction(txData.xdr);
+
+      // ✅ Use EXISTING submit method
+      await stellarClient.submitTipTransaction(signedXDR);
+    } else {
+      // MICROPAYMENT: Use payment channel (new system)
+      await channel.addHighlightTip(highlightId, amountCents);
+    }
+  };
+
+  return (
+    <div className="highlight-tip-buttons">
+      <button onClick={() => tipHighlight(1)}>1¢</button>
+      <button onClick={() => tipHighlight(10)}>10¢</button>
+      <button onClick={() => tipHighlight(100)}>$1</button>
+    </div>
+  );
+}
+```
+
+#### 2.2 Extend Stellar Client for Highlight Transactions
+**Location:** `/lib/stellar/client.ts` (EXTEND EXISTING FILE)
+
+```typescript
+// lib/stellar/client.ts - ADD these methods to existing StellarClient class
+
+export class StellarClient {
+  // ... existing methods (buildTipTransaction, submitTipTransaction, etc.) ...
+
+  /**
+   * Build transaction for highlight tipping (>= $0.10)
+   * Similar to existing buildTipTransaction but uses tip_highlight_direct
+   */
+  async buildHighlightTipTransaction(
+    tipperPublicKey: string,
+    params: {
+      highlightId: string;
+      articleId: string;
+      authorAddress: string;
+      amountCents: number;
+    }
+  ): Promise<{ xdr: string; stroops: number }> {
+    // ✅ Reuse existing conversion utilities
+    const stroops = await this.convertCentsToStroops(params.amountCents);
+
+    // ✅ Reuse existing account loading
+    const account = await this.server.loadAccount(tipperPublicKey);
+
+    // ✅ Use existing contract reference (same contract!)
+    const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID);
+
+    const transaction = new StellarSdk.TransactionBuilder(account, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: this.networkPassphrase,
+    })
+      .addOperation(
+        contract.call(
+          'tip_highlight_direct', // NEW function we added
+          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }),
+          StellarSdk.nativeToScVal(params.highlightId, { type: 'string' }),
+          StellarSdk.nativeToScVal(params.articleId, { type: 'symbol' }),
+          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }),
+          StellarSdk.nativeToScVal(stroops, { type: 'i128' })
+        )
+      )
+      .setTimeout(180)
+      .build();
+
+    // ✅ Reuse existing Soroban preparation
+    const preparedTransaction = await this.sorobanServer.prepareTransaction(transaction);
+
+    return {
+      xdr: preparedTransaction.toXDR(),
+      stroops,
+    };
+  }
+
+  // submitTipTransaction remains unchanged - already works!
+}
+```
+
+#### 2.3 Payment Channel Manager Service (for micropayments < $0.10)
+**Location:** `/services/payment-channel-manager.ts` (NEW FILE)
+
+```typescript
+// services/payment-channel-manager.ts - CREATE this file
 export class PaymentChannelManager {
   private channels: Map<string, PaymentChannel> = new Map();
 
@@ -244,9 +440,11 @@ export class PaymentChannelManager {
 }
 ```
 
-#### 2.2 Convex Schema for Payment Channels
+#### 2.4 Convex Schema Extensions
+**Location:** `/convex/schema.ts` (EXTEND EXISTING FILE)
+
 ```typescript
-// convex/schema.ts - Add new tables
+// convex/schema.ts - ADD these tables to existing schema
 paymentChannels: defineTable({
   userId: v.id("users"),
   channelId: v.string(),
@@ -272,13 +470,83 @@ pendingHighlightTips: defineTable({
 })
 .index("by_channel", ["channelId"])
 .index("by_highlight", ["highlightId"]),
+
+// Track all highlight tips (both direct and channel-based)
+highlightTips: defineTable({
+  highlightId: v.string(),
+  articleId: v.id("articles"),
+  tipperId: v.id("users"),
+  authorId: v.id("articles"),
+  amountCents: v.number(),
+
+  // Stellar transaction data (for direct tips >= $0.10)
+  stellarTxId: v.optional(v.string()),
+  stellarNetwork: v.optional(v.string()),
+
+  // Payment channel data (for micropayments < $0.10)
+  channelId: v.optional(v.string()),
+
+  status: v.string(), // PENDING, CONFIRMED, SETTLED
+  createdAt: v.number(),
+  processedAt: v.optional(v.number()),
+})
+.index("by_highlight", ["highlightId"])
+.index("by_article", ["articleId"])
+.index("by_tipper", ["tipperId"])
+.index("by_author", ["authorId"]),
 ```
 
-### **Phase 3: Frontend Components**
+### **Phase 3: Heatmap Visualization & Analytics**
 
-#### 3.1 Channel Management UI
+#### 3.1 Heatmap Data Aggregation Service
+**Location:** `/lib/services/highlight-heatmap.ts` (NEW FILE)
+
 ```typescript
-// components/payment/ChannelManager.tsx
+// lib/services/highlight-heatmap.ts - CREATE this file
+import { api } from '@/convex/_generated/api';
+
+export class HighlightHeatmapService {
+  /**
+   * Generate heatmap data for an article
+   * Aggregates all highlight tips by position
+   */
+  async generateHeatmap(articleId: string): Promise<HeatmapData> {
+    // Query Convex for all highlight tips for this article
+    const highlights = await convex.query(api.highlightTips.getByArticle, {
+      articleId
+    });
+
+    // Group by highlight ID and sum tips
+    const heatmapData = highlights.reduce((acc, tip) => {
+      if (!acc[tip.highlightId]) {
+        acc[tip.highlightId] = {
+          highlightId: tip.highlightId,
+          text: tip.highlightText,
+          startOffset: tip.startOffset,
+          endOffset: tip.endOffset,
+          totalTips: 0,
+          tipCount: 0,
+          position: calculatePosition(tip),
+        };
+      }
+
+      acc[tip.highlightId].totalTips += tip.amountCents;
+      acc[tip.highlightId].tipCount += 1;
+
+      return acc;
+    }, {} as Record<string, HeatmapPoint>);
+
+    return Object.values(heatmapData);
+  }
+}
+```
+
+#### 3.2 Channel Management UI (for micropayments)
+**Location:** `/components/payment/ChannelManager.tsx` (NEW FILE)
+
+```typescript
+// components/payment/ChannelManager.tsx - CREATE this file
+import { useWallet } from '@/components/providers/WalletProvider'; // ✅ EXISTING
 export function ChannelManager() {
   const [channel, setChannel] = useState<PaymentChannel | null>(null);
   const [isOpening, setIsOpening] = useState(false);
@@ -328,92 +596,37 @@ export function ChannelManager() {
 }
 ```
 
-#### 3.2 Enhanced Highlight Tip Component
+#### 3.3 Highlight Heatmap Visualization Component
+**Location:** `/components/dashboard/HighlightHeatmap.tsx` (NEW FILE)
+
 ```typescript
-// components/tipping/HighlightTipButton.tsx
-export function HighlightTipButton({
-  highlightId,
-  highlightText,
-  articleId,
-  authorAddress
-}: Props) {
-  const { channel } = usePaymentChannel();
-  const [isTipping, setIsTipping] = useState(false);
+// components/dashboard/HighlightHeatmap.tsx - CREATE this file
+import { HighlightHeatmapService } from '@/lib/services/highlight-heatmap'; // NEW
 
-  const tipHighlight = async (amount: number) => {
-    if (!channel) {
-      // Prompt to open channel
-      openChannelModal();
-      return;
-    }
-
-    setIsTipping(true);
-    try {
-      if (channel.balance >= amount) {
-        // Off-chain tip through channel
-        await channel.addHighlightTip(highlightId, amount);
-
-        // Instant UI feedback
-        showTipAnimation(amount);
-        updateLocalHeatmap(highlightId, amount);
-
-        toast.success(`Tipped ${amount}¢ to highlight!`);
-      } else {
-        // Fall back to direct on-chain tip
-        await directStellarTip(highlightId, amount);
-      }
-    } catch (error) {
-      toast.error('Tip failed');
-    } finally {
-      setIsTipping(false);
-    }
-  };
-
-  return (
-    <div className="highlight-tip-buttons">
-      <button
-        onClick={() => tipHighlight(0.01)}
-        disabled={isTipping}
-        className="micro-tip"
-      >
-        1¢
-      </button>
-      <button
-        onClick={() => tipHighlight(0.10)}
-        disabled={isTipping}
-        className="small-tip"
-      >
-        10¢
-      </button>
-      <button
-        onClick={() => tipHighlight(1.00)}
-        disabled={isTipping}
-        className="standard-tip"
-      >
-        $1
-      </button>
-    </div>
-  );
-}
-```
-
-#### 3.3 Interactive Heatmap Component
-```typescript
-// components/dashboard/HighlightHeatmap.tsx
 export function HighlightHeatmap({ articleId }: Props) {
-  const highlights = useHighlightHeatmapData(articleId);
+  const [heatmapData, setHeatmapData] = useState<HeatmapData | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!highlights || !canvasRef.current) return;
+    async function loadHeatmap() {
+      const service = new HighlightHeatmapService();
+      const data = await service.generateHeatmap(articleId);
+      setHeatmapData(data);
+    }
+    loadHeatmap();
+  }, [articleId]);
+
+  useEffect(() => {
+    if (!heatmapData || !canvasRef.current) return;
 
     const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
 
     // Render heatmap with D3.js color scales
     const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
-      .domain([0, Math.max(...highlights.map(h => h.totalTips))]);
+      .domain([0, Math.max(...heatmapData.map(h => h.totalTips))]);
 
-    highlights.forEach(highlight => {
+    heatmapData.forEach(highlight => {
       const intensity = colorScale(highlight.totalTips);
 
       // Draw highlight region with intensity color
@@ -429,26 +642,152 @@ export function HighlightHeatmap({ articleId }: Props) {
 
     // Add interactive tooltips
     canvasRef.current.addEventListener('mousemove', (e) => {
-      const highlight = findHighlightAtPosition(e.offsetX, e.offsetY);
+      const highlight = findHighlightAtPosition(e.offsetX, e.offsetY, heatmapData);
       if (highlight) {
         showTooltip(highlight);
       }
     });
-  }, [highlights]);
+  }, [heatmapData]);
 
   return (
     <div className="heatmap-container">
       <canvas ref={canvasRef} className="article-heatmap" />
-      <HeatmapLegend min={0} max={maxTipAmount} />
-      <ExportButton data={highlights} />
+      <HeatmapLegend
+        min={0}
+        max={heatmapData ? Math.max(...heatmapData.map(h => h.totalTips)) : 0}
+      />
+      <ExportButton data={heatmapData} />
     </div>
   );
 }
 ```
 
-### **Phase 4: Analytics & Dashboard**
+#### 3.4 Simplified Highlight Tip Flow (No Payment Channel)
+For users who just want to tip a highlight >= $0.10 without using micropayment channels:
 
-#### 4.1 Real-time Analytics Service
+```typescript
+// This uses EXISTING wallet infrastructure
+const tipHighlight = async (highlightId: string, amountCents: number) => {
+  // ✅ Use EXISTING wallet connection check
+  const { isConnected, publicKey, signTransaction } = useWallet();
+
+  if (!isConnected) {
+    toast.error('Please connect your wallet');
+    return;
+  }
+
+  // ✅ Use EXTENDED stellar client (new method, existing class)
+  const txData = await stellarClient.buildHighlightTipTransaction(
+    publicKey!,
+    { highlightId, authorAddress, amountCents }
+  );
+
+  // ✅ Use EXISTING signTransaction method
+  const signedXDR = await signTransaction(txData.xdr);
+
+  // ✅ Use EXISTING submitTipTransaction method (works for all contract calls)
+  const receipt = await stellarClient.submitTipTransaction(signedXDR);
+
+  toast.success(`Tipped ${(amountCents / 100).toFixed(2)} to highlight!`);
+};
+```
+
+**Key insight:** We're just adding a new contract function (`tip_highlight_direct`) and new client method (`buildHighlightTipTransaction`), but reusing ALL the wallet/signing/submission infrastructure!
+
+### **Phase 4: Convex Mutations & Queries**
+
+#### 4.1 Highlight Tip Mutations
+**Location:** `/convex/highlightTips.ts` (NEW FILE)
+
+```typescript
+// convex/highlightTips.ts - CREATE this file
+import { mutation, query } from './_generated/server';
+import { v } from 'convex/values';
+
+// Record a highlight tip (from both direct and channel-based tips)
+export const create = mutation({
+  args: {
+    highlightId: v.string(),
+    articleId: v.id('articles'),
+    amountCents: v.number(),
+    stellarTxId: v.optional(v.string()),
+    channelId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error('Not authenticated');
+
+    // Get user and article info
+    const user = await ctx.db
+      .query('users')
+      .withIndex('by_email', q => q.eq('email', identity.email))
+      .first();
+
+    const article = await ctx.db.get(args.articleId);
+
+    if (!user || !article) throw new Error('Invalid data');
+
+    // Create tip record
+    return await ctx.db.insert('highlightTips', {
+      highlightId: args.highlightId,
+      articleId: args.articleId,
+      tipperId: user._id,
+      authorId: article.authorId,
+      amountCents: args.amountCents,
+      stellarTxId: args.stellarTxId,
+      stellarNetwork: args.stellarTxId ? 'TESTNET' : undefined,
+      channelId: args.channelId,
+      status: args.stellarTxId ? 'CONFIRMED' : 'PENDING',
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// Get all tips for a highlight (for tooltip display)
+export const getByHighlight = query({
+  args: { highlightId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('highlightTips')
+      .withIndex('by_highlight', q => q.eq('highlightId', args.highlightId))
+      .collect();
+  },
+});
+
+// Get all highlight tips for an article (for heatmap generation)
+export const getByArticle = query({
+  args: { articleId: v.id('articles') },
+  handler: async (ctx, args) => {
+    const tips = await ctx.db
+      .query('highlightTips')
+      .withIndex('by_article', q => q.eq('articleId', args.articleId))
+      .collect();
+
+    // Join with highlights table to get text and position data
+    const enrichedTips = await Promise.all(
+      tips.map(async (tip) => {
+        const highlight = await ctx.db
+          .query('highlights')
+          .filter(q => q.eq(q.field('text'), tip.highlightId)) // Assuming we store hash in text field temporarily
+          .first();
+
+        return {
+          ...tip,
+          highlightText: highlight?.text,
+          startOffset: highlight?.startOffset,
+          endOffset: highlight?.endOffset,
+        };
+      })
+    );
+
+    return enrichedTips;
+  },
+});
+```
+
+### **Phase 5: Analytics & Dashboard**
+
+#### 5.1 Real-time Analytics Service
 ```typescript
 // services/highlight-analytics.ts
 export class HighlightAnalyticsService {
@@ -508,7 +847,7 @@ export class HighlightAnalyticsService {
 }
 ```
 
-#### 4.2 Author Dashboard Page
+#### 5.2 Author Dashboard Page
 ```typescript
 // app/dashboard/highlights/page.tsx
 export default function HighlightDashboard() {
@@ -575,9 +914,9 @@ export default function HighlightDashboard() {
 }
 ```
 
-### **Phase 5: Testing & Optimization**
+### **Phase 6: Testing & Optimization**
 
-#### 5.1 Comprehensive Test Suite
+#### 6.1 Comprehensive Test Suite
 ```typescript
 // tests/highlight-tipping.test.ts
 describe('Highlight Tipping System', () => {
@@ -651,7 +990,7 @@ describe('Highlight Tipping System', () => {
 });
 ```
 
-#### 5.2 Test Data Generator
+#### 6.2 Test Data Generator
 ```typescript
 // scripts/generate-test-highlights.ts
 async function generateTestHighlights() {
@@ -706,53 +1045,98 @@ async function generateTestHighlights() {
 }
 ```
 
-## ✅ Completion Metrics
+## ✅ Revised Completion Metrics
 
-### Technical Deliverables
-- [x] Payment channel smart contract implementation
-- [x] Highlight ID generation with Stellar memo compatibility
-- [x] Off-chain tip accumulation system
-- [x] Batch settlement mechanism
-- [x] Real-time heatmap generation
-- [x] WebSocket-based live updates
-- [x] Redis caching layer
-- [x] 50+ test highlights with tips
+### **Technical Deliverables** (Adjusted)
 
-### Performance Targets
-- [x] Sub-3 second tip processing
-- [x] < 500ms heatmap load time
-- [x] Support for $0.01 micropayments
-- [x] 100-tip batch processing
-- [x] 80% cache hit rate
+**Week 1-2: Contract Extension**
+- [ ] Add `HighlightTip` struct to existing contract
+- [ ] Implement `tip_highlight_direct()` function
+- [ ] Implement payment channel functions (open, tip offchain, settle)
+- [ ] Deploy updated contract to Stellar testnet
+- [ ] Test contract functions via Stellar CLI
 
-### User Experience
-- [x] One-click channel opening
-- [x] Instant tip feedback (off-chain)
-- [x] Real-time heatmap updates
-- [x] Mobile-responsive interface
-- [x] Export functionality
+**Week 2-3: Frontend Integration**
+- [ ] Create `highlight-utils.ts` with `generateHighlightId()`
+- [ ] Extend `StellarClient` class with `buildHighlightTipTransaction()`
+- [ ] Create `HighlightTipButton` component (uses existing wallet hooks)
+- [ ] Create `PaymentChannelManager` service
+- [ ] Add Convex tables: `highlightTips`, `paymentChannels`, `pendingHighlightTips`
+- [ ] Create Convex mutations/queries for highlight tips
 
-## 🚀 Deployment Strategy
+**Week 3-4: Heatmap & Analytics**
+- [ ] Build `HighlightHeatmapService` for data aggregation
+- [ ] Create `HighlightHeatmap` visualization component
+- [ ] Add highlight analytics to author dashboard
+- [ ] Implement WebSocket for real-time tip updates
 
-1. **Testnet Deployment**:
-   - Smart contracts on Stellar testnet
-   - Frontend on Vercel preview
-   - Monitor for 24 hours
+**Week 4-5: Testing & Polish**
+- [ ] Generate 50+ test highlights with varied tip amounts
+- [ ] Test direct highlight tipping flow (>= $0.10)
+- [ ] Test payment channel flow (< $0.10): open → tip → settle
+- [ ] Performance test: heatmap load time < 500ms
+- [ ] E2E test: User connects wallet → tips highlight → author sees update
+- [ ] Cross-wallet testing: Freighter, xBull, Albedo
 
-2. **Production Readiness**:
-   - Performance testing complete
-   - Security audit passed
-   - Documentation updated
-   - Feature flag enabled for 10% rollout
+### **Performance Targets**
+- [ ] < 3 seconds for direct highlight tip (using existing wallet flow)
+- [ ] < 500ms heatmap generation and load time
+- [ ] Support $0.01 micropayments via payment channels
+- [ ] Batch process 100+ channel tips in single settlement
+- [ ] Cache heatmap data for 5 minutes (Redis or in-memory)
 
-## 🎯 Success Criteria Met
+### **User Experience Goals**
+- [ ] **Leverage existing wallet UX** - Users already know how to connect wallet
+- [ ] Instant tip feedback for micropayments (off-chain accumulation)
+- [ ] Real-time heatmap updates when new tips arrive
+- [ ] Mobile-responsive highlight tip buttons
+- [ ] Export heatmap data (CSV/JSON)
+
+## 🚀 Revised Deployment Strategy
+
+### **Phase 1: Local Development & Testing**
+- [ ] Deploy updated tipping contract to Stellar testnet
+- [ ] Configure local environment with testnet contract ID
+- [ ] Test with Freighter wallet on testnet
+- [ ] Verify direct tips and payment channels work
+
+### **Phase 2: Vercel Preview Deployment**
+- [ ] Deploy frontend to Vercel preview environment
+- [ ] Test with multiple wallets (Freighter, xBull, Albedo)
+- [ ] Monitor Convex database for tip records
+- [ ] Check Stellar testnet explorer for transactions
+
+### **Phase 3: Staging (Testnet + Production Frontend)**
+- [ ] Deploy to production Vercel environment
+- [ ] Keep using testnet Stellar contract (no real money)
+- [ ] Monitor for 48 hours with internal testing
+- [ ] Collect UX feedback on highlight tipping flow
+
+### **Phase 4: Mainnet Migration (Future)**
+- [ ] Deploy contracts to Stellar mainnet
+- [ ] Update `NEXT_PUBLIC_TIPPING_CONTRACT_ID` to mainnet contract
+- [ ] Feature flag for 10% rollout
+- [ ] Monitor for 1 week before full rollout
+
+## 🎯 Revised Success Criteria
 
 ✅ **Users can highlight any text and attach tips**
-✅ **Each highlight has unique ID stored in Stellar memo**
+✅ **Each highlight has unique deterministic ID (SHA256 hash)**
 ✅ **Authors see highlight heatmap showing earning patterns**
-✅ **50+ test highlights created with tips attached**
-✅ **Payment channels enable $0.01 tips efficiently**
-✅ **Real-time updates via WebSocket**
-✅ **Batch settlement reduces on-chain transactions by 100x**
+✅ **50+ test highlights created with varied tip amounts**
+✅ **Payment channels enable $0.01-$0.09 micropayment tips efficiently**
+✅ **Direct transactions handle $0.10+ tips using existing wallet flow**
+✅ **Real-time heatmap updates (polling or WebSocket)**
+✅ **Batch settlement reduces on-chain transactions by 100x for micropayments**
 
-This implementation leverages Stellar's unique capabilities (ultra-low fees, payment channels) to enable granular content monetization impossible on other blockchains, creating a new economic model for digital content.
+## 🔥 Key Advantages Over Original Plan
+
+1. **50% Faster Implementation** - Reuse existing wallet infrastructure instead of building from scratch
+2. **Lower Risk** - Extend proven systems rather than replace them
+3. **Better UX** - Users already familiar with existing tip flow
+4. **Hybrid Approach** - Best of both worlds: Simple for large tips, efficient for micro-tips
+5. **Production-Ready Wallet** - Multi-wallet support already battle-tested
+6. **Easier Testing** - Can test highlight tips independently from existing article tips
+7. **Incremental Rollout** - Can deploy highlight tipping without touching existing features
+
+This adjusted implementation leverages Stellar's unique capabilities (ultra-low fees, smart contracts, payment channels) while **building on top of your existing, working infrastructure** to enable granular content monetization impossible on other blockchains, creating a new economic model for digital content.

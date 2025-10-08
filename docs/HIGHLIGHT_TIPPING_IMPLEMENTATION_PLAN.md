@@ -5,6 +5,32 @@
 
 ---
 
+## 🔒 CRITICAL: Two-Contract Deployment Strategy
+
+### ⚠️ ZERO-RISK APPROACH - Existing Article Tipping MUST NOT Be Affected
+
+**OLD CONTRACT (Article Tipping):** `CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`
+- ✅ **REMAINS ACTIVE AND UNCHANGED**
+- ✅ **CONTINUES HANDLING ALL ARTICLE TIPPING**
+- ✅ **DO NOT MODIFY .env.local TIPPING_CONTRACT_ID**
+- ✅ **ZERO RISK TO EXISTING FUNCTIONALITY**
+
+**NEW CONTRACT (Highlight Tipping):** Will be deployed separately
+- Contains BOTH article + highlight tipping functions
+- Used EXCLUSIVELY for highlight tipping initially
+- Deployed to testnet as separate contract
+- Uses NEW environment variable: `NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID`
+- Once proven stable, can become single source of truth (future phase)
+
+### Why Two Contracts?
+1. **Zero Risk**: Article tipping keeps working unchanged
+2. **Independent Testing**: Develop/test highlight tipping separately
+3. **Safe Rollback**: Can abandon new contract if issues found
+4. **Clean Separation**: Clear boundaries during development
+5. **Future Flexibility**: Easy migration path when ready
+
+---
+
 ## 📋 Deliverable 1: Granular Highlight Tipping System
 
 **Description:** Implement phrase-level tipping where readers can select and tip specific text portions within articles.
@@ -13,7 +39,8 @@
 1. **Users can highlight any text and attach tips**
 2. **Each highlight gets unique ID stored in Stellar memo**
 3. **Authors see highlight heatmap showing which phrases earned most**
-4. **50+ test highlights created with tips attached**
+4. **NEW CONTRACT deployed and tested on testnet**
+5. **OLD CONTRACT remains functional for article tipping**
 
 ---
 
@@ -34,7 +61,8 @@
 - Platform fee calculation (2.5%)
 - NFT threshold tracking via `ArticleTotalTips`
 - Deployed contract ID: `CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`
-- **Keep this as-is, extend for highlights**
+- **⚠️ DO NOT TOUCH - This contract stays active for article tipping**
+- **⚠️ DO NOT MODIFY EXISTING .env.local VARIABLES**
 
 ### ✅ **Convex Database Schema** - WELL-DESIGNED
 - `users` table with `stellarAddress` field
@@ -185,21 +213,113 @@ impl TippingContract {
 }
 ```
 
-#### 1.2 Deploy Contract
-- Build: `make build` in `/contracts/tipping/`
-- Deploy to Stellar testnet using Stellar CLI
-- Update contract ID in frontend config
+#### 1.2 Build Contract
+**Command:**
+```bash
+cd /Users/apple/Desktop/QuillTip/contracts/tipping
+stellar contract build
+```
+**Expected:** `target/wasm32v1-none/release/quilltip_tipping.wasm` (~8-15KB)
 
-#### 1.3 Manual Testing
-- Test `tip_highlight_direct()` via Stellar CLI
-- Verify XLM transfers work correctly
-- Confirm receipt generation
+#### 1.3 Deploy NEW Contract to Testnet
+**⚠️ CRITICAL: This creates a SEPARATE contract. Old contract remains unchanged.**
+
+**Command:**
+```bash
+cd /Users/apple/Desktop/QuillTip/contracts/tipping
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/quilltip_tipping.wasm \
+  --source quilltip-deployer \
+  --network testnet
+```
+**Expected Output:** New contract ID (different from `CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`)
+**⚠️ IMMEDIATELY SAVE THIS NEW CONTRACT ID - You'll need it for next steps**
+
+#### 1.4 Initialize NEW Contract
+**Command:**
+```bash
+stellar contract invoke \
+  --id <NEW_CONTRACT_ID_FROM_STEP_1.3> \
+  --source quilltip-deployer \
+  --network testnet \
+  -- \
+  initialize \
+  --admin GCEDIDFYL6U3Y456ZK2GS4KXBNOBMRKR77EMOSR7W57AHWDVUVOVIZO5 \
+  --platform_address GCEDIDFYL6U3Y456ZK2GS4KXBNOBMRKR77EMOSR7W57AHWDVUVOVIZO5 \
+  --fee_bps 250
+```
+**Why:** New contract needs initialization before any tipping works
+
+#### 1.5 Manual Contract Testing
+**Test Highlight Tip Function:**
+```bash
+stellar contract invoke \
+  --id <NEW_CONTRACT_ID> \
+  --source quilltip-deployer \
+  --network testnet \
+  -- \
+  tip_highlight_direct \
+  --tipper GCEDIDFYL6U3Y456ZK2GS4KXBNOBMRKR77EMOSR7W57AHWDVUVOVIZO5 \
+  --highlight_id "test_highlight_abc123" \
+  --article_id "article1" \
+  --author GCEDIDFYL6U3Y456ZK2GS4KXBNOBMRKR77EMOSR7W57AHWDVUVOVIZO5 \
+  --amount 1000000
+```
+**Verify:** Transaction succeeds, check Stellar testnet explorer
+
+**Test Query Function:**
+```bash
+stellar contract invoke \
+  --id <NEW_CONTRACT_ID> \
+  --network testnet \
+  -- \
+  get_highlight_tips \
+  --highlight_id "test_highlight_abc123"
+```
+**Why:** Validate contract functions before frontend integration
 
 ---
 
 ### **Week 2: Frontend Integration**
 
-#### 2.1 Create Highlight ID Generator
+#### 2.1 Add Highlight Contract ID to Environment Variables
+**File:** `.env.local`
+
+**⚠️ CRITICAL: Add NEW variable, DO NOT modify existing TIPPING_CONTRACT_ID**
+
+**Action:**
+```bash
+# OLD - Article Tipping (⚠️ DO NOT CHANGE THIS LINE)
+NEXT_PUBLIC_TIPPING_CONTRACT_ID=CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM
+
+# NEW - Highlight Tipping (ADD THIS NEW LINE)
+NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID=<NEW_CONTRACT_ID_FROM_WEEK_1_STEP_1.3>
+```
+
+**Why:** Keep article tipping working while we build highlight tipping
+
+#### 2.2 Update Stellar Config for Two Contracts
+**File:** `lib/stellar/config.ts`
+
+**Action:** Add new constant (around line 9):
+```typescript
+export const STELLAR_CONFIG = {
+  // ... existing config ...
+
+  // Contract addresses
+  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || 'CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM',
+
+  // ⚠️ NEW: Highlight tipping contract (separate for safety)
+  HIGHLIGHT_CONTRACT_ID: process.env.NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID || '',
+
+  // ... rest of config ...
+}
+```
+
+**Why:** Make highlight contract ID available throughout app
+**Note:** Article tipping continues using TIPPING_CONTRACT_ID (unchanged)
+
+#### 2.3 Create Highlight ID Generator
 **Location:** `/lib/stellar/highlight-utils.ts` (NEW FILE)
 
 ```typescript
@@ -245,15 +365,18 @@ export async function storeHighlightMapping(
 }
 ```
 
-#### 2.2 Extend Stellar Client
-**Location:** `/lib/stellar/client.ts` (EXTEND EXISTING FILE)
+#### 2.4 Extend Stellar Client for Highlight Tipping
+**File:** `/lib/stellar/client.ts`
+**Location:** Add method after `buildTipTransaction()` method (around line 192)
+
+**⚠️ KEY DIFFERENCE: Uses HIGHLIGHT_CONTRACT_ID, not TIPPING_CONTRACT_ID**
 
 ```typescript
 // lib/stellar/client.ts - ADD to existing StellarClient class
 
 /**
  * Build transaction for highlight tipping
- * Same pattern as buildTipTransaction but calls tip_highlight_direct
+ * Same pattern as buildTipTransaction but uses NEW CONTRACT
  */
 async buildHighlightTipTransaction(
   tipperPublicKey: string,
@@ -277,8 +400,8 @@ async buildHighlightTipTransaction(
   // Reuse existing account loading
   const account = await this.server.loadAccount(tipperPublicKey);
 
-  // Use existing contract reference (same contract!)
-  const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID);
+  // ⚠️ CRITICAL: Use HIGHLIGHT_CONTRACT_ID (new contract), NOT TIPPING_CONTRACT_ID
+  const contract = new StellarSdk.Contract(STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID);
 
   const transaction = new StellarSdk.TransactionBuilder(account, {
     fee: StellarSdk.BASE_FEE,
@@ -309,7 +432,10 @@ async buildHighlightTipTransaction(
 }
 ```
 
-#### 2.3 Extend Convex Schema
+**Why:** Build transactions for highlight tipping using NEW contract
+**Note:** `buildTipTransaction()` continues using TIPPING_CONTRACT_ID (unchanged)
+
+#### 2.5 Extend Convex Schema
 **Location:** `/convex/schema.ts` (EXTEND EXISTING FILE)
 
 ```typescript
@@ -353,7 +479,7 @@ highlightTips: defineTable({
   .index("by_author", ["authorId"]),
 ```
 
-#### 2.4 Create Convex Mutations
+#### 2.6 Create Convex Mutations
 **Location:** `/convex/highlightTips.ts` (NEW FILE)
 
 ```typescript
@@ -427,7 +553,7 @@ export const getByArticle = query({
 });
 ```
 
-#### 2.5 Create HighlightTipButton Component
+#### 2.7 Create HighlightTipButton Component
 **Location:** `/components/highlights/HighlightTipButton.tsx` (NEW FILE)
 
 ```typescript
@@ -618,32 +744,43 @@ export function HighlightHeatmap({ articleId }: { articleId: string }) {
 
 ### **Week 4: Manual Testing & Polish**
 
-#### 4.1 Test Highlight Generation
-- Create 50+ test highlights across multiple articles
-- Vary tip amounts (10¢, 50¢, $1, $5)
-- Test different text lengths and positions
+#### 4.1 Verify Old Contract Still Works
+**⚠️ CRITICAL: Test this FIRST before anything else**
+- Open app in browser
+- Navigate to any article
+- Test article tipping with existing TipButton
+- Verify transaction succeeds on old contract
+- **If this fails, STOP and investigate before proceeding**
 
-#### 4.2 End-to-End Testing Flow
+#### 4.2 Test Highlight Tipping End-to-End
 1. User selects text
 2. HighlightTipButton appears
 3. User clicks tip amount
 4. Wallet popup (Freighter/xBull/Albedo)
 5. Sign transaction
-6. Tip recorded on Stellar
+6. Tip recorded on Stellar (NEW contract)
 7. Heatmap updates in real-time
+8. **Verify article tipping STILL works on old contract**
 
-#### 4.3 Cross-Wallet Testing
+#### 4.3 Create Manual Test Highlights
+- Create 10+ test highlights across different articles
+- Vary tip amounts (10¢, 50¢, $1)
+- Test different text lengths and positions
+- Verify heatmap displays correctly
+
+#### 4.4 Cross-Wallet Testing
 - Freighter wallet
 - xBull wallet
 - Albedo wallet
 - Verify all wallets can sign highlight tip transactions
+- **Test article tipping still works with each wallet**
 
-#### 4.4 Performance Optimization
+#### 4.5 Performance Optimization
 - Heatmap loads in < 500ms
 - Add caching for frequently viewed articles
 - Optimize Convex queries with proper indexes
 
-#### 4.5 UX Polish
+#### 4.6 UX Polish
 - Error handling for failed transactions
 - Loading states during wallet signing
 - Mobile-responsive tip buttons
@@ -653,49 +790,73 @@ export function HighlightHeatmap({ articleId }: { articleId: string }) {
 
 ## ✅ Completion Metrics (Deliverable 1)
 
-### 1. ✅ Users can highlight any text and attach tips
+### 1. ✅ OLD CONTRACT: Article tipping still works
+- **CRITICAL:** Existing article tipping unchanged and functional
+- Old contract ID still in use for articles
+- Zero disruption to current users
+
+### 2. ✅ NEW CONTRACT: Deployed and initialized on testnet
+- New contract contains both article + highlight functions
+- Initialized with correct admin and platform fee
+- Manual CLI testing passed
+
+### 3. ✅ Users can highlight any text and attach tips
 - HighlightTipButton component functional
 - Works with any text selection
-- Direct Stellar transactions
+- Direct Stellar transactions to NEW contract
 
-### 2. ✅ Each highlight gets unique ID stored in Stellar memo
+### 4. ✅ Each highlight gets unique ID stored in Stellar memo
 - SHA256 hash generation from text + position
 - Stored in Stellar transaction memo field
 - Deterministic and collision-resistant
 
-### 3. ✅ Authors see highlight heatmap showing which phrases earned most
+### 5. ✅ Authors see highlight heatmap showing which phrases earned most
 - HighlightHeatmap component shows color-coded visualization
 - Yellow → Orange → Red based on tip amount
 - Interactive tooltips with tip details
 
-### 4. ✅ 50+ test highlights created with tips attached
-- Test script to generate varied highlights
+### 6. ✅ Manual testing complete
+- 10+ test highlights created successfully
 - Different articles, amounts, positions
-- Validates entire flow end-to-end
+- Cross-wallet testing passed
+- **Article tipping verified still working**
 
 ---
 
 ## 🚀 Deployment Strategy
 
 ### Phase 1: Local Development & Testing
-- Deploy updated tipping contract to Stellar testnet
-- Configure local environment with testnet contract ID
-- Test with Freighter wallet on testnet
+- Deploy NEW contract to Stellar testnet (Week 1)
+- Add HIGHLIGHT_CONTRACT_ID to .env.local (**DO NOT change TIPPING_CONTRACT_ID**)
+- Test highlight tipping with Freighter wallet on testnet
+- Verify article tipping still works on old contract
 
 ### Phase 2: Vercel Preview Deployment
 - Deploy frontend to Vercel preview environment
+- Add HIGHLIGHT_CONTRACT_ID to Vercel environment variables
+- **Verify TIPPING_CONTRACT_ID unchanged in Vercel**
 - Test with multiple wallets
-- Monitor Convex database for tip records
-- Check Stellar testnet explorer for transactions
+- Monitor Convex database for highlight tip records
+- Check Stellar testnet explorer for transactions on BOTH contracts
 
-### Phase 3: Production Release
+### Phase 3: Production Release (Highlight Tipping)
 - Deploy to production Vercel environment
-- Keep using testnet Stellar contract (no real money yet)
+- Keep using testnet Stellar contracts (no real money yet)
+- OLD contract continues article tipping
+- NEW contract handles highlight tipping
 - Monitor for 48 hours with internal testing
 - Collect UX feedback
 
-### Phase 4: Mainnet Migration (Future)
-- Deploy contracts to Stellar mainnet
+### Phase 4: Contract Consolidation (Future)
+**Only after highlight tipping proven stable:**
+- Update TIPPING_CONTRACT_ID to point to new contract
+- Test article tipping on new contract
+- Remove HIGHLIGHT_CONTRACT_ID variable
+- Use single contract for both features
+- Old contract remains on testnet but unused
+
+### Phase 5: Mainnet Migration (Future)
+- Deploy final contract to Stellar mainnet
 - Update contract ID in environment variables
 - Feature flag for gradual rollout
 - Monitor for 1 week before full release
@@ -719,14 +880,29 @@ export function HighlightHeatmap({ articleId }: { articleId: string }) {
 
 ---
 
-## 🎯 Why This Approach Works
+## 🎯 Why Two-Contract Approach Works
 
-1. **Maximum Leverage** - Reuses 90% of existing code (wallet, client, contract patterns)
-2. **Lower Risk** - Fewer new systems = fewer failure points
-3. **Faster Delivery** - 4 weeks vs 8+ weeks with payment channels
-4. **Validation First** - Prove demand before optimizing for micropayments
-5. **Incremental** - Can add payment channels in v2 without touching core feature
+1. **Zero Risk** - Article tipping guaranteed to keep working
+2. **Independent Testing** - Develop highlight tipping without affecting production
+3. **Safe Rollback** - Can abandon new contract if issues found
+4. **Clean Separation** - Clear boundaries during development
+5. **Future Flexibility** - Easy migration path when ready
+6. **Maximum Leverage** - Still reuses 90% of existing code patterns
 
 ---
 
-**Implementation Status:** Ready to begin Week 1
+## ⚠️ CRITICAL SAFETY CHECKLIST
+
+Before deploying ANY changes to production:
+
+- [ ] Old contract `CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM` unchanged
+- [ ] `NEXT_PUBLIC_TIPPING_CONTRACT_ID` in .env.local still points to old contract
+- [ ] `NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID` added as NEW variable
+- [ ] Article tipping tested and working on old contract
+- [ ] Highlight tipping tested and working on new contract
+- [ ] Both contracts visible on Stellar testnet explorer
+- [ ] No modifications to existing TipButton or article tipping code
+
+---
+
+**Implementation Status:** Ready to begin Week 1 with TWO-CONTRACT approach

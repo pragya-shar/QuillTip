@@ -65,11 +65,14 @@ export function HighlightableArticle({
   } | null>(null)
   const editorRef = useRef<HTMLDivElement>(null)
   
+  // Fetch article data (for author info, Stellar address, etc.)
+  const article = useQuery(api.articles.getArticleById, { id: articleId })
+
   // Fetch highlights for the article
-  const highlights = useQuery(api.highlights.getArticleHighlights, { 
+  const highlights = useQuery(api.highlights.getArticleHighlights, {
     articleId
   })
-  
+
   // Mutation to create a highlight
   const createHighlight = useMutation(api.highlights.createHighlight)
   
@@ -228,12 +231,18 @@ export function HighlightableArticle({
       
       {/* Highlight creation popover */}
       <AnimatePresence>
-        {popoverPosition && selectedText && (
+        {popoverPosition && selectedText && article && (
           <HighlightPopover
             position={popoverPosition}
             onCreateHighlight={handleCreateHighlight}
             onClose={handlePopoverClose}
             selectedText={selectedText.text}
+            articleId={articleId}
+            articleSlug={article.slug}
+            authorName={article.author?.name || article.authorName || 'Author'}
+            authorStellarAddress={article.author?.stellarAddress}
+            startOffset={selectedText.from}
+            endOffset={selectedText.to}
           />
         )}
       </AnimatePresence>

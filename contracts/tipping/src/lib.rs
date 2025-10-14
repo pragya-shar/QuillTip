@@ -23,7 +23,7 @@ pub struct TipReceipt {
 #[contracttype]
 pub struct HighlightTip {
     pub highlight_id: String,    // Unique highlight identifier (SHA256)
-    pub article_id: Symbol,       // Parent article
+    pub article_id: Symbol,       // Parent article (Convex ID - alphanumeric, Symbol-safe)
     pub tipper: Address,
     pub amount: i128,
     pub timestamp: u64,
@@ -303,7 +303,7 @@ impl TippingContract {
         // Store highlight tip
         let tip = HighlightTip {
             highlight_id: highlight_id.clone(),
-            article_id: article_id.clone(),
+            article_id,
             tipper: tipper.clone(),
             amount,
             timestamp: env.ledger().timestamp(),

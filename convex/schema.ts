@@ -183,6 +183,62 @@ export default defineSchema({
     .index("by_author", ["authorId"])
     .index("by_status", ["status"]),
 
+  // Highlight Tips table (NEW - granular tipping)
+  highlightTips: defineTable({
+    // Core references
+    highlightId: v.string(), // SHA256 hash stored in Stellar memo
+    articleId: v.id("articles"),
+    tipperId: v.id("users"),
+    authorId: v.id("users"),
+
+    // Denormalized data for performance
+    highlightText: v.string(), // The actual text that was tipped
+    articleTitle: v.string(),
+    articleSlug: v.string(),
+    tipperName: v.optional(v.string()),
+    tipperAvatar: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    authorAvatar: v.optional(v.string()),
+
+    // Tip details
+    amountUsd: v.number(),
+    amountCents: v.number(),
+    message: v.optional(v.string()),
+
+    // Stellar transaction data
+    stellarTxId: v.string(),
+    stellarNetwork: v.string(), // TESTNET or MAINNET
+    stellarMemo: v.string(), // Highlight ID stored in memo
+    stellarLedger: v.optional(v.number()),
+    stellarFeeCharged: v.optional(v.string()),
+    stellarSourceAccount: v.optional(v.string()),
+    stellarDestinationAccount: v.optional(v.string()),
+    stellarAmountXlm: v.optional(v.string()),
+    contractTipId: v.optional(v.string()),
+
+    // Position data (for heatmap visualization)
+    startOffset: v.number(),
+    endOffset: v.number(),
+    startContainerPath: v.optional(v.string()),
+    endContainerPath: v.optional(v.string()),
+
+    // Status
+    status: v.string(), // PENDING, CONFIRMED, FAILED
+    failureReason: v.optional(v.string()),
+    platformFee: v.optional(v.number()),
+    authorShare: v.optional(v.number()),
+
+    // Timestamps
+    createdAt: v.number(),
+    processedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_highlight", ["highlightId"])
+    .index("by_article", ["articleId"])
+    .index("by_tipper", ["tipperId"])
+    .index("by_author", ["authorId"])
+    .index("by_status", ["status"]),
+
   // Author Earnings table
   authorEarnings: defineTable({
     // Relationship

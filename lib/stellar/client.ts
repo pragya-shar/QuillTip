@@ -192,6 +192,63 @@ export class StellarClient {
   }
 
   /**
+   * Build transaction for highlight tipping
+   * Same pattern as buildTipTransaction but uses HIGHLIGHT_CONTRACT_ID
+   */
+  async buildHighlightTipTransaction(
+    tipperPublicKey: string,
+    params: {
+      highlightId: string
+      articleId: string
+      authorAddress: string
+      amountCents: number
+    }
+  ): Promise<{
+    xdr: string
+    stroops: number
+    authorReceived: number
+    platformFee: number
+  }> {
+    const stroops = await this.convertCentsToStroops(params.amountCents)
+    const platformFee = Math.floor((stroops * STELLAR_CONFIG.PLATFORM_FEE_BPS) / 10_000)
+    const authorReceived = stroops - platformFee
+
+    // Load the tipper's account
+    const account = await this.server.loadAccount(tipperPublicKey)
+
+    // Create contract instance for HIGHLIGHT contract
+    const contract = new StellarSdk.Contract(STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID)
+
+    // Build the transaction
+    const transaction = new StellarSdk.TransactionBuilder(account, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: this.networkPassphrase,
+    })
+      .addOperation(
+        contract.call(
+          'tip_highlight_direct',
+          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }), // tipper
+          StellarSdk.nativeToScVal(params.highlightId, { type: 'string' }), // highlight_id
+          StellarSdk.nativeToScVal(params.articleId, { type: 'symbol' }), // article_id (Convex ID - alphanumeric, Symbol-safe, matches article tipping)
+          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }), // author
+          StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
+        )
+      )
+      .setTimeout(180)
+      .build()
+
+    // Prepare transaction for Soroban
+    const preparedTransaction = await this.sorobanServer.prepareTransaction(transaction)
+
+    return {
+      xdr: preparedTransaction.toXDR(),
+      stroops,
+      authorReceived,
+      platformFee,
+    }
+  }
+
+  /**
    * Submit signed transaction to network
    */
   async submitTipTransaction(signedXDR: string): Promise<TipReceipt> {

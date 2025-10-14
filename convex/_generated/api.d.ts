@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as articles from "../articles.js";
 import type * as auth from "../auth.js";
+import type * as highlightTips from "../highlightTips.js";
 import type * as highlights from "../highlights.js";
 import type * as http from "../http.js";
 import type * as nfts from "../nfts.js";
@@ -33,6 +34,7 @@ import type * as users from "../users.js";
 declare const fullApi: ApiFromModules<{
   articles: typeof articles;
   auth: typeof auth;
+  highlightTips: typeof highlightTips;
   highlights: typeof highlights;
   http: typeof http;
   nfts: typeof nfts;

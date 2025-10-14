@@ -3,12 +3,22 @@
 import { useState } from 'react'
 import { X, Highlighter, MessageSquare, Lock, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { HighlightTipButton } from './HighlightTipButton'
+import { Id } from '@/convex/_generated/dataModel'
 
 interface HighlightPopoverProps {
   position: { top: number; left: number }
   onCreateHighlight: (color: string, note?: string, isPublic?: boolean) => void
   onClose: () => void
   selectedText: string
+  // Tipping props (optional - only show tip button if article data provided)
+  articleId?: Id<'articles'>
+  articleSlug?: string
+  articleTitle?: string
+  authorName?: string
+  authorStellarAddress?: string | null
+  startOffset?: number
+  endOffset?: number
 }
 
 const PREMIUM_HIGHLIGHT_COLORS = [
@@ -55,6 +65,12 @@ export function HighlightPopover({
   onCreateHighlight,
   onClose,
   selectedText,
+  articleId,
+  articleSlug,
+  authorName,
+  authorStellarAddress,
+  startOffset,
+  endOffset,
 }: HighlightPopoverProps) {
   const [selectedColor, setSelectedColor] = useState(
     PREMIUM_HIGHLIGHT_COLORS[0]?.value || '#F59E0B'
@@ -160,6 +176,29 @@ export function HighlightPopover({
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             rows={3}
             autoFocus
+          />
+        </div>
+      )}
+
+      {/* Tip Button - Show if article data is available */}
+      {articleId && articleSlug && authorStellarAddress && startOffset !== undefined && endOffset !== undefined && (
+        <div className="mb-3 pt-3 border-t border-gray-200">
+          <div className="text-xs font-medium text-gray-600 mb-2">
+            💰 Tip this Highlight
+          </div>
+          <HighlightTipButton
+            articleId={articleId}
+            articleSlug={articleSlug}
+            authorName={authorName || 'Author'}
+            authorStellarAddress={authorStellarAddress}
+            highlightText={selectedText}
+            startOffset={startOffset}
+            endOffset={endOffset}
+            className="w-full justify-center"
+            onSuccess={() => {
+              // Close popover after successful tip
+              onClose()
+            }}
           />
         </div>
       )}

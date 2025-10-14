@@ -156,7 +156,7 @@ export const getArticleById = query({
   handler: async (ctx, args) => {
     const article = await ctx.db.get(args.id);
     if (!article) return null;
-    
+
     const author = await ctx.db.get(article.authorId);
     return {
       ...article,
@@ -165,6 +165,7 @@ export const getArticleById = query({
         name: author.name,
         username: author.username,
         avatar: author.avatar,
+        stellarAddress: author.stellarAddress,
       } : null,
     };
   },

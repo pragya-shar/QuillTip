@@ -14,9 +14,11 @@ import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { HighlightPopover } from '@/components/highlights/HighlightPopover'
+import { HighlightDetailsPanel } from '@/components/highlights/HighlightDetailsPanel'
 import { cn } from '@/lib/utils'
 import { JSONContent } from '@tiptap/react'
-import { motion, AnimatePresence } from 'motion/react'
+import { AnimatePresence } from 'motion/react'
+import { useAuth } from '@/components/providers/AuthContext'
 
 const lowlight = createLowlight(common)
 
@@ -27,6 +29,7 @@ interface HighlightData {
   endOffset: number
   startContainerPath: string
   endContainerPath: string
+  highlightId: string
   color?: string
   note?: string
   isPublic: boolean
@@ -64,7 +67,10 @@ export function HighlightableArticle({
     position: { top: number; left: number }
   } | null>(null)
   const editorRef = useRef<HTMLDivElement>(null)
-  
+
+  // Get current user for ownership checks
+  const { user } = useAuth()
+
   // Fetch article data (for author info, Stellar address, etc.)
   const article = useQuery(api.articles.getArticleById, { id: articleId })
 
@@ -247,36 +253,19 @@ export function HighlightableArticle({
         )}
       </AnimatePresence>
       
-      {/* Highlight info tooltip */}
+      {/* Highlight details panel */}
       <AnimatePresence>
-        {highlightTooltip && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.2 }}
-            className="highlight-tooltip visible"
-            style={{
-              top: highlightTooltip.position.top,
-              left: highlightTooltip.position.left,
-              transform: 'translateX(-50%)',
-            }}
-            onMouseLeave={handleTooltipClose}
-          >
-            {highlightTooltip.highlight.userName && (
-              <div className="author">
-                {highlightTooltip.highlight.userName}
-              </div>
-            )}
-            {highlightTooltip.highlight.note && (
-              <div className="note">
-                {highlightTooltip.highlight.note}
-              </div>
-            )}
-            <div className="timestamp">
-              {new Date(highlightTooltip.highlight.createdAt).toLocaleDateString()}
-            </div>
-          </motion.div>
+        {highlightTooltip && article && (
+          <HighlightDetailsPanel
+            highlight={highlightTooltip.highlight}
+            position={highlightTooltip.position}
+            onClose={handleTooltipClose}
+            currentUserId={user?._id as Id<'users'> | undefined}
+            articleId={articleId}
+            articleSlug={article.slug}
+            authorName={article.author?.name || article.authorName || 'Author'}
+            authorStellarAddress={article.author?.stellarAddress}
+          />
         )}
       </AnimatePresence>
     </div>

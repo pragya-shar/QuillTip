@@ -108,33 +108,37 @@ export default defineSchema({
     // References
     articleId: v.id("articles"),
     userId: v.id("users"),
-    
+
     // Denormalized data for performance
     articleTitle: v.string(),
     articleSlug: v.string(),
     articleAuthor: v.string(),
     userName: v.optional(v.string()),
     userAvatar: v.optional(v.string()),
-    
+
     // Text selection data
     text: v.string(),
     startOffset: v.number(),
     endOffset: v.number(),
     startContainerPath: v.string(),
     endContainerPath: v.string(),
-    
+
+    // Unique identifier (SHA256 hash) for linking with tips
+    highlightId: v.string(),
+
     // Metadata
     color: v.optional(v.string()),
     note: v.optional(v.string()),
     isPublic: v.boolean(),
-    
+
     // Timestamps
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_article", ["articleId"])
     .index("by_user", ["userId"])
-    .index("by_article_public", ["articleId", "isPublic"]),
+    .index("by_article_public", ["articleId", "isPublic"])
+    .index("by_highlight_id", ["highlightId"]),
 
   // Tips table
   tips: defineTable({

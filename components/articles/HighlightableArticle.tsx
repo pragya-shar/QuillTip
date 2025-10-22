@@ -79,6 +79,15 @@ export function HighlightableArticle({
     articleId
   })
 
+  // Use ref to avoid stale closure in onHighlightClick callback
+  const highlightsRef = useRef(highlights)
+  useEffect(() => {
+    highlightsRef.current = highlights
+    if (highlights) {
+      console.log('🔍 Loaded', highlights.length, 'highlights from Convex')
+    }
+  }, [highlights])
+
   // Mutation to create a highlight
   const createHighlight = useMutation(api.highlights.createHighlight)
   
@@ -105,27 +114,34 @@ export function HighlightableArticle({
           note: h.note,
           createdAt: h.createdAt
         })) || [],
-        onHighlightClick: (highlightAttrs) => {
-          // Find the full highlight data
-          const fullHighlight = highlights?.find(h => h._id === highlightAttrs.id)
+        onHighlightClick: (highlightAttrs, event) => {
+          // Use ref to get current highlights (avoids stale closure)
+          const currentHighlights = highlightsRef.current
+
+          // Find the full highlight data with defensive lookup
+          // Try matching by _id first (correct way)
+          let fullHighlight = currentHighlights?.find(h => h._id === highlightAttrs.id)
+
+          // Fallback: try matching by highlightId for backwards compatibility
+          if (!fullHighlight && highlightAttrs.id) {
+            fullHighlight = currentHighlights?.find(h => h.highlightId === highlightAttrs.id)
+          }
+
           if (fullHighlight) {
             // Show tooltip with highlight info
             if (onHighlightClick) {
               onHighlightClick(fullHighlight)
             } else {
-              // Default behavior: show tooltip
-              const selection = window.getSelection()
-              if (selection && selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0)
-                const rect = range.getBoundingClientRect()
-                setHighlightTooltip({
-                  highlight: fullHighlight,
-                  position: {
-                    top: rect.top + window.scrollY - 60,
-                    left: rect.left + rect.width / 2
-                  }
-                })
-              }
+              // Default behavior: show tooltip using click event position
+              const target = event.target as HTMLElement
+              const rect = target.getBoundingClientRect()
+              setHighlightTooltip({
+                highlight: fullHighlight,
+                position: {
+                  top: rect.top + window.scrollY - 60,
+                  left: rect.left + rect.width / 2
+                }
+              })
             }
           }
         }
@@ -177,7 +193,7 @@ export function HighlightableArticle({
   // Handle highlight creation
   const handleCreateHighlight = useCallback(async (color: string, note?: string, isPublic: boolean = true) => {
     if (!selectedText || !editor) return
-    
+
     try {
       // Create highlight data from selection
       const highlightData = HighlightConverter.createHighlightFromSelection(editor, {
@@ -185,34 +201,26 @@ export function HighlightableArticle({
         note,
         isPublic
       })
-      
+
       if (highlightData) {
-        // Save to database
+        // Save to database and get the new highlight ID
         await createHighlight({
           articleId,
           ...highlightData
         })
-        
-        // Apply the highlight immediately for instant feedback
-        editor
-          .chain()
-          .focus()
-          .setHighlight({
-            id: `temp-${Date.now()}`, // Temporary ID until refetch
-            color,
-            userId: 'current-user', // This would come from auth context
-            note,
-            createdAt: Date.now(),
-          })
-          .run()
-        
-        // Clear selection
+
+        // Clear selection immediately for better UX
         setSelectedText(null)
         setPopoverPosition(null)
         window.getSelection()?.removeAllRanges()
+
+        // Note: The highlight will be applied automatically when the
+        // highlights query refetches (due to Convex reactivity)
+        // No need to manually apply a temporary highlight
       }
     } catch (error) {
-      console.error('Error creating highlight:', error)
+      console.error('❌ Error creating highlight:', error)
+      // TODO: Show user-friendly error message
     }
   }, [selectedText, editor, articleId, createHighlight])
   

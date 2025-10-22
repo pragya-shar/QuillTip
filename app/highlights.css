@@ -36,7 +36,7 @@ mark[data-highlight-id] {
   position: relative;
   background-color: rgba(var(--highlight-color-rgb), var(--highlight-opacity, 0.3));
   mix-blend-mode: normal;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 2px;
   padding: 0 2px;
   margin: 0 -2px;
@@ -76,12 +76,18 @@ mark[data-overlap-count="5"] {
 
 /* Premium Hover Effects */
 mark[data-highlight-id]:hover {
-  filter: brightness(1.1) saturate(1.2);
-  transform: scale(1.02) translateZ(0);
-  box-shadow: 
-    0 2px 8px rgba(var(--highlight-color-rgb), 0.3),
-    0 0 0 2px rgba(var(--highlight-color-rgb), 0.1);
+  filter: brightness(1.15) saturate(1.3);
+  transform: scale(1.03) translateZ(0);
+  box-shadow:
+    0 3px 10px rgba(var(--highlight-color-rgb), 0.4),
+    0 0 0 2px rgba(var(--highlight-color-rgb), 0.15);
   z-index: 10;
+}
+
+/* Active/Click State for Instant Feedback */
+mark[data-highlight-id]:active {
+  transform: scale(1.01) translateZ(0);
+  transition: all 0.05s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Tooltip on Hover */
@@ -102,13 +108,15 @@ mark[data-highlight-id]::after {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition-delay: 0.1s;
 }
 
 mark[data-highlight-id]:hover::after {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+  transition-delay: 0s;
 }
 
 /* Entrance Animations */

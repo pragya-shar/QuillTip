@@ -10,13 +10,17 @@ export const getArticleHighlights = query({
     isPublic: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Use by_article index to get all highlights, then filter by isPublic if specified
     let highlightsQuery = ctx.db
       .query("highlights")
-      .withIndex("by_article_public", (q) => 
-        q.eq("articleId", args.articleId).eq("isPublic", args.isPublic !== false)
-      );
-    
-    const highlights = await highlightsQuery.collect();
+      .withIndex("by_article", (q) => q.eq("articleId", args.articleId));
+
+    let highlights = await highlightsQuery.collect();
+
+    // Filter by isPublic only if explicitly specified
+    if (args.isPublic !== undefined) {
+      highlights = highlights.filter(h => h.isPublic === args.isPublic);
+    }
     
     // Enrich with user data
     const enrichedHighlights = await Promise.all(

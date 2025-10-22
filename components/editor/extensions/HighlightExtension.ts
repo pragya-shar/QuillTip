@@ -16,7 +16,7 @@ export interface HighlightOptions {
   HTMLAttributes: Record<string, string | number | boolean>
   multicolor: boolean
   highlights: HighlightAttributes[]
-  onHighlightClick?: (highlight: HighlightAttributes) => void
+  onHighlightClick?: (highlight: HighlightAttributes, event: MouseEvent) => void
 }
 
 declare module '@tiptap/core' {
@@ -215,7 +215,9 @@ const HighlightExtension = Mark.create<HighlightOptions>({
         key: new PluginKey('highlightClick'),
         props: {
           handleClick: (view, pos, event) => {
-            if (!onHighlightClick) return false
+            if (!onHighlightClick) {
+              return false
+            }
 
             const { schema, doc } = view.state
             const range = doc.resolve(pos)
@@ -227,7 +229,8 @@ const HighlightExtension = Mark.create<HighlightOptions>({
 
             if (highlightMark && highlightMark.attrs.id) {
               event.preventDefault()
-              onHighlightClick(highlightMark.attrs as HighlightAttributes)
+              event.stopPropagation()
+              onHighlightClick(highlightMark.attrs as HighlightAttributes, event as MouseEvent)
               return true
             }
 

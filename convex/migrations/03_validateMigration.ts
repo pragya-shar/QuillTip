@@ -83,7 +83,7 @@ export const validate = query({
         const testHighlight = withHighlightId[0];
         const tips = await ctx.db
           .query("highlightTips")
-          .withIndex("by_highlight", q => q.eq("highlightId", testHighlight.highlightId!))
+          .withIndex("by_highlight", q => q.eq("highlightId", testHighlight!.highlightId!))
           .collect();
 
         tipQueryTest.success = true;

@@ -80,11 +80,15 @@ export class HighlightConverter {
    * Apply highlights to the TipTap editor as marks
    */
   static applyHighlightsToEditor(editor: Editor, highlights: HighlightData[]) {
-    if (!editor || !highlights.length) return
+    if (!editor) return
 
     try {
-      // Clear existing highlight marks first (without focusing)
+      // ALWAYS clear existing highlight marks first (even if highlights array is empty)
+      // This ensures deleted highlights are properly removed from the editor
       editor.chain().unsetHighlight().run()
+
+      // Early return if no highlights to apply
+      if (!highlights.length) return
 
       // Sort highlights by position to apply them in order
       const sortedHighlights = [...highlights].sort(

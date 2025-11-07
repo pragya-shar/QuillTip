@@ -236,6 +236,39 @@ const HighlightExtension = Mark.create<HighlightOptions>({
 
             return false
           },
+          handleDOMEvents: {
+            // Handle touch events for mobile devices
+            touchend: (view, event) => {
+              if (!onHighlightClick) {
+                return false
+              }
+
+              // Get the touch position
+              const touch = event.changedTouches[0]
+              if (!touch) return false
+
+              // Find the position in the document
+              const pos = view.posAtCoords({ left: touch.clientX, top: touch.clientY })
+              if (!pos) return false
+
+              const { schema, doc } = view.state
+              const range = doc.resolve(pos.pos)
+              const marks = range.marks()
+
+              const highlightMark = marks.find(
+                (mark) => mark.type === schema.marks.highlight
+              )
+
+              if (highlightMark && highlightMark.attrs.id) {
+                event.preventDefault()
+                event.stopPropagation()
+                onHighlightClick(highlightMark.attrs as HighlightAttributes, event as unknown as MouseEvent)
+                return true
+              }
+
+              return false
+            },
+          },
         },
       }),
       new Plugin({

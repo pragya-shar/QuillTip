@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Highlighter, MessageSquare, Lock, Globe } from 'lucide-react'
+import { Highlighter, MessageSquare, Lock, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HighlightTipButton } from './HighlightTipButton'
 import { Id } from '@/convex/_generated/dataModel'
@@ -79,15 +79,14 @@ export function HighlightPopover({
   const [isPublic, setIsPublic] = useState(true)
   const [showNoteInput, setShowNoteInput] = useState(false)
 
-  const handleCreateHighlight = () => {
+  const handleSaveHighlight = () => {
     onCreateHighlight(selectedColor, note || undefined, isPublic)
+    onClose()
   }
 
   const handleColorSelect = (color: string) => {
     setSelectedColor(color)
-    if (!showNoteInput) {
-      onCreateHighlight(color, undefined, isPublic)
-    }
+    // Just select the color, don't create highlight automatically
   }
 
   return (
@@ -180,46 +179,48 @@ export function HighlightPopover({
         </div>
       )}
 
-      {/* Tip Button - Show if article data is available */}
-      {articleId && articleSlug && authorStellarAddress && startOffset !== undefined && endOffset !== undefined && (
-        <div className="mb-3 pt-3 border-t border-gray-200">
-          <div className="text-xs font-medium text-gray-600 mb-2">
-            💰 Tip this Highlight
-          </div>
-          <HighlightTipButton
-            articleId={articleId}
-            articleSlug={articleSlug}
-            authorName={authorName || 'Author'}
-            authorStellarAddress={authorStellarAddress}
-            highlightText={selectedText}
-            startOffset={startOffset}
-            endOffset={endOffset}
-            className="w-full justify-center"
-            onSuccess={() => {
-              // Close popover after successful tip
-              onClose()
-            }}
-          />
+      {/* Action Buttons Section */}
+      <div className="pt-3 border-t border-gray-200">
+        <div className="text-xs font-medium text-gray-600 mb-3 text-center">
+          💾 Save highlight {articleId && articleSlug && authorStellarAddress && startOffset !== undefined && endOffset !== undefined && 'or 💰 tip the author'}
         </div>
-      )}
-
-      {/* Action Buttons */}
-      <div className="flex gap-2">
-        {showNoteInput && (
+        
+        <div className="flex gap-2 mb-3">
+          {/* Save Highlight Button */}
           <button
-            onClick={handleCreateHighlight}
-            className="highlight-action-button flex-1 bg-gradient-to-r from-gray-900 to-gray-700 text-white hover:from-gray-800 hover:to-gray-600"
+            onClick={handleSaveHighlight}
+            className="highlight-action-button flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 flex items-center justify-center"
           >
-            <Highlighter className="w-4 h-4 inline mr-2" />
-            Save Highlight
+            <Highlighter className="w-4 h-4 mr-2" />
+            <span>Save</span>
           </button>
-        )}
 
+          {/* Tip Highlight Button - Show if article data is available */}
+          {articleId && articleSlug && authorStellarAddress && startOffset !== undefined && endOffset !== undefined && (
+            <HighlightTipButton
+              articleId={articleId}
+              articleSlug={articleSlug}
+              authorName={authorName || 'Author'}
+              authorStellarAddress={authorStellarAddress}
+              highlightText={selectedText}
+              startOffset={startOffset}
+              endOffset={endOffset}
+              className="flex-1"
+              onSuccess={() => {
+                // Create highlight with selected settings, then close
+                onCreateHighlight(selectedColor, note || undefined, isPublic)
+                onClose()
+              }}
+            />
+          )}
+        </div>
+
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="highlight-action-button px-3 bg-gray-100 hover:bg-gray-200 text-gray-700"
+          className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
-          <X className="w-4 h-4" />
+          Cancel
         </button>
       </div>
     </div>

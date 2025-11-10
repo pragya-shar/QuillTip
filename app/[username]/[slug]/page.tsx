@@ -11,6 +11,7 @@ import { TipButton } from '@/components/tipping/TipButton'
 import { NFTIntegration } from '@/components/nft/NFTIntegration'
 import { DollarSign, Trophy, Heart, MessageSquare, ChevronDown } from 'lucide-react'
 import { HighlightNotes } from '@/components/highlights/HighlightNotes'
+import { HighlightHeatmap } from '@/components/highlights/HighlightHeatmap'
 import { useAuth } from '@/components/providers/AuthContext'
 import { Id } from '@/convex/_generated/dataModel'
 import { cn } from '@/lib/utils'
@@ -167,6 +168,12 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                     currentUserAddress={user?.stellarAddress}
                   />
                 </div>
+                
+                {/* Highlight Heatmap Section */}
+                <HighlightHeatmap 
+                  articleId={article._id}
+                  isAuthor={user?._id === article.author.id}
+                />
                 
                 {/* Highlight Notes Section */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200">

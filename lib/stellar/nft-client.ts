@@ -144,6 +144,7 @@ export class NFTClient {
             StellarSdk.nativeToScVal(params.metadataUrl, { type: 'string' }) // metadata_url
           )
         )
+        .addMemo(StellarSdk.Memo.text(`nft:${params.articleId}`)) // Store article ID in memo for NFT tracking
         .setTimeout(180)
         .build()
 

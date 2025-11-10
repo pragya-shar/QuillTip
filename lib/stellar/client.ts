@@ -119,6 +119,7 @@ export class StellarClient {
             amount: xlmAmount,
           })
         )
+        .addMemo(StellarSdk.Memo.text('payment')) // Simple payment identifier
         .setTimeout(30)
         .build()
 
@@ -176,6 +177,7 @@ export class StellarClient {
           StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
         )
       )
+      .addMemo(StellarSdk.Memo.text(`article:${params.articleId}`)) // Store article ID in memo for on-chain tracking
       .setTimeout(180)
       .build()
 
@@ -234,6 +236,7 @@ export class StellarClient {
           StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
         )
       )
+      .addMemo(StellarSdk.Memo.text(params.highlightId)) // Store highlight ID in memo for on-chain verification
       .setTimeout(180)
       .build()
 

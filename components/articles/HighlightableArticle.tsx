@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { JSONContent } from '@tiptap/react'
 import { AnimatePresence } from 'motion/react'
 import { useAuth } from '@/components/providers/AuthContext'
+import { toast } from 'sonner'
 
 const lowlight = createLowlight(common)
 
@@ -220,7 +221,9 @@ export function HighlightableArticle({
       }
     } catch (error) {
       console.error('❌ Error creating highlight:', error)
-      // TODO: Show user-friendly error message
+      toast.error('Failed to create highlight', {
+        description: error instanceof Error ? error.message : 'Please try again or refresh the page.',
+      })
     }
   }, [selectedText, editor, articleId, createHighlight])
   

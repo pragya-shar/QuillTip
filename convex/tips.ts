@@ -36,6 +36,30 @@ export const getArticleTips = query({
   },
 });
 
+// Get tip statistics for an article
+export const getArticleTipStats = query({
+  args: {
+    articleId: v.id("articles"),
+  },
+  handler: async (ctx, args) => {
+    const tips = await ctx.db
+      .query("tips")
+      .withIndex("by_article", (q) => q.eq("articleId", args.articleId))
+      .filter((q) => q.eq(q.field("status"), "CONFIRMED"))
+      .collect();
+    
+    const totalTips = tips.length;
+    const totalAmountUsd = tips.reduce((sum, tip) => sum + tip.amountUsd, 0);
+    const uniqueTippers = new Set(tips.map(tip => tip.tipperId)).size;
+    
+    return {
+      totalTips,
+      totalAmountUsd,
+      uniqueTippers,
+    };
+  },
+});
+
 // Get user's sent tips
 export const getUserSentTips = query({
   args: {

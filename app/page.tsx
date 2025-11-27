@@ -6,6 +6,7 @@ import AppNavigation from '@/components/layout/AppNavigation';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import HowItWorksSection from '@/components/landing/HowItWorksSection';
+import WaitlistSection from '@/components/landing/WaitlistSection';
 import FAQSection from '@/components/landing/FAQSection';
 import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
@@ -72,6 +73,7 @@ export default function HomePage() {
       <HeroSection />
       <FeaturesSection />
       <HowItWorksSection />
+      <WaitlistSection />
       <FAQSection />
       <Footer />
     </div>

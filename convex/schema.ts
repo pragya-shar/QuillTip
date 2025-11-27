@@ -378,4 +378,22 @@ export default defineSchema({
     .index("by_user", ["uploadedBy"])
     .index("by_article", ["articleId"])
     .index("by_type", ["uploadType"]),
+
+  // Waitlist table
+  waitlist: defineTable({
+    email: v.string(),
+    
+    // Status tracking
+    status: v.optional(v.string()), // "pending", "invited", "joined"
+    
+    // Metadata
+    source: v.optional(v.string()), // "landing_page", "referral", etc.
+    invitedAt: v.optional(v.number()),
+    joinedAt: v.optional(v.number()),
+    
+    // Timestamps
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
 });

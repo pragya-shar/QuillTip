@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Mail, ArrowRight, CheckCircle } from 'lucide-react';
 
 export default function WaitlistSection() {
@@ -8,6 +10,8 @@ export default function WaitlistSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  const joinWaitlist = useMutation(api.waitlist.joinWaitlist);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,15 +26,16 @@ export default function WaitlistSection() {
 
     setIsSubmitting(true);
     
-    // Simulate API call - replace with actual endpoint later
     try {
-      // TODO: Replace with actual API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await joinWaitlist({ 
+        email,
+        source: 'landing_page' 
+      });
       
       setIsSubmitted(true);
       setEmail('');
-    } catch {
-      setError('Something went wrong. Please try again.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

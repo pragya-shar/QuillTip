@@ -1,5 +1,6 @@
 import * as StellarSdk from '@stellar/stellar-sdk'
 import { STELLAR_CONFIG } from './config'
+import { createMemo } from './memo-utils'
 import type {
   TipParams,
   TipReceipt,
@@ -177,7 +178,7 @@ export class StellarClient {
           StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
         )
       )
-      .addMemo(StellarSdk.Memo.text(`article:${params.articleId}`)) // Store article ID in memo for on-chain tracking
+      .addMemo(createMemo({ type: 'article', id: params.articleId }))
       .setTimeout(180)
       .build()
 
@@ -236,7 +237,7 @@ export class StellarClient {
           StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
         )
       )
-      .addMemo(StellarSdk.Memo.text(params.highlightId)) // Store highlight ID in memo for on-chain verification
+      .addMemo(createMemo({ type: 'highlight', id: params.highlightId }))
       .setTimeout(180)
       .build()
 

@@ -1,6 +1,7 @@
 import * as StellarSdk from '@stellar/stellar-sdk'
 import { STELLAR_CONFIG } from './config'
-import { createMemo } from './memo-utils'
+// Note: Memos cannot be used with Soroban source account auth
+// (Stellar protocol restriction: "non-source auth Soroban tx uses memo or muxed source account")
 import type {
   TipParams,
   TipReceipt,
@@ -164,7 +165,10 @@ export class StellarClient {
     // Create contract instance
     const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID)
 
-    // Build the transaction
+    // Convert stroops to BigInt for i128 (required by Soroban)
+    const stroopsBigInt = BigInt(stroops)
+
+    // Build the transaction (no memo - not allowed with Soroban source account auth)
     const transaction = new StellarSdk.TransactionBuilder(account, {
       fee: StellarSdk.BASE_FEE,
       networkPassphrase: this.networkPassphrase,
@@ -172,13 +176,12 @@ export class StellarClient {
       .addOperation(
         contract.call(
           'tip_article',
-          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }), // tipper
-          StellarSdk.nativeToScVal(params.articleId, { type: 'symbol' }), // article_id
-          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }), // author
-          StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
+          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }),
+          StellarSdk.nativeToScVal(params.articleId.slice(0, 10), { type: 'symbol' }), // truncated for Symbol limit
+          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }),
+          StellarSdk.nativeToScVal(stroopsBigInt, { type: 'i128' })
         )
       )
-      .addMemo(createMemo({ type: 'article', id: params.articleId }))
       .setTimeout(180)
       .build()
 
@@ -191,7 +194,6 @@ export class StellarClient {
       authorReceived,
       platformFee,
     }
-
   }
 
   /**
@@ -222,7 +224,10 @@ export class StellarClient {
     // Create contract instance for HIGHLIGHT contract
     const contract = new StellarSdk.Contract(STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID)
 
-    // Build the transaction
+    // Convert stroops to BigInt for i128 (required by Soroban)
+    const stroopsBigInt = BigInt(stroops)
+
+    // Build the transaction (no memo - not allowed with Soroban source account auth)
     const transaction = new StellarSdk.TransactionBuilder(account, {
       fee: StellarSdk.BASE_FEE,
       networkPassphrase: this.networkPassphrase,
@@ -230,14 +235,13 @@ export class StellarClient {
       .addOperation(
         contract.call(
           'tip_highlight_direct',
-          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }), // tipper
-          StellarSdk.nativeToScVal(params.highlightId, { type: 'string' }), // highlight_id
-          StellarSdk.nativeToScVal(params.articleId, { type: 'symbol' }), // article_id (Convex ID - alphanumeric, Symbol-safe, matches article tipping)
-          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }), // author
-          StellarSdk.nativeToScVal(stroops, { type: 'i128' }) // amount
+          StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }),
+          StellarSdk.nativeToScVal(params.highlightId, { type: 'string' }),
+          StellarSdk.nativeToScVal(params.articleId.slice(0, 10), { type: 'symbol' }), // truncated for Symbol limit
+          StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }),
+          StellarSdk.nativeToScVal(stroopsBigInt, { type: 'i128' })
         )
       )
-      .addMemo(createMemo({ type: 'highlight', id: params.highlightId }))
       .setTimeout(180)
       .build()
 
@@ -261,16 +265,6 @@ export class StellarClient {
     // Submit transaction
     const result = await this.sorobanServer.sendTransaction(transaction)
 
-    console.log('Transaction submission result:', {
-      status: result.status,
-      hash: result.hash,
-      errorResult: result.errorResult,
-      // Additional debug properties if available
-      ...((result as unknown as Record<string, unknown>).errorResultXdr ? {
-        errorResultXdr: (result as unknown as Record<string, unknown>).errorResultXdr
-      } : {})
-    })
-
     if (result.status === 'PENDING') {
       // Wait for transaction to be included in ledger
       let txResult = await this.sorobanServer.getTransaction(result.hash)
@@ -282,15 +276,6 @@ export class StellarClient {
         txResult = await this.sorobanServer.getTransaction(result.hash)
         retries++
       }
-
-      console.log('Transaction result after polling:', {
-        status: txResult.status,
-        retries,
-        // Additional debug properties if available
-        ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
-          resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
-        } : {})
-      })
 
       if (txResult.status === 'SUCCESS') {
         // Parse the return value from contract
@@ -309,44 +294,16 @@ export class StellarClient {
           }
         }
       } else if (txResult.status === 'FAILED') {
-        // Parse the error for better debugging
-        const errorDetails = {
-          status: txResult.status,
-          // Additional error properties if available
-          ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
-            resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
-          } : {}),
-          ...((txResult as unknown as Record<string, unknown>).resultMetaXdr ? {
-            resultMetaXdr: (txResult as unknown as Record<string, unknown>).resultMetaXdr
-          } : {}),
-        }
-        console.error('Transaction failed with details:', errorDetails)
-        throw new Error(`Transaction failed: ${JSON.stringify(errorDetails, null, 2)}`)
+        throw new Error('Transaction failed on the network')
       } else if (txResult.status === 'NOT_FOUND' && retries >= maxRetries) {
         throw new Error('Transaction timeout: Could not confirm transaction after 30 seconds')
       }
     }
 
-    // Handle various error cases
-    console.error('Transaction submission failed:', {
-      status: result.status,
-      errorResult: result.errorResult,
-    })
-
-    // Extract meaningful error message
-    let errorMessage = 'Transaction submission failed'
-
-    if (result.errorResult) {
-      if (typeof result.errorResult === 'string') {
-        errorMessage = result.errorResult
-      } else if (typeof result.errorResult === 'object' && result.errorResult !== null) {
-        errorMessage = `Transaction failed with status: ${result.status}. Details: ${JSON.stringify(result.errorResult, null, 2)}`
-      } else {
-        errorMessage = `Transaction failed with status: ${result.status}. Error: ${String(result.errorResult)}`
-      }
-    } else {
-      errorMessage = `Transaction failed with status: ${result.status}`
-    }
+    // Handle error cases
+    const errorMessage = result.errorResult
+      ? `Transaction failed: ${JSON.stringify(result.errorResult)}`
+      : `Transaction failed with status: ${result.status}`
 
     throw new Error(errorMessage)
   }
@@ -366,7 +323,7 @@ export class StellarClient {
         networkPassphrase: this.networkPassphrase,
       })
         .addOperation(
-          contract.call('get_article_tips', StellarSdk.nativeToScVal(articleId, { type: 'symbol' }))
+          contract.call('get_article_tips', StellarSdk.nativeToScVal(articleId.slice(0, 10), { type: 'symbol' }))
         )
         .setTimeout(30)
         .build()

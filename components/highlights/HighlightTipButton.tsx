@@ -90,8 +90,6 @@ export function HighlightTipButton({
     setIsLoading(true)
 
     try {
-      console.log('💰 Starting highlight tip transaction...')
-
       // Generate deterministic highlight ID
       const highlightId = await generateHighlightId(
         articleSlug,
@@ -99,8 +97,6 @@ export function HighlightTipButton({
         startOffset,
         endOffset
       )
-
-      console.log('🔑 Generated highlight ID:', highlightId)
 
       // Build Stellar transaction
       const transactionData = await stellarClient.buildHighlightTipTransaction(
@@ -113,17 +109,11 @@ export function HighlightTipButton({
         }
       )
 
-      console.log('📝 Signing transaction...')
-
       // Sign transaction with wallet
       const signedXDR = await signTransaction(transactionData.xdr)
 
-      console.log('🚀 Submitting to Stellar network...')
-
       // Submit transaction to Stellar network
       const receipt = await stellarClient.submitTipTransaction(signedXDR)
-
-      console.log('💾 Recording in database...')
 
       // Record tip in Convex
       await createHighlightTip({
@@ -147,8 +137,6 @@ export function HighlightTipButton({
         platformFee: transactionData.platformFee,
         authorShare: transactionData.authorReceived,
       })
-
-      console.log('✅ Highlight tip completed successfully!', receipt)
 
       // Close modal first
       setIsOpen(false)

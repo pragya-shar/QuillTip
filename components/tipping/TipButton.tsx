@@ -65,42 +65,15 @@ export function TipButton({
       return
     }
 
-    // For now, fall back to mock if no author Stellar address
+    // Require author to have Stellar address configured for real tips
     if (!authorStellarAddress) {
-      setIsLoading(true)
-      try {
-        console.log('💰 Sending mock tip...')
-        await sendTip({
-          articleId,
-          amountUsd: amountCents / 100,
-        })
-
-        console.log('✅ Mock tip sent successfully')
-
-        // Close modal first
-        setIsOpen(false)
-        setSelectedAmount(null)
-        setCustomAmount('')
-
-        // Show success toast after modal closes
-        toast.success(
-          `Successfully tipped ${authorName} $${(amountCents / 100).toFixed(2)}!`
-        )
-      } catch (error) {
-        console.error('Tipping error:', error)
-        toast.error(
-          error instanceof Error ? error.message : 'Failed to send tip'
-        )
-      } finally {
-        setIsLoading(false)
-      }
+      toast.error('Author has not set up their Stellar wallet for receiving tips')
       return
     }
 
     setIsLoading(true)
 
     try {
-      console.log('💰 Starting Stellar tip transaction...')
       // Build Stellar transaction using user's wallet address
       const transactionData = await stellarClient.buildTipTransaction(
         publicKey,
@@ -112,23 +85,17 @@ export function TipButton({
         }
       )
 
-      console.log('📝 Signing transaction...')
       // Sign transaction with wallet
       const signedXDR = await signTransaction(transactionData.xdr)
-
-      console.log('🚀 Submitting to Stellar network...')
       // Submit transaction to Stellar network
       const receipt = await stellarClient.submitTipTransaction(signedXDR)
 
-      console.log('💾 Recording in database...')
       // Record tip in Convex for analytics/UI (with Stellar transaction hash)
       await sendTip({
         articleId,
         amountUsd: amountCents / 100,
         message: `Stellar tip: ${receipt.transactionHash}`,
       })
-
-      console.log('✅ Stellar tip completed successfully!', receipt)
 
       // Close modal first to prevent it from interfering with toast
       setIsOpen(false)

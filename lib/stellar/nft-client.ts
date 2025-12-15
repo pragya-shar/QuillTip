@@ -1,5 +1,6 @@
 import * as StellarSdk from '@stellar/stellar-sdk'
 import { STELLAR_CONFIG } from './config'
+import { createMemo } from './memo-utils'
 import type {
   MintNFTParams,
   NFTOwnership,
@@ -103,7 +104,7 @@ export class NFTClient {
       const result = await this.sorobanServer.simulateTransaction(transaction)
 
       if (StellarSdk.rpc.Api.isSimulationSuccess(result) && result.result?.retval) {
-        return parseInt(StellarSdk.scValToNative(result.result.retval))
+        return parseInt(StellarSdk.scValToNative(result.result.retval), 10)
       }
 
       return STELLAR_CONFIG.NFT_TIP_THRESHOLD_STROOPS
@@ -144,6 +145,7 @@ export class NFTClient {
             StellarSdk.nativeToScVal(params.metadataUrl, { type: 'string' }) // metadata_url
           )
         )
+        .addMemo(createMemo({ type: 'nft', id: params.articleId }))
         .setTimeout(180)
         .build()
 
@@ -169,16 +171,6 @@ export class NFTClient {
       // Submit transaction
       const result = await this.sorobanServer.sendTransaction(transaction)
 
-      console.log('Transaction submission result:', {
-        status: result.status,
-        hash: result.hash,
-        errorResult: result.errorResult,
-        // Additional debug properties if available
-        ...((result as unknown as Record<string, unknown>).errorResultXdr ? {
-          errorResultXdr: (result as unknown as Record<string, unknown>).errorResultXdr
-        } : {})
-      })
-
       if (result.status === 'PENDING') {
         // Wait for transaction to be included in ledger
         let txResult = await this.sorobanServer.getTransaction(result.hash)
@@ -191,20 +183,11 @@ export class NFTClient {
           retries++
         }
 
-        console.log('Transaction result after polling:', {
-          status: txResult.status,
-          retries,
-          // Additional debug properties if available
-          ...((txResult as unknown as Record<string, unknown>).resultXdr ? {
-            resultXdr: (txResult as unknown as Record<string, unknown>).resultXdr
-          } : {})
-        })
-
         if (txResult.status === 'SUCCESS') {
           // Parse the return value from contract (token ID)
           let tokenId: number | undefined
           if (txResult.returnValue) {
-            tokenId = parseInt(StellarSdk.scValToNative(txResult.returnValue))
+            tokenId = parseInt(StellarSdk.scValToNative(txResult.returnValue), 10)
           }
 
           return {

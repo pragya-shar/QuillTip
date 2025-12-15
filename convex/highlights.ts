@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { generateHighlightIdServer } from "./lib/highlightHash";
 
 // Get highlights for an article
 export const getArticleHighlights = query({
@@ -9,13 +10,17 @@ export const getArticleHighlights = query({
     isPublic: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Use by_article index to get all highlights, then filter by isPublic if specified
     let highlightsQuery = ctx.db
       .query("highlights")
-      .withIndex("by_article_public", (q) => 
-        q.eq("articleId", args.articleId).eq("isPublic", args.isPublic !== false)
-      );
-    
-    const highlights = await highlightsQuery.collect();
+      .withIndex("by_article", (q) => q.eq("articleId", args.articleId));
+
+    let highlights = await highlightsQuery.collect();
+
+    // Filter by isPublic only if explicitly specified
+    if (args.isPublic !== undefined) {
+      highlights = highlights.filter(h => h.isPublic === args.isPublic);
+    }
     
     // Enrich with user data
     const enrichedHighlights = await Promise.all(
@@ -45,13 +50,13 @@ export const getUserHighlights = query({
   handler: async (ctx, args) => {
     const targetUserId = args.userId || await getAuthUserId(ctx);
     if (!targetUserId) return [];
-    
+
     const highlights = await ctx.db
       .query("highlights")
       .withIndex("by_user", (q) => q.eq("userId", targetUserId))
       .order("desc")
       .collect();
-    
+
     // Enrich with article data
     const enrichedHighlights = await Promise.all(
       highlights.map(async (highlight) => {
@@ -67,7 +72,57 @@ export const getUserHighlights = query({
         };
       })
     );
-    
+
+    return enrichedHighlights;
+  },
+});
+
+// Get user's highlights with tip statistics
+export const getUserHighlightsWithTips = query({
+  args: {
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    const targetUserId = args.userId || await getAuthUserId(ctx);
+    if (!targetUserId) return [];
+
+    const highlights = await ctx.db
+      .query("highlights")
+      .withIndex("by_user", (q) => q.eq("userId", targetUserId))
+      .order("desc")
+      .collect();
+
+    // Enrich with article data and tip statistics
+    const enrichedHighlights = await Promise.all(
+      highlights.map(async (highlight) => {
+        const article = await ctx.db.get(highlight.articleId);
+
+        // Get all tips for this highlight (by highlightId hash)
+        const tips = await ctx.db
+          .query("highlightTips")
+          .withIndex("by_highlight", (q) => q.eq("highlightId", highlight.highlightId))
+          .collect();
+
+        const tipCount = tips.length;
+        const totalTipsUsd = tips.reduce((sum, tip) => sum + (tip.amountCents / 100), 0);
+
+        return {
+          ...highlight,
+          article: article ? {
+            id: article._id,
+            title: article.title,
+            slug: article.slug,
+            authorUsername: article.authorUsername,
+          } : null,
+          tipStats: {
+            count: tipCount,
+            totalUsd: totalTipsUsd,
+            hasTips: tipCount > 0,
+          },
+        };
+      })
+    );
+
     return enrichedHighlights;
   },
 });
@@ -88,16 +143,24 @@ export const createHighlight = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
-    
+
     const article = await ctx.db.get(args.articleId);
     if (!article) throw new Error("Article not found");
-    
+
+    // Generate deterministic highlight ID (same algorithm as tips)
+    const highlightId = await generateHighlightIdServer(
+      article.slug,
+      args.text,
+      args.startOffset,
+      args.endOffset
+    );
+
     const now = Date.now();
-    
-    const highlightId = await ctx.db.insert("highlights", {
+
+    const recordId = await ctx.db.insert("highlights", {
       articleId: args.articleId,
       articleTitle: article.title,
       articleSlug: article.slug,
@@ -110,24 +173,25 @@ export const createHighlight = mutation({
       endOffset: args.endOffset,
       startContainerPath: args.startContainerPath,
       endContainerPath: args.endContainerPath,
+      highlightId, // Store the hash for linking with tips
       color: args.color || "#FFEB3B",
       note: args.note,
       isPublic: args.isPublic !== false,
       createdAt: now,
       updatedAt: now,
     });
-    
+
     // Update article highlight count
     await ctx.db.patch(args.articleId, {
       highlightCount: (article.highlightCount || 0) + 1,
     });
-    
+
     // Update user highlight count
     await ctx.db.patch(userId, {
       highlightCount: (user.highlightCount || 0) + 1,
     });
-    
-    return highlightId;
+
+    return recordId;
   },
 });
 
@@ -147,14 +211,19 @@ export const updateHighlight = mutation({
     if (!highlight) throw new Error("Highlight not found");
     if (highlight.userId !== userId) throw new Error("Not authorized");
     
-    const updates: any = {
+    const updates: {
+      updatedAt: number;
+      note?: string;
+      color?: string;
+      isPublic?: boolean;
+    } = {
       updatedAt: Date.now(),
     };
-    
+
     if (args.note !== undefined) updates.note = args.note;
     if (args.color !== undefined) updates.color = args.color;
     if (args.isPublic !== undefined) updates.isPublic = args.isPublic;
-    
+
     await ctx.db.patch(args.id, updates);
     return args.id;
   },

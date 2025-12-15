@@ -108,33 +108,37 @@ export default defineSchema({
     // References
     articleId: v.id("articles"),
     userId: v.id("users"),
-    
+
     // Denormalized data for performance
     articleTitle: v.string(),
     articleSlug: v.string(),
     articleAuthor: v.string(),
     userName: v.optional(v.string()),
     userAvatar: v.optional(v.string()),
-    
+
     // Text selection data
     text: v.string(),
     startOffset: v.number(),
     endOffset: v.number(),
     startContainerPath: v.string(),
     endContainerPath: v.string(),
-    
+
+    // Unique identifier (SHA256 hash) for linking with tips
+    highlightId: v.string(),
+
     // Metadata
     color: v.optional(v.string()),
     note: v.optional(v.string()),
     isPublic: v.boolean(),
-    
+
     // Timestamps
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_article", ["articleId"])
     .index("by_user", ["userId"])
-    .index("by_article_public", ["articleId", "isPublic"]),
+    .index("by_article_public", ["articleId", "isPublic"])
+    .index("by_highlight_id", ["highlightId"]),
 
   // Tips table
   tips: defineTable({
@@ -178,6 +182,62 @@ export default defineSchema({
     processedAt: v.optional(v.number()),
     updatedAt: v.number(),
   })
+    .index("by_article", ["articleId"])
+    .index("by_tipper", ["tipperId"])
+    .index("by_author", ["authorId"])
+    .index("by_status", ["status"]),
+
+  // Highlight Tips table (NEW - granular tipping)
+  highlightTips: defineTable({
+    // Core references
+    highlightId: v.string(), // SHA256 hash stored in Stellar memo
+    articleId: v.id("articles"),
+    tipperId: v.id("users"),
+    authorId: v.id("users"),
+
+    // Denormalized data for performance
+    highlightText: v.string(), // The actual text that was tipped
+    articleTitle: v.string(),
+    articleSlug: v.string(),
+    tipperName: v.optional(v.string()),
+    tipperAvatar: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    authorAvatar: v.optional(v.string()),
+
+    // Tip details
+    amountUsd: v.number(),
+    amountCents: v.number(),
+    message: v.optional(v.string()),
+
+    // Stellar transaction data
+    stellarTxId: v.string(),
+    stellarNetwork: v.string(), // TESTNET or MAINNET
+    stellarMemo: v.string(), // Highlight ID stored in memo
+    stellarLedger: v.optional(v.number()),
+    stellarFeeCharged: v.optional(v.string()),
+    stellarSourceAccount: v.optional(v.string()),
+    stellarDestinationAccount: v.optional(v.string()),
+    stellarAmountXlm: v.optional(v.string()),
+    contractTipId: v.optional(v.string()),
+
+    // Position data (for heatmap visualization)
+    startOffset: v.number(),
+    endOffset: v.number(),
+    startContainerPath: v.optional(v.string()),
+    endContainerPath: v.optional(v.string()),
+
+    // Status
+    status: v.string(), // PENDING, CONFIRMED, FAILED
+    failureReason: v.optional(v.string()),
+    platformFee: v.optional(v.number()),
+    authorShare: v.optional(v.number()),
+
+    // Timestamps
+    createdAt: v.number(),
+    processedAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_highlight", ["highlightId"])
     .index("by_article", ["articleId"])
     .index("by_tipper", ["tipperId"])
     .index("by_author", ["authorId"])
@@ -318,4 +378,22 @@ export default defineSchema({
     .index("by_user", ["uploadedBy"])
     .index("by_article", ["articleId"])
     .index("by_type", ["uploadType"]),
+
+  // Waitlist table
+  waitlist: defineTable({
+    email: v.string(),
+    
+    // Status tracking
+    status: v.optional(v.string()), // "pending", "invited", "joined"
+    
+    // Metadata
+    source: v.optional(v.string()), // "landing_page", "referral", etc.
+    invitedAt: v.optional(v.number()),
+    joinedAt: v.optional(v.number()),
+    
+    // Timestamps
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
 });

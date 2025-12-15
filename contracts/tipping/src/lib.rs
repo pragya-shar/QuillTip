@@ -21,6 +21,16 @@ pub struct TipReceipt {
 
 #[derive(Clone)]
 #[contracttype]
+pub struct HighlightTip {
+    pub highlight_id: String,    // Unique highlight identifier (SHA256)
+    pub article_id: Symbol,       // Parent article (Convex ID - alphanumeric, Symbol-safe)
+    pub tipper: Address,
+    pub amount: i128,
+    pub timestamp: u64,
+}
+
+#[derive(Clone)]
+#[contracttype]
 pub enum DataKey {
     Admin,
     PlatformAddress,
@@ -29,6 +39,7 @@ pub enum DataKey {
     ArticleTotalTips(Symbol),  // Track total tips per article for NFT threshold
     TipCounter,
     TotalVolume,
+    HighlightTips(String),     // Highlight ID → Tips
 }
 
 const MINIMUM_TIP_STROOPS: i128 = 100_000; // 0.01 XLM (approximately 1 cent)
@@ -218,23 +229,114 @@ impl TippingContract {
     /// Update platform fee (admin only)
     pub fn update_fee(env: Env, admin: Address, new_fee_bps: u32) {
         admin.require_auth();
-        
+
         let stored_admin: Address = env.storage()
             .instance()
             .get(&DataKey::Admin)
             .expect("Admin not set");
-        
+
         if admin != stored_admin {
             panic!("Unauthorized");
         }
-        
+
         if new_fee_bps > 1000 { // Max 10%
             panic!("Fee too high");
         }
-        
+
         env.storage()
             .instance()
             .set(&DataKey::PlatformFeeBps, &new_fee_bps);
+    }
+
+    /// Tip a highlight directly (same flow as tip_article)
+    pub fn tip_highlight_direct(
+        env: Env,
+        tipper: Address,
+        highlight_id: String,
+        article_id: Symbol,
+        author: Address,
+        amount: i128,
+    ) -> TipReceipt {
+        tipper.require_auth();
+
+        // Validate minimum amount
+        if amount < MINIMUM_TIP_STROOPS {
+            panic!("Amount below minimum tip");
+        }
+
+        // Get platform settings (reuse existing code)
+        let platform_address: Address = env.storage()
+            .instance()
+            .get(&DataKey::PlatformAddress)
+            .expect("Platform address not set");
+
+        let platform_fee_bps: u32 = env.storage()
+            .instance()
+            .get(&DataKey::PlatformFeeBps)
+            .unwrap_or(DEFAULT_PLATFORM_FEE_BPS);
+
+        // Calculate fees (same as tip_article)
+        let platform_fee = (amount * platform_fee_bps as i128) / 10_000;
+        let author_share = amount - platform_fee;
+
+        // Get XLM token client (same as tip_article)
+        let xlm_address = Address::from_string(&String::from_str(&env, XLM_TOKEN_ADDRESS));
+        let xlm_client = token::TokenClient::new(&env, &xlm_address);
+
+        // Transfer author's share
+        xlm_client.transfer(&tipper, &author, &author_share);
+
+        // Transfer platform fee
+        if platform_fee > 0 {
+            xlm_client.transfer(&tipper, &platform_address, &platform_fee);
+        }
+
+        // Get and increment tip counter (same as tip_article)
+        let tip_counter: u64 = env.storage()
+            .persistent()
+            .get(&DataKey::TipCounter)
+            .unwrap_or(0);
+
+        let new_tip_id = tip_counter + 1;
+        env.storage().persistent().set(&DataKey::TipCounter, &new_tip_id);
+
+        // Store highlight tip
+        let tip = HighlightTip {
+            highlight_id: highlight_id.clone(),
+            article_id,
+            tipper: tipper.clone(),
+            amount,
+            timestamp: env.ledger().timestamp(),
+        };
+
+        // Get existing tips for highlight
+        let mut highlight_tips: Vec<HighlightTip> = env.storage()
+            .persistent()
+            .get(&DataKey::HighlightTips(highlight_id.clone()))
+            .unwrap_or(vec![&env]);
+
+        highlight_tips.push_back(tip);
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::HighlightTips(highlight_id), &highlight_tips);
+
+        // Create receipt (same format as tip_article)
+        TipReceipt {
+            tip_id: new_tip_id,
+            amount_sent: amount,
+            author_received: author_share,
+            platform_fee,
+            timestamp: env.ledger().timestamp(),
+        }
+    }
+
+    /// Get all tips for a highlight
+    pub fn get_highlight_tips(env: Env, highlight_id: String) -> Vec<HighlightTip> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::HighlightTips(highlight_id))
+            .unwrap_or(vec![&env])
     }
 }
 

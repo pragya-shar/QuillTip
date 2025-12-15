@@ -10,26 +10,41 @@ import { Coins, Heart, Loader2, Wallet } from 'lucide-react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { stellarClient } from '@/lib/stellar/client'
+import { generateHighlightId, formatTipAmount } from '@/lib/stellar/highlight-utils'
 
-interface TipButtonProps {
+interface HighlightTipButtonProps {
   articleId: Id<'articles'>
+  articleSlug: string
   authorName: string
-  authorStellarAddress?: string | null // Author's Stellar address for direct tips
+  authorStellarAddress?: string | null
+  highlightText: string
+  startOffset: number
+  endOffset: number
+  startContainerPath?: string
+  endContainerPath?: string
   className?: string
+  onSuccess?: () => void
 }
 
 const TIP_AMOUNTS = [
+  { cents: 10, label: '10¢', popular: false },
+  { cents: 50, label: '50¢', popular: true },
   { cents: 100, label: '$1', popular: false },
-  { cents: 500, label: '$5', popular: true },
-  { cents: 1000, label: '$10', popular: false },
 ]
 
-export function TipButton({
+export function HighlightTipButton({
   articleId,
+  articleSlug,
   authorName,
   authorStellarAddress,
+  highlightText,
+  startOffset,
+  endOffset,
+  startContainerPath,
+  endContainerPath,
   className = '',
-}: TipButtonProps) {
+  onSuccess,
+}: HighlightTipButtonProps) {
   const { isAuthenticated } = useAuth()
   const { isConnected, publicKey, signTransaction, connect } = useWallet()
   const router = useRouter()
@@ -38,18 +53,25 @@ export function TipButton({
   const [customAmount, setCustomAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const sendTip = useMutation(api.tips.sendTip)
+  const createHighlightTip = useMutation(api.highlightTips.create)
 
   const handleTip = async () => {
-    // Check authentication and wallet connection
+    // Check authentication
     if (!isAuthenticated) {
       toast.error('Please sign in to send tips')
-      router.push('/auth/signin')
+      router.push('/login')
       return
     }
 
+    // Check wallet connection
     if (!isConnected || !publicKey) {
       toast.error('Please connect your Stellar wallet to send tips')
+      return
+    }
+
+    // Check author has Stellar address
+    if (!authorStellarAddress) {
+      toast.error('Author has not set up their Stellar wallet yet')
       return
     }
 
@@ -65,21 +87,23 @@ export function TipButton({
       return
     }
 
-    // Require author to have Stellar address configured for real tips
-    if (!authorStellarAddress) {
-      toast.error('Author has not set up their Stellar wallet for receiving tips')
-      return
-    }
-
     setIsLoading(true)
 
     try {
-      // Build Stellar transaction using user's wallet address
-      const transactionData = await stellarClient.buildTipTransaction(
+      // Generate deterministic highlight ID
+      const highlightId = await generateHighlightId(
+        articleSlug,
+        highlightText,
+        startOffset,
+        endOffset
+      )
+
+      // Build Stellar transaction
+      const transactionData = await stellarClient.buildHighlightTipTransaction(
         publicKey,
         {
-          tipper: publicKey,
-          articleId: articleId.toString(),
+          highlightId,
+          articleId: articleId.toString(), // Use Convex ID (alphanumeric, Symbol-safe) to match article tipping
           authorAddress: authorStellarAddress,
           amountCents,
         }
@@ -87,24 +111,41 @@ export function TipButton({
 
       // Sign transaction with wallet
       const signedXDR = await signTransaction(transactionData.xdr)
+
       // Submit transaction to Stellar network
       const receipt = await stellarClient.submitTipTransaction(signedXDR)
 
-      // Record tip in Convex for analytics/UI (with Stellar transaction hash)
-      await sendTip({
+      // Record tip in Convex
+      await createHighlightTip({
+        highlightId,
         articleId,
-        amountUsd: amountCents / 100,
-        message: `Stellar tip: ${receipt.transactionHash}`,
+        highlightText,
+        startOffset,
+        endOffset,
+        startContainerPath,
+        endContainerPath,
+        amountCents,
+        stellarTxId: receipt.transactionHash ?? '',
+        stellarMemo: highlightId,
+        stellarNetwork: 'TESTNET',
+        stellarLedger: undefined,
+        stellarFeeCharged: undefined,
+        stellarSourceAccount: publicKey,
+        stellarDestinationAccount: authorStellarAddress,
+        stellarAmountXlm: (transactionData.stroops / 10_000_000).toString(),
+        contractTipId: receipt.tipId,
+        platformFee: transactionData.platformFee,
+        authorShare: transactionData.authorReceived,
       })
 
-      // Close modal first to prevent it from interfering with toast
+      // Close modal first
       setIsOpen(false)
       setSelectedAmount(null)
       setCustomAmount('')
 
-      // Show success toast after modal closes
+      // Show success toast
       toast.success(
-        `Successfully tipped ${authorName} $${(amountCents / 100).toFixed(2)} via Stellar!`,
+        `Successfully tipped ${authorName} ${formatTipAmount(amountCents)} for this highlight!`,
         {
           description: receipt.transactionHash
             ? `Transaction: ${receipt.transactionHash.slice(0, 8)}...`
@@ -121,8 +162,13 @@ export function TipButton({
             : undefined,
         }
       )
+
+      // Call success callback
+      if (onSuccess) {
+        onSuccess()
+      }
     } catch (error) {
-      console.error('Stellar tip error:', error)
+      console.error('Highlight tip error:', error)
 
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to send tip'
@@ -133,9 +179,7 @@ export function TipButton({
         errorMessage.includes('rejected')
       ) {
         toast.error('Transaction cancelled by user')
-        // Reset state for user cancellation
       } else {
-        // Show error toast
         toast.error('Transaction failed', {
           description: errorMessage,
         })
@@ -145,40 +189,51 @@ export function TipButton({
     }
   }
 
+  // Truncate long text for display
+  const displayText = highlightText.length > 60
+    ? highlightText.slice(0, 60) + '...'
+    : highlightText
+
   return (
     <>
       {/* Tip Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600 transition-all transform hover:scale-105 shadow-lg ${className}`}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg hover:from-yellow-500 hover:to-orange-600 transition-all transform hover:scale-105 shadow-md text-sm ${className}`}
+        title="Tip this highlight"
       >
-        <Coins className="w-4 h-4" />
-        <span className="font-medium">Tip Author</span>
+        <Coins className="w-3.5 h-3.5" />
+        <span className="font-medium">Tip Highlight</span>
       </button>
 
       {/* Tip Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Support {authorName}</h3>
+              <h3 className="text-xl font-bold">Tip Highlight</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
               >
                 ×
               </button>
             </div>
 
+            {/* Highlight Preview */}
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-gray-700 italic">&ldquo;{displayText}&rdquo;</p>
+            </div>
+
             <p className="text-gray-600 mb-4">
-              Show your appreciation with a micro-tip. 97.5% goes directly to
+              Tip {authorName} for this specific insight. 97.5% goes directly to
               the author!
             </p>
 
-            {/* Wallet Setup Guide (shown when not connected) */}
+            {/* Wallet Setup Guide */}
             {!isConnected && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-                <p>Connect your Stellar wallet to send tips to {authorName}.</p>
+                <p>Connect your Stellar wallet to tip this highlight.</p>
               </div>
             )}
 

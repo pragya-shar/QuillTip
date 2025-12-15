@@ -1,0 +1,363 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
+import { motion } from 'motion/react'
+import {
+  X,
+  Coins,
+  User,
+  Calendar,
+  MessageSquare,
+  Edit,
+  Trash2,
+  Loader2,
+  TrendingUp
+} from 'lucide-react'
+import { HighlightTipButton } from './HighlightTipButton'
+import { formatTipAmount } from '@/lib/stellar/highlight-utils'
+import Image from 'next/image'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+
+interface HighlightDetailsPanelProps {
+  highlight: {
+    _id: Id<'highlights'>
+    text: string
+    startOffset: number
+    endOffset: number
+    startContainerPath: string
+    endContainerPath: string
+    highlightId: string
+    color?: string
+    note?: string
+    isPublic: boolean
+    userId: Id<'users'>
+    userName?: string
+    userAvatar?: string
+    createdAt: number
+  }
+  position: { top: number; left: number }
+  onClose: () => void
+  currentUserId?: Id<'users'>
+  // Article data for tipping
+  articleId?: Id<'articles'>
+  articleSlug?: string
+  authorName?: string
+  authorStellarAddress?: string | null
+}
+
+export function HighlightDetailsPanel({
+  highlight,
+  position,
+  onClose,
+  currentUserId,
+  articleId,
+  articleSlug,
+  authorName,
+  authorStellarAddress,
+}: HighlightDetailsPanelProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedNote, setEditedNote] = useState(highlight.note || '')
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Check if current user owns this highlight
+  const isOwner = currentUserId && currentUserId === highlight.userId
+
+  // Fetch tip statistics for this highlight
+  const highlightTips = useQuery(api.highlightTips.getByHighlight, {
+    highlightId: highlight.highlightId,
+  })
+
+  // Mutations
+  const updateHighlight = useMutation(api.highlights.updateHighlight)
+  const deleteHighlight = useMutation(api.highlights.deleteHighlight)
+
+  // Calculate tip stats
+  const tipStats = useMemo(() => {
+    if (!highlightTips) return { count: 0, totalCents: 0, totalUsd: 0 }
+
+    const totalCents = highlightTips.reduce((sum, tip) => sum + tip.amountCents, 0)
+
+    return {
+      count: highlightTips.length,
+      totalCents,
+      totalUsd: totalCents / 100,
+    }
+  }, [highlightTips])
+
+  // Handle note update
+  const handleSaveNote = async () => {
+    try {
+      await updateHighlight({
+        id: highlight._id,
+        note: editedNote || undefined,
+      })
+      setIsEditing(false)
+      toast.success('Note updated successfully')
+    } catch (error) {
+      console.error('Failed to update note:', error)
+      toast.error('Failed to update note')
+    }
+  }
+
+  // Handle delete
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this highlight?')) return
+
+    setIsDeleting(true)
+    try {
+      await deleteHighlight({ id: highlight._id })
+      toast.success('Highlight deleted')
+      onClose()
+    } catch (error) {
+      console.error('Failed to delete highlight:', error)
+      toast.error('Failed to delete highlight')
+      setIsDeleting(false)
+    }
+  }
+
+  // Truncate text for display
+  const displayText = highlight.text.length > 150
+    ? highlight.text.slice(0, 150) + '...'
+    : highlight.text
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 10 }}
+      transition={{ duration: 0.2 }}
+      className="fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-200 max-w-md w-full"
+      style={{
+        top: position.top,
+        left: position.left,
+        transform: 'translateX(-50%)',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between p-4 border-b border-gray-100">
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            Highlight Details
+          </h3>
+          <div
+            className="text-xs px-2 py-1 rounded inline-block"
+            style={{
+              backgroundColor: `${highlight.color}33`,
+              color: highlight.color || '#F59E0B',
+            }}
+          >
+            {highlight.isPublic ? 'Public' : 'Private'}
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Highlighted Text */}
+      <div className="p-4 border-b border-gray-100">
+        <div
+          className="p-3 rounded-lg border-l-4 italic text-sm text-gray-700"
+          style={{ borderLeftColor: highlight.color || '#F59E0B' }}
+        >
+          &ldquo;{displayText}&rdquo;
+        </div>
+      </div>
+
+      {/* Creator Info */}
+      <div className="px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          {highlight.userAvatar ? (
+            <Image
+              src={highlight.userAvatar}
+              alt={highlight.userName || 'User'}
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+              {(highlight.userName || 'U').charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <User className="w-3 h-3 text-gray-400" />
+              <span className="text-sm font-medium text-gray-900">
+                {highlight.userName || 'Anonymous'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Calendar className="w-3 h-3 text-gray-400" />
+              <span className="text-xs text-gray-500">
+                {new Date(highlight.createdAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Note Section */}
+      {(highlight.note || isOwner) && (
+        <div className="px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="w-4 h-4 text-gray-400" />
+            <span className="text-xs font-medium text-gray-600">Note</span>
+          </div>
+
+          {isEditing ? (
+            <div className="space-y-2">
+              <textarea
+                value={editedNote}
+                onChange={(e) => setEditedNote(e.target.value)}
+                placeholder="Add a note to your highlight..."
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows={3}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveNote}
+                  className="flex-1 px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setEditedNote(highlight.note || '')
+                    setIsEditing(false)
+                  }}
+                  className="flex-1 px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-700">
+              {highlight.note || (
+                <span className="text-gray-400 italic">No note added</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tip Statistics */}
+      {tipStats.count > 0 && (
+        <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-orange-50">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-medium text-gray-700">Tip Statistics</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-xs text-gray-600">Total Tips</div>
+              <div className="text-lg font-bold text-gray-900">
+                {tipStats.count}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-600">Total Earned</div>
+              <div className="text-lg font-bold text-orange-600">
+                {formatTipAmount(tipStats.totalCents)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="p-4">
+        {isOwner ? (
+          // Owner actions: Edit & Delete
+          <div className="space-y-2">
+            {!isEditing && (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit Note</span>
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium",
+                    isDeleting
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-red-50 text-red-700 hover:bg-red-100"
+                  )}
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Highlight</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          // Non-owner action: Tip
+          articleId && articleSlug && authorStellarAddress && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                <Coins className="w-3 h-3" />
+                <span>Support this insight</span>
+              </div>
+              <HighlightTipButton
+                articleId={articleId}
+                articleSlug={articleSlug}
+                authorName={authorName || 'Author'}
+                authorStellarAddress={authorStellarAddress}
+                highlightText={highlight.text}
+                startOffset={highlight.startOffset}
+                endOffset={highlight.endOffset}
+                startContainerPath={highlight.startContainerPath}
+                endContainerPath={highlight.endContainerPath}
+                className="w-full justify-center"
+                onSuccess={() => {
+                  toast.success('Tip sent! Statistics will update shortly')
+                  // Panel stays open to show updated stats
+                }}
+              />
+              {tipStats.count === 0 && (
+                <p className="text-xs text-center text-gray-500 mt-2">
+                  Be the first to tip this highlight!
+                </p>
+              )}
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Footer hint */}
+      {!isOwner && tipStats.count > 0 && (
+        <div className="px-4 pb-3 text-xs text-center text-gray-400">
+          {tipStats.count} {tipStats.count === 1 ? 'person has' : 'people have'} tipped
+          this highlight
+        </div>
+      )}
+    </motion.div>
+  )
+}

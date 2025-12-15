@@ -51,3 +51,7 @@ contracts/article-nft/target
 # stellar
 .stellar
 **/.stellar
+
+# internal docs (planning/deployment docs not for version control)
+CONTRACT_DEPLOYMENT_PLAN.md
+IMPROVEMENTS_MOSCOW.md

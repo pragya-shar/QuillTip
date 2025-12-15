@@ -80,19 +80,24 @@ export class HighlightConverter {
    * Apply highlights to the TipTap editor as marks
    */
   static applyHighlightsToEditor(editor: Editor, highlights: HighlightData[]) {
-    if (!editor || !highlights.length) return
+    if (!editor) return
 
-    // Clear existing highlight marks first
-    editor.chain().focus().unsetHighlight().run()
+    try {
+      // ALWAYS clear existing highlight marks first (even if highlights array is empty)
+      // This ensures deleted highlights are properly removed from the editor
+      editor.chain().unsetHighlight().run()
 
-    // Sort highlights by position to apply them in order
-    const sortedHighlights = [...highlights].sort(
-      (a, b) => a.startOffset - b.startOffset
-    )
+      // Early return if no highlights to apply
+      if (!highlights.length) return
 
-    // Apply each highlight as a mark
-    sortedHighlights.forEach((highlight) => {
-      try {
+      // Sort highlights by position to apply them in order
+      const sortedHighlights = [...highlights].sort(
+        (a, b) => a.startOffset - b.startOffset
+      )
+
+      // Apply each highlight as a mark (without focusing for performance)
+      sortedHighlights.forEach((highlight) => {
+        try {
         // Convert text offsets to document positions
         const from = this.getDocumentPosition(
           editor.state.doc,
@@ -117,10 +122,9 @@ export class HighlightConverter {
             normalizedActual.includes(normalizedExpected) ||
             normalizedExpected.includes(normalizedActual)
           ) {
-            // Apply the highlight mark with all attributes
+            // Apply the highlight mark with all attributes (no focus for performance)
             editor
               .chain()
-              .focus()
               .setTextSelection({ from, to })
               .setHighlight({
                 id: highlight._id,
@@ -150,51 +154,9 @@ export class HighlightConverter {
         console.error('Failed to apply highlight:', error, highlight)
       }
     })
-
-    // Reset selection to the beginning
-    editor.chain().focus().setTextSelection(0).run()
-  }
-
-  /**
-   * Find the actual positions in the editor for a given text
-   * @deprecated Use getDocumentPosition instead
-   */
-  private static findTextPositions(
-    editor: Editor,
-    searchText: string,
-    approximateStart: number
-  ): { from: number; to: number } {
-    const { state } = editor
-    const { doc } = state
-
-    // Get the full text content
-    const fullText = doc.textContent
-
-    // Try to find the exact text near the approximate position
-    const searchStart = Math.max(0, approximateStart - 50)
-    const searchEnd = Math.min(
-      fullText.length,
-      approximateStart + searchText.length + 50
-    )
-
-    const searchArea = fullText.substring(searchStart, searchEnd)
-    const textIndex = searchArea.indexOf(searchText)
-
-    if (textIndex !== -1) {
-      const from = searchStart + textIndex + 1 // TipTap positions are 1-indexed
-      const to = from + searchText.length
-      return { from, to }
+    } catch (error) {
+      console.error('❌ Error applying highlights to editor:', error)
     }
-
-    // Fallback: search the entire document
-    const globalIndex = fullText.indexOf(searchText)
-    if (globalIndex !== -1) {
-      const from = globalIndex + 1
-      const to = from + searchText.length
-      return { from, to }
-    }
-
-    return { from: -1, to: -1 }
   }
 
   /**
@@ -258,12 +220,6 @@ export class HighlightConverter {
     // Convert document positions to text offsets
     const startOffset = this.getTextOffset(editor.state.doc, from)
     const endOffset = this.getTextOffset(editor.state.doc, to)
-
-    console.log('Creating highlight:', {
-      text: selectedText,
-      docPositions: { from, to },
-      textOffsets: { startOffset, endOffset },
-    })
 
     return {
       text: selectedText,

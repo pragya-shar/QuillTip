@@ -9,6 +9,9 @@ export const STELLAR_CONFIG = {
   TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || 'CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM',
   NFT_CONTRACT_ID: process.env.NEXT_PUBLIC_NFT_CONTRACT_ID || 'CAOWOEKBL5VX4BHN4QT2RQN4QEEBEJZLVKNRQ7UAVGOX3W4UMSSQTTC5',
 
+  // Highlight tipping contract (NEW - separate for safety)
+  HIGHLIGHT_CONTRACT_ID: process.env.NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID || '',
+
   // Platform settings
   PLATFORM_ADDRESS: process.env.NEXT_PUBLIC_PLATFORM_ADDRESS || '',
   PLATFORM_FEE_BPS: 250, // 2.5% platform fee
@@ -35,3 +38,17 @@ export const TIP_AMOUNTS = [
   { cents: 50, label: '50¢' },
   { cents: 100, label: '$1' },
 ] as const;
+
+// Runtime validation - warn about missing config (browser only, runs once)
+if (typeof window !== 'undefined') {
+  if (!STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID) {
+    console.warn(
+      '[Stellar Config] NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID is not set. Highlight tipping will not work.'
+    );
+  }
+  if (!STELLAR_CONFIG.PLATFORM_ADDRESS) {
+    console.warn(
+      '[Stellar Config] NEXT_PUBLIC_PLATFORM_ADDRESS is not set. Platform fee collection disabled.'
+    );
+  }
+}

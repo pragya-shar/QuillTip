@@ -16,7 +16,7 @@ export interface HighlightOptions {
   HTMLAttributes: Record<string, string | number | boolean>
   multicolor: boolean
   highlights: HighlightAttributes[]
-  onHighlightClick?: (highlight: HighlightAttributes) => void
+  onHighlightClick?: (highlight: HighlightAttributes, event: MouseEvent) => void
 }
 
 declare module '@tiptap/core' {
@@ -215,7 +215,9 @@ const HighlightExtension = Mark.create<HighlightOptions>({
         key: new PluginKey('highlightClick'),
         props: {
           handleClick: (view, pos, event) => {
-            if (!onHighlightClick) return false
+            if (!onHighlightClick) {
+              return false
+            }
 
             const { schema, doc } = view.state
             const range = doc.resolve(pos)
@@ -227,11 +229,45 @@ const HighlightExtension = Mark.create<HighlightOptions>({
 
             if (highlightMark && highlightMark.attrs.id) {
               event.preventDefault()
-              onHighlightClick(highlightMark.attrs as HighlightAttributes)
+              event.stopPropagation()
+              onHighlightClick(highlightMark.attrs as HighlightAttributes, event as MouseEvent)
               return true
             }
 
             return false
+          },
+          handleDOMEvents: {
+            // Handle touch events for mobile devices
+            touchend: (view, event) => {
+              if (!onHighlightClick) {
+                return false
+              }
+
+              // Get the touch position
+              const touch = event.changedTouches[0]
+              if (!touch) return false
+
+              // Find the position in the document
+              const pos = view.posAtCoords({ left: touch.clientX, top: touch.clientY })
+              if (!pos) return false
+
+              const { schema, doc } = view.state
+              const range = doc.resolve(pos.pos)
+              const marks = range.marks()
+
+              const highlightMark = marks.find(
+                (mark) => mark.type === schema.marks.highlight
+              )
+
+              if (highlightMark && highlightMark.attrs.id) {
+                event.preventDefault()
+                event.stopPropagation()
+                onHighlightClick(highlightMark.attrs as HighlightAttributes, event as unknown as MouseEvent)
+                return true
+              }
+
+              return false
+            },
           },
         },
       }),

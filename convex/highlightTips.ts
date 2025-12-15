@@ -195,6 +195,16 @@ export const getArticleStats = query({
     const uniqueTippers = new Set(tips.map(tip => tip.tipperId)).size;
 
     // Group by highlight ID to find most tipped highlights
+    type HighlightGroup = {
+      highlightId: string;
+      text: string;
+      startOffset: number;
+      endOffset: number;
+      totalTips: number;
+      totalAmountCents: number;
+      tipCount: number;
+    };
+
     const highlightGroups = tips.reduce((acc, tip) => {
       if (!acc[tip.highlightId]) {
         acc[tip.highlightId] = {
@@ -207,14 +217,15 @@ export const getArticleStats = query({
           tipCount: 0,
         };
       }
-      acc[tip.highlightId].totalTips += tip.amountCents;
-      acc[tip.highlightId].totalAmountCents += tip.amountCents;
-      acc[tip.highlightId].tipCount += 1;
+      const group = acc[tip.highlightId]!;
+      group.totalTips += tip.amountCents;
+      group.totalAmountCents += tip.amountCents;
+      group.tipCount += 1;
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, HighlightGroup>);
 
     const topHighlights = Object.values(highlightGroups)
-      .sort((a: any, b: any) => b.totalAmountCents - a.totalAmountCents)
+      .sort((a, b) => b.totalAmountCents - a.totalAmountCents)
       .slice(0, 10);
 
     return {

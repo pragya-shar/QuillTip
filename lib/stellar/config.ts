@@ -38,3 +38,17 @@ export const TIP_AMOUNTS = [
   { cents: 50, label: '50¢' },
   { cents: 100, label: '$1' },
 ] as const;
+
+// Runtime validation - warn about missing config (browser only, runs once)
+if (typeof window !== 'undefined') {
+  if (!STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID) {
+    console.warn(
+      '[Stellar Config] NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID is not set. Highlight tipping will not work.'
+    );
+  }
+  if (!STELLAR_CONFIG.PLATFORM_ADDRESS) {
+    console.warn(
+      '[Stellar Config] NEXT_PUBLIC_PLATFORM_ADDRESS is not set. Platform fee collection disabled.'
+    );
+  }
+}

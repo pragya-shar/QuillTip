@@ -278,24 +278,32 @@ export const updateArticle = mutation({
     if (!article) throw new Error("Article not found");
     if (article.authorId !== userId) throw new Error("Not authorized");
     
-    const updates: any = {
+    const updates: {
+      updatedAt: number;
+      title?: string;
+      content?: unknown;
+      readTime?: number;
+      excerpt?: string;
+      coverImage?: string;
+      tags?: string[];
+    } = {
       updatedAt: Date.now(),
     };
-    
+
     if (args.title !== undefined) {
       updates.title = args.title;
       // Optionally update slug if title changes significantly
     }
-    
+
     if (args.content !== undefined) {
       updates.content = args.content;
       updates.readTime = calculateReadTime(args.content);
     }
-    
+
     if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
     if (args.tags !== undefined) updates.tags = args.tags;
-    
+
     await ctx.db.patch(args.id, updates);
     return args.id;
   },
@@ -491,7 +499,7 @@ export const saveDraft = mutation({
 });
 
 // Helper function to calculate read time
-function calculateReadTime(content: any): number {
+function calculateReadTime(content: unknown): number {
   // Simple estimation: 200 words per minute
   const text = JSON.stringify(content);
   const wordCount = text.split(/\s+/).length;

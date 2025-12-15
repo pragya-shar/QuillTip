@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 /**
  * Add an email to the waitlist
@@ -43,13 +44,19 @@ export const joinWaitlist = mutation({
 });
 
 /**
- * Get all waitlist entries (admin only - add auth later)
+ * Get all waitlist entries (requires authentication)
  */
 export const getWaitlist = query({
   args: {
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Require authentication to access waitlist data
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
     if (args.status) {
       const entries = await ctx.db
         .query("waitlist")

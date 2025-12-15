@@ -211,14 +211,19 @@ export const updateHighlight = mutation({
     if (!highlight) throw new Error("Highlight not found");
     if (highlight.userId !== userId) throw new Error("Not authorized");
     
-    const updates: any = {
+    const updates: {
+      updatedAt: number;
+      note?: string;
+      color?: string;
+      isPublic?: boolean;
+    } = {
       updatedAt: Date.now(),
     };
-    
+
     if (args.note !== undefined) updates.note = args.note;
     if (args.color !== undefined) updates.color = args.color;
     if (args.isPublic !== undefined) updates.isPublic = args.isPublic;
-    
+
     await ctx.db.patch(args.id, updates);
     return args.id;
   },

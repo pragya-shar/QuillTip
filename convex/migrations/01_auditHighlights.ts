@@ -24,9 +24,11 @@ export const audit = query({
     const withoutHighlightId = allHighlights.filter(h => !h.highlightId);
 
     // Check for potential issues
+    type HighlightRecord = typeof allHighlights[number];
+    type HighlightSummary = { id: HighlightRecord['_id']; hasId: boolean; userId: HighlightRecord['userId'] };
     const potentialIssues: {
       orphanedTips: Array<{ tipId: string; highlightId: string; text: string }>;
-      duplicateTexts: Array<{ text: string; count: number; highlights: any[] }>;
+      duplicateTexts: Array<{ text: string; count: number; highlights: HighlightSummary[] }>;
     } = {
       orphanedTips: [],
       duplicateTexts: [],
@@ -45,7 +47,7 @@ export const audit = query({
     }
 
     // Find duplicate texts (same text highlighted multiple times - potential collision risk)
-    const textMap = new Map<string, any[]>();
+    const textMap = new Map<string, HighlightRecord[]>();
     for (const highlight of allHighlights) {
       const key = `${highlight.articleSlug}:${highlight.text.slice(0, 50)}`;
       if (!textMap.has(key)) {

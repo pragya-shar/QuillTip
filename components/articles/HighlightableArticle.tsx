@@ -84,9 +84,6 @@ export function HighlightableArticle({
   const highlightsRef = useRef(highlights)
   useEffect(() => {
     highlightsRef.current = highlights
-    if (highlights) {
-      console.log('🔍 Loaded', highlights.length, 'highlights from Convex')
-    }
   }, [highlights])
 
   // Mutation to create a highlight

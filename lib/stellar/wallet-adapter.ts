@@ -236,11 +236,6 @@ class StellarWalletAdapter {
       kit.openModal({
         onWalletSelected: async (option: ISupportedWallet) => {
           try {
-            // Debug logging for HOT wallet issue
-            console.log('[Wallet Debug] Selected wallet:', option.id, option.name);
-            if (option.name?.toLowerCase().includes('hot')) {
-              console.warn('[Wallet Debug] HOT wallet detected! ID:', option.id, 'Expected:', HOTWALLET_ID);
-            }
             // Albedo-specific warning for localhost (but allow trying)
             if (option.id === ALBEDO_ID && isLocalhost()) {
               console.warn('[Wallet Adapter] Albedo may not work on localhost due to CORS. Consider using HTTPS.');
@@ -722,7 +717,6 @@ class StellarWalletAdapter {
   ): () => void {
     // Skip polling for HOT wallet to prevent popups
     if (this.selectedWalletId === HOTWALLET_ID) {
-      console.log('[Wallet Debug] Skipping account polling for HOT wallet');
       return () => {}; // Return no-op cleanup function
     }
 
@@ -768,7 +762,6 @@ class StellarWalletAdapter {
   ): () => void {
     // Skip polling for HOT wallet to prevent popups
     if (this.selectedWalletId === HOTWALLET_ID) {
-      console.log('[Wallet Debug] Skipping network polling for HOT wallet');
       return () => {}; // Return no-op cleanup function
     }
 

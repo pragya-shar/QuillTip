@@ -1,9 +1,9 @@
 # Arweave Integration - Implementation Plan V2
 ## Deliverable 2: Permanent Content Storage & OpenZeppelin Security Patterns
 
-**Status:** Ready for Implementation
-**Testing:** AR.IO Testnet (FREE - no mainnet costs)
-**Contract Modifications:** After Dec 17, 2025
+**Status:** In Progress (Branch: `arweave-integration`)
+**Testing:** Stellar Testnet + AR.IO Testnet (FREE - no mainnet costs)
+**Date:** December 2024
 
 ---
 
@@ -11,12 +11,20 @@
 
 QuillTip codebase is **~85% ready** for Arweave integration. Key finding: `memo-utils.ts` already handles Arweave TX IDs (future-proofed!).
 
-### Deliverable 2 Requirements
-| Requirement | Solution |
-|-------------|----------|
-| Articles permanently stored on Arweave | AR.IO Testnet (free tokens) |
-| Content hash in Stellar memo | Already implemented in `memo-utils.ts` |
-| OpenZeppelin security patterns | Ownable, Pausable, AccessControl in Soroban |
+### Contract Consolidation (NEW)
+| Before | After |
+|--------|-------|
+| 3 contracts (Tipping, Highlight, NFT) | **2 contracts (Unified Tipping, NFT)** |
+
+The tipping contract already has both `tip_article()` and `tip_highlight_direct()` functions. We consolidate to:
+1. **Unified Tipping Contract** - handles both article + highlight tipping
+2. **NFT Contract** - article NFT minting with Arweave support
+
+### Target Networks (ALL TESTNET - FREE)
+| Network | Purpose | Cost |
+|---------|---------|------|
+| **Stellar Testnet** | Smart contract deployment | FREE (testnet XLM) |
+| **AR.IO Testnet** | Arweave permanent storage | FREE (up to 10,000 test tokens) |
 
 ---
 
@@ -27,7 +35,6 @@ QuillTip codebase is **~85% ready** for Arweave integration. Key finding: `memo-
 - Up to **10,000 free test tokens**
 - Works with standard `arweave-js` SDK
 - Real network behavior, real TX IDs
-- Perfect for Deliverable 2 demo
 
 ```bash
 # Environment Config (testnet - FREE)
@@ -58,11 +65,6 @@ if (arweaveTxId) {
 await ctx.scheduler.runAfter(1000, api.tips.confirmTip, { tipId })
 ```
 
-### 3. Deployed Contracts (Stellar Testnet)
-- Article Tipping: `CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`
-- Highlight Tipping: `CDONAZILY4HGXK4I5VDLLM6RJE2WNSZD4XP2Y3TMKAM52VYYCVTJ64AB`
-- NFT Minting: `CAOWOEKBL5VX4BHN4QT2RQN4QEEBEJZLVKNRQ7UAVGOX3W4UMSSQTTC5`
-
 ---
 
 ## Architecture
@@ -83,6 +85,36 @@ Next.js Frontend
 
 ---
 
+## Contract Architecture (After Implementation)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              UNIFIED TIPPING CONTRACT                    │
+│  (Handles both article tipping AND highlight tipping)   │
+├─────────────────────────────────────────────────────────┤
+│  Functions:                                              │
+│  - tip_article(tipper, article_id, author, amount)      │
+│  - tip_article_with_arweave(..., arweave_tx_id)         │
+│  - tip_highlight_direct(tipper, highlight_id, ...)      │
+│  - tip_highlight_with_arweave(..., arweave_tx_id)       │
+│  - pause() / unpause() / is_paused()                    │
+│  - update_fee() / get_article_tips() / etc.             │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│                    NFT CONTRACT                          │
+├─────────────────────────────────────────────────────────┤
+│  Functions:                                              │
+│  - mint_article_nft(author, article_id, tip_amount, url)│
+│  - mint_article_nft_with_arweave(..., arweave_tx_id)    │
+│  - transfer(from, to, token_id)                         │
+│  - pause() / unpause()                                  │
+│  - get_owner() / is_article_minted() / etc.             │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Implementation Phases
 
 ### PHASE 1: Arweave Infrastructure
@@ -90,7 +122,6 @@ Next.js Frontend
 #### 1.1 Install Dependencies
 ```bash
 npm install arweave
-npm install -D @types/arweave
 ```
 
 #### 1.2 Create Arweave Config
@@ -103,6 +134,8 @@ export const ARWEAVE_CONFIG = {
   HOST: 'arweave.net',
   PORT: 443,
   PROTOCOL: 'https',
+  APP_NAME: 'QuillTip',
+  APP_VERSION: '1.0',
 };
 ```
 
@@ -137,8 +170,8 @@ export class ArweaveClient {
     }, wallet);
 
     transaction.addTag('Content-Type', 'application/json');
-    transaction.addTag('App-Name', 'QuillTip');
-    transaction.addTag('App-Version', '1.0');
+    transaction.addTag('App-Name', ARWEAVE_CONFIG.APP_NAME);
+    transaction.addTag('App-Version', ARWEAVE_CONFIG.APP_VERSION);
     transaction.addTag('Article-Title', content.title);
     transaction.addTag('Author', content.author);
 
@@ -190,9 +223,9 @@ export type ArweaveStatus = 'pending' | 'uploaded' | 'verified' | 'failed';
 ### PHASE 2: Database Schema Update
 
 #### 2.1 Add Arweave Fields
-**File:** `convex/schema.ts` (MODIFY)
+**File:** `convex/schema.ts` (MODIFY - line ~81)
 
-Add to `articles` table:
+Add to `articles` table after `readTime`:
 ```typescript
 // Arweave permanent storage (optional - additive)
 arweaveTxId: v.optional(v.string()),       // 43-char TX ID
@@ -210,6 +243,8 @@ contentVersion: v.optional(v.number()),    // Version tracking
 **File:** `convex/arweave.ts` (NEW)
 
 ```typescript
+"use node";
+
 import { internalAction, internalMutation, internalQuery } from './_generated/server';
 import { v } from 'convex/values';
 import { internal } from './_generated/api';
@@ -227,6 +262,12 @@ export const getArticleForUpload = internalQuery({
 export const uploadArticleToArweave = internalAction({
   args: { articleId: v.id('articles') },
   handler: async (ctx, args) => {
+    const enabled = process.env.ARWEAVE_ENABLED === 'true';
+    if (!enabled) {
+      console.log('[Arweave] Integration disabled, skipping upload');
+      return { success: false, reason: 'disabled' };
+    }
+
     const article = await ctx.runQuery(
       internal.arweave.getArticleForUpload,
       { articleId: args.articleId }
@@ -280,22 +321,24 @@ export const recordArweaveFailure = internalMutation({
   args: { articleId: v.id('articles'), error: v.string() },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.articleId, { arweaveStatus: 'failed' });
+    console.error(`[Arweave] Upload failed for ${args.articleId}: ${args.error}`);
   },
 });
 ```
 
 #### 3.2 Hook into publishArticle
-**File:** `convex/articles.ts` (MODIFY)
+**File:** `convex/articles.ts` (MODIFY - line ~332)
 
 ```typescript
-// Add after setting published: true
-if (process.env.ARWEAVE_ENABLED === 'true') {
-  await ctx.scheduler.runAfter(
-    0,
-    internal.arweave.uploadArticleToArweave,
-    { articleId: args.articleId }
-  );
-}
+// Add import at top
+import { internal } from "./_generated/api";
+
+// Add after setting published: true (line ~332)
+await ctx.scheduler.runAfter(
+  0,
+  internal.arweave.uploadArticleToArweave,
+  { articleId: args.id }
+);
 ```
 
 ---
@@ -340,22 +383,116 @@ export function ArweaveStatus({ article }: ArweaveStatusProps) {
 
 ---
 
-### PHASE 5: OpenZeppelin Security Patterns (After Dec 17, 2025)
+### PHASE 5: OpenZeppelin Security Patterns + Contract Deployment
 
-Implement these patterns in Soroban contracts:
+#### 5.1 Add OpenZeppelin Stellar Dependencies
+**File:** `contracts/tipping/Cargo.toml` (MODIFY)
 
-| Pattern | Implementation |
-|---------|----------------|
-| **Ownable** | Admin-only functions with `require_auth()` |
-| **Pausable** | Emergency pause/unpause functionality |
-| **ReentrancyGuard** | Check-effects-interactions pattern |
-| **AccessControl** | Role-based permissions (Admin, Moderator) |
+```toml
+[dependencies]
+stellar-access = { git = "https://github.com/OpenZeppelin/stellar-contracts", package = "stellar-access" }
+stellar-utils = { git = "https://github.com/OpenZeppelin/stellar-contracts", package = "stellar-utils" }
+stellar-macros = { git = "https://github.com/OpenZeppelin/stellar-contracts", package = "stellar-macros" }
+```
 
-**Contract modifications (deferred):**
-- Add `tip_article_with_hash()` function
-- Add `tip_highlight_with_hash()` function
-- Add `arweave_tx_id` to NFTToken struct
-- Add `mint_article_nft_with_arweave()` function
+**File:** `contracts/article-nft/Cargo.toml` (MODIFY)
+
+```toml
+[dependencies]
+stellar-access = { git = "https://github.com/OpenZeppelin/stellar-contracts", package = "stellar-access" }
+stellar-utils = { git = "https://github.com/OpenZeppelin/stellar-contracts", package = "stellar-utils" }
+stellar-macros = { git = "https://github.com/OpenZeppelin/stellar-contracts", package = "stellar-macros" }
+```
+
+#### 5.2 Upgrade Unified Tipping Contract
+**File:** `contracts/tipping/src/lib.rs` (MODIFY)
+
+Add to the contract:
+- Pausable pattern (`pause()`, `unpause()`, `is_paused()`)
+- `#[when_not_paused]` macro on `tip_article` and `tip_highlight_direct`
+- `tip_article_with_arweave()` - accepts Arweave TX ID
+- `tip_highlight_with_arweave()` - accepts Arweave TX ID
+
+#### 5.3 Upgrade NFT Contract
+**File:** `contracts/article-nft/src/lib.rs` (MODIFY)
+
+Add to the contract:
+- Pausable pattern
+- `arweave_tx_id: Option<String>` field to NFTToken struct
+- `mint_article_nft_with_arweave()` function
+
+#### 5.4 Build & Deploy
+
+```bash
+# Build contracts
+cd contracts/tipping && stellar contract build
+cd ../article-nft && stellar contract build
+
+# Deploy Unified Tipping Contract
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/quilltip_tipping.wasm \
+  --source <YOUR_KEY> \
+  --network testnet
+
+# Initialize Tipping Contract
+stellar contract invoke \
+  --id <NEW_TIPPING_CONTRACT_ID> \
+  --source <YOUR_KEY> \
+  --network testnet \
+  -- initialize \
+  --admin <ADMIN_ADDRESS> \
+  --platform_address <PLATFORM_ADDRESS> \
+  --fee_bps 250
+
+# Deploy NFT Contract
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/quilltip_article_nft.wasm \
+  --source <YOUR_KEY> \
+  --network testnet
+
+# Initialize NFT Contract
+stellar contract invoke \
+  --id <NEW_NFT_CONTRACT_ID> \
+  --source <YOUR_KEY> \
+  --network testnet \
+  -- initialize \
+  --admin <ADMIN_ADDRESS> \
+  --tip_threshold 100000000
+```
+
+---
+
+### PHASE 6: Config Updates (Contract Consolidation)
+
+#### 6.1 Update Stellar Config
+**File:** `lib/stellar/config.ts` (MODIFY)
+
+```typescript
+export const STELLAR_CONFIG = {
+  // ... network config ...
+
+  // Contract addresses - CONSOLIDATED (2 contracts)
+  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || '<NEW_TIPPING_CONTRACT_ID>',
+  NFT_CONTRACT_ID: process.env.NEXT_PUBLIC_NFT_CONTRACT_ID || '<NEW_NFT_CONTRACT_ID>',
+
+  // REMOVED: HIGHLIGHT_CONTRACT_ID - now uses TIPPING_CONTRACT_ID
+  // Highlight tipping uses same contract as article tipping
+
+  // ... rest unchanged ...
+};
+```
+
+#### 6.2 Update Stellar Client
+**File:** `lib/stellar/client.ts` (MODIFY - line ~225)
+
+Change `buildHighlightTipTransaction()` to use `TIPPING_CONTRACT_ID`:
+```typescript
+// BEFORE:
+const contract = new StellarSdk.Contract(STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID)
+
+// AFTER:
+const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID)
+```
 
 ---
 
@@ -364,47 +501,71 @@ Implement these patterns in Soroban contracts:
 ### CREATE (5 files)
 | File | Purpose |
 |------|---------|
+| `lib/arweave/config.ts` | Arweave environment config |
 | `lib/arweave/client.ts` | Arweave SDK wrapper |
-| `lib/arweave/config.ts` | Testnet/mainnet config |
 | `lib/arweave/types.ts` | TypeScript types |
 | `convex/arweave.ts` | Background upload actions |
 | `components/articles/ArweaveStatus.tsx` | Status display |
 
-### MODIFY (3 files)
+### MODIFY (9 files)
 | File | Changes |
 |------|---------|
-| `convex/schema.ts` | Add 5 Arweave fields |
-| `convex/articles.ts` | Hook publishArticle |
-| `.env.example` | Add Arweave config vars |
+| `convex/schema.ts:81` | Add 5 Arweave fields |
+| `convex/articles.ts:332` | Hook scheduler in publishArticle |
+| `.env.example` | Add Arweave vars, remove HIGHLIGHT_CONTRACT_ID |
+| `contracts/tipping/Cargo.toml` | Add OZ dependencies |
+| `contracts/tipping/src/lib.rs` | Add Pausable, Arweave functions |
+| `contracts/article-nft/Cargo.toml` | Add OZ dependencies |
+| `contracts/article-nft/src/lib.rs` | Add Pausable, arweave_tx_id |
+| `lib/stellar/config.ts:13` | Remove HIGHLIGHT_CONTRACT_ID |
+| `lib/stellar/client.ts:225` | Use TIPPING_CONTRACT_ID for highlights |
+
+### DELETE (1 file)
+| File | Reason |
+|------|--------|
+| `docs/ARWEAVE_INTEGRATION_PLAN.md` | Superseded by this document |
 
 ---
 
 ## Environment Variables
 
 ```bash
-# .env.local
+# .env.local / .env.example
+
+# Arweave Permanent Storage
 ARWEAVE_ENABLED=true
 ARWEAVE_USE_TESTNET=true
 ARWEAVE_WALLET_KEY={"kty":"RSA","n":"..."}  # JWK from AR.IO faucet
+
+# Stellar Contracts (2 contracts - CONSOLIDATED)
+NEXT_PUBLIC_TIPPING_CONTRACT_ID=<your-tipping-contract-id>  # Handles both article + highlight
+NEXT_PUBLIC_NFT_CONTRACT_ID=<your-nft-contract-id>
+# Note: HIGHLIGHT_CONTRACT_ID removed - unified into TIPPING_CONTRACT_ID
 ```
+
+---
+
+## Pre-requisites
+
+1. **Arweave Wallet:** Get from https://faucet.arweave.net/ (free testnet tokens)
+2. **Stellar Wallet:** Funded testnet account
+3. **Stellar CLI:** `cargo install --locked stellar-cli`
+4. **Rust toolchain:** `rustup target add wasm32-unknown-unknown wasm32v1-none`
 
 ---
 
 ## Success Criteria
 
-- [x] Arweave client with AR.IO testnet support
-- [x] Background upload on article publish
-- [x] TX ID stored in Convex
-- [x] ArweaveStatus component displays status
-- [x] Memo format ready (already done!)
-- [ ] OpenZeppelin patterns in contracts (after Dec 17)
+### Arweave Integration
+- [ ] Arweave client uploads articles to AR.IO testnet
+- [ ] Background job triggers on article publish
+- [ ] TX ID stored in Convex + displayed in UI
+- [ ] Memo format uses Arweave TX ID when available (already implemented!)
 
----
-
-## Next Steps
-
-1. Get AR.IO testnet wallet from https://faucet.arweave.net/
-2. Request free test tokens (up to 10,000)
-3. Implement Arweave client files
-4. Update schema and articles mutation
-5. Test end-to-end flow: publish → upload → verify TX ID
+### Contract Redeployment
+- [ ] Single unified tipping contract deployed (article + highlight)
+- [ ] NFT contract deployed with arweave_tx_id field
+- [ ] Both contracts have Pausable pattern (pause/unpause)
+- [ ] `lib/stellar/config.ts` uses single TIPPING_CONTRACT_ID
+- [ ] `lib/stellar/client.ts` uses same contract for highlight tips
+- [ ] All tests pass

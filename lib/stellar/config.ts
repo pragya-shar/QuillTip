@@ -5,12 +5,10 @@ export const STELLAR_CONFIG = {
   SOROBAN_RPC_URL: process.env.NEXT_PUBLIC_SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org',
   NETWORK_PASSPHRASE: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || 'Test SDF Network ; September 2015',
 
-  // Contract addresses
-  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || 'CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM',
-  NFT_CONTRACT_ID: process.env.NEXT_PUBLIC_NFT_CONTRACT_ID || 'CAOWOEKBL5VX4BHN4QT2RQN4QEEBEJZLVKNRQ7UAVGOX3W4UMSSQTTC5',
-
-  // Highlight tipping contract (NEW - separate for safety)
-  HIGHLIGHT_CONTRACT_ID: process.env.NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID || 'CDONAZILY4HGXK4I5VDLLM6RJE2WNSZD4XP2Y3TMKAM52VYYCVTJ64AB',
+  // Contract addresses (2 contracts - Unified Tipping + NFT)
+  // TIPPING_CONTRACT_ID handles BOTH article AND highlight tipping
+  TIPPING_CONTRACT_ID: process.env.NEXT_PUBLIC_TIPPING_CONTRACT_ID || '',
+  NFT_CONTRACT_ID: process.env.NEXT_PUBLIC_NFT_CONTRACT_ID || '',
 
   // Platform settings
   PLATFORM_ADDRESS: process.env.NEXT_PUBLIC_PLATFORM_ADDRESS || '',
@@ -41,9 +39,9 @@ export const TIP_AMOUNTS = [
 
 // Runtime validation - warn about missing config (browser only, runs once)
 if (typeof window !== 'undefined') {
-  if (!STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID) {
+  if (!STELLAR_CONFIG.TIPPING_CONTRACT_ID) {
     console.warn(
-      '[Stellar Config] NEXT_PUBLIC_HIGHLIGHT_CONTRACT_ID is not set. Highlight tipping will not work.'
+      '[Stellar Config] NEXT_PUBLIC_TIPPING_CONTRACT_ID is not set. Tipping will not work.'
     );
   }
   if (!STELLAR_CONFIG.PLATFORM_ADDRESS) {

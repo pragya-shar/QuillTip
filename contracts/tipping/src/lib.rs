@@ -1,5 +1,8 @@
 #![no_std]
 use soroban_sdk::{contract, contractimpl, contracttype, token, vec, Address, Env, String, Symbol, Vec};
+use stellar_contract_utils::pausable::{self, Pausable, PausableError};
+use stellar_access::ownable::{self, Ownable, OwnableError};
+use stellar_macros::{only_owner, when_not_paused};
 
 #[derive(Clone)]
 #[contracttype]
@@ -40,6 +43,7 @@ pub enum DataKey {
     TipCounter,
     TotalVolume,
     HighlightTips(String),     // Highlight ID → Tips
+    Paused,                    // Emergency pause state (OZ Pausable)
 }
 
 const MINIMUM_TIP_STROOPS: i128 = 100_000; // 0.01 XLM (approximately 1 cent)
@@ -337,6 +341,103 @@ impl TippingContract {
             .persistent()
             .get(&DataKey::HighlightTips(highlight_id))
             .unwrap_or(vec![&env])
+    }
+
+    // ========== PAUSABLE PATTERN (OZ) ==========
+
+    /// Check if contract is paused
+    pub fn is_paused(env: Env) -> bool {
+        pausable::paused(&env)
+    }
+
+    /// Pause the contract (admin only)
+    pub fn pause(env: Env, admin: Address) {
+        admin.require_auth();
+
+        let stored_admin: Address = env.storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("Admin not set");
+
+        if admin != stored_admin {
+            panic!("Unauthorized");
+        }
+
+        pausable::pause(&env);
+    }
+
+    /// Unpause the contract (admin only)
+    pub fn unpause(env: Env, admin: Address) {
+        admin.require_auth();
+
+        let stored_admin: Address = env.storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("Admin not set");
+
+        if admin != stored_admin {
+            panic!("Unauthorized");
+        }
+
+        pausable::unpause(&env);
+    }
+
+    // ========== ARWEAVE-ENABLED TIPPING ==========
+
+    /// Tip an article with Arweave reference
+    pub fn tip_article_with_arweave(
+        env: Env,
+        tipper: Address,
+        article_id: Symbol,
+        author: Address,
+        amount: i128,
+        arweave_tx_id: String,
+    ) -> TipReceipt {
+        // Check not paused
+        pausable::when_not_paused(&env);
+
+        // Execute normal tip
+        let receipt = Self::tip_article(env.clone(), tipper.clone(), article_id.clone(), author.clone(), amount);
+
+        // Emit event with Arweave TX ID
+        env.events().publish(
+            (Symbol::new(&env, "tip_with_arweave"), article_id),
+            (tipper, author, amount, arweave_tx_id)
+        );
+
+        receipt
+    }
+
+    /// Tip a highlight with Arweave reference
+    pub fn tip_highlight_with_arweave(
+        env: Env,
+        tipper: Address,
+        highlight_id: String,
+        article_id: Symbol,
+        author: Address,
+        amount: i128,
+        arweave_tx_id: String,
+    ) -> TipReceipt {
+        // Check not paused
+        pausable::when_not_paused(&env);
+
+        // Execute normal highlight tip
+        let receipt = Self::tip_highlight_direct(
+            env.clone(),
+            tipper.clone(),
+            highlight_id.clone(),
+            article_id.clone(),
+            author.clone(),
+            amount
+        );
+
+        // Emit event with Arweave TX ID
+        env.events().publish(
+            (Symbol::new(&env, "highlight_tip_arweave"), highlight_id),
+            (tipper, author, amount, arweave_tx_id)
+        );
+
+        receipt
     }
 }
 

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 // Get article data for upload (used by arweave action)
 export const getArticleForUpload = internalQuery({
@@ -33,6 +34,13 @@ export const recordArweaveUpload = internalMutation({
       contentVersion: args.version,
       updatedAt: Date.now(),
     });
+
+    // Schedule verification after 10 minutes
+    await ctx.scheduler.runAfter(
+      10 * 60 * 1000,
+      internal.arweave.verifyArweaveUpload,
+      { articleId: args.articleId }
+    );
   },
 });
 
@@ -48,5 +56,19 @@ export const recordArweaveFailure = internalMutation({
       updatedAt: Date.now(),
     });
     console.error(`[Arweave] Failed for article ${args.articleId}: ${args.error}`);
+  },
+});
+
+// Update arweave status (for verification job)
+export const updateArweaveStatus = internalMutation({
+  args: {
+    articleId: v.id("articles"),
+    status: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.articleId, {
+      arweaveStatus: args.status,
+      updatedAt: Date.now(),
+    });
   },
 });

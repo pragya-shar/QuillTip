@@ -9,7 +9,8 @@ import AppNavigation from '@/components/layout/AppNavigation'
 import { TipStats } from '@/components/tipping/TipStats'
 import { TipButton } from '@/components/tipping/TipButton'
 import { NFTIntegration } from '@/components/nft/NFTIntegration'
-import { DollarSign, Trophy, Heart, MessageSquare, ChevronDown } from 'lucide-react'
+import { DollarSign, Trophy, Heart, MessageSquare, ChevronDown, Archive } from 'lucide-react'
+import { ArweaveStatus } from '@/components/articles/ArweaveStatus'
 import { HighlightNotes } from '@/components/highlights/HighlightNotes'
 import { HighlightHeatmap } from '@/components/highlights/HighlightHeatmap'
 import { useAuth } from '@/components/providers/AuthContext'
@@ -229,6 +230,22 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                         <span className="font-semibold">${(article.tipStats.total || 0).toFixed(2)}</span>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Arweave Permanent Storage */}
+                {article.arweaveStatus && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Archive className="w-5 h-5 text-blue-500" />
+                      Permanent Storage
+                    </h3>
+                    <ArweaveStatus
+                      status={article.arweaveStatus}
+                      txId={article.arweaveTxId}
+                      url={article.arweaveUrl}
+                      timestamp={article.arweaveTimestamp}
+                    />
                   </div>
                 )}
               </div>

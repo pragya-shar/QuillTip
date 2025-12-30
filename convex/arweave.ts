@@ -90,3 +90,42 @@ export const uploadArticleToArweave = internalAction({
     console.error(`[Arweave] Upload failed after ${maxRetries} attempts:`, lastError);
   },
 });
+
+// Verification action - checks if transaction is confirmed on Arweave
+export const verifyArweaveUpload = internalAction({
+  args: { articleId: v.id("articles") },
+  handler: async (ctx, args) => {
+    const data = await ctx.runQuery(internal.arweaveHelpers.getArticleForUpload, {
+      articleId: args.articleId,
+    });
+
+    if (!data?.article.arweaveTxId) {
+      console.log("[Arweave] No txId to verify for article:", args.articleId);
+      return;
+    }
+
+    // Skip if already verified or failed
+    if (data.article.arweaveStatus === "verified" || data.article.arweaveStatus === "failed") {
+      return;
+    }
+
+    const { getTransactionStatus } = await import("../lib/arweave/client");
+    const status = await getTransactionStatus(data.article.arweaveTxId);
+
+    if (status.confirmed) {
+      await ctx.runMutation(internal.arweaveHelpers.updateArweaveStatus, {
+        articleId: args.articleId,
+        status: "verified",
+      });
+      console.log(`[Arweave] Verified: ${data.article.arweaveTxId}`);
+    } else {
+      // Retry in 10 minutes if not confirmed yet
+      await ctx.scheduler.runAfter(
+        10 * 60 * 1000,
+        internal.arweave.verifyArweaveUpload,
+        { articleId: args.articleId }
+      );
+      console.log(`[Arweave] Not yet confirmed, scheduled retry for: ${data.article.arweaveTxId}`);
+    }
+  },
+});

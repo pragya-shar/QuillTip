@@ -2,8 +2,9 @@
 ## Deliverable 2: Permanent Content Storage & OpenZeppelin Security Patterns
 
 **Status:** In Progress (Branch: `arweave-integration`)
-**Testing:** Stellar Testnet + AR.IO Testnet (FREE - no mainnet costs)
+**Testing:** Stellar Testnet + Turbo SDK (FREE uploads under 100 KiB)
 **Date:** December 2024
+**Updated:** Switched from raw `arweave` SDK to `@ardrive/turbo-sdk` for free uploads
 
 ---
 
@@ -20,27 +21,42 @@ The tipping contract already has both `tip_article()` and `tip_highlight_direct(
 1. **Unified Tipping Contract** - handles both article + highlight tipping
 2. **NFT Contract** - article NFT minting with Arweave support
 
-### Target Networks (ALL TESTNET - FREE)
+### Target Networks
 | Network | Purpose | Cost |
 |---------|---------|------|
 | **Stellar Testnet** | Smart contract deployment | FREE (testnet XLM) |
-| **AR.IO Testnet** | Arweave permanent storage | FREE (up to 10,000 test tokens) |
+| **Arweave (via Turbo)** | Permanent article storage | FREE (under 100 KiB) |
 
 ---
 
-## AR.IO Testnet - Free Arweave Testing
+## Turbo SDK - Free Arweave Uploads
 
-**Faucet:** https://faucet.arweave.net/
+**Documentation:** https://docs.ar.io/build/upload/turbo-credits/
 
-- Up to **10,000 free test tokens**
-- Works with standard `arweave-js` SDK
-- Real network behavior, real TX IDs
+From AR.IO official docs:
+> **"Uploads under 100 KiB are completely free and do not require a prior top up."**
+
+### Why Turbo SDK (not raw `arweave` SDK)?
+
+| Feature | Raw `arweave` SDK | Turbo SDK |
+|---------|-------------------|-----------|
+| Storage destination | Arweave blockchain | Arweave blockchain (same!) |
+| Free uploads | NO - requires AR tokens | YES - under 100 KiB |
+| Transaction IDs | Real Arweave TX IDs | Real Arweave TX IDs (same!) |
+| Wallet required | YES - must be funded | NO - for small files |
+| Permanence | Permanent | Permanent (same!) |
+
+**Key insight:** Turbo is a **bundler/gateway** that uploads TO Arweave. Data is still permanently stored on the real Arweave blockchain with real transaction IDs.
+
+### Article Size Estimate
+- Typical JSON article: 5-50 KiB
+- Free tier limit: 100 KiB
+- **Result:** Most articles upload for FREE
 
 ```bash
-# Environment Config (testnet - FREE)
+# Environment Config (Turbo - FREE for <100KB)
 ARWEAVE_ENABLED=true
-ARWEAVE_USE_TESTNET=true
-ARWEAVE_WALLET_KEY={"kty":"RSA",...}  # From AR.IO testnet faucet
+# ARWEAVE_WALLET_KEY is OPTIONAL for files under 100 KiB
 ```
 
 ---
@@ -74,13 +90,13 @@ Next.js Frontend
     ↓
     ├──→ Convex (fast queries, real-time, drafts)
     ├──→ Stellar Testnet (payments, verification)
-    └──→ AR.IO Testnet (permanent storage - FREE)
+    └──→ Turbo SDK → Arweave (permanent storage - FREE <100KB)
 ```
 
 **Flow:**
 1. User publishes article → Convex updated immediately
-2. Background job uploads to AR.IO Testnet
-3. TX ID stored in Convex + available for Stellar memo
+2. Background job uploads via Turbo SDK (FREE for articles <100KB)
+3. Real Arweave TX ID stored in Convex + available for Stellar memo
 4. Article accessible from both Convex (fast) and Arweave (permanent)
 
 ---
@@ -117,89 +133,108 @@ Next.js Frontend
 
 ## Implementation Phases
 
-### PHASE 1: Arweave Infrastructure
+### PHASE 1: Arweave Infrastructure (Turbo SDK)
 
 #### 1.1 Install Dependencies
 ```bash
-npm install arweave
+npm install @ardrive/turbo-sdk
 ```
 
+**Note:** We use Turbo SDK instead of raw `arweave` SDK because:
+- FREE uploads for files under 100 KiB (no tokens needed)
+- Still stores data on real Arweave blockchain
+- Same permanent TX IDs
+
 #### 1.2 Create Arweave Config
-**File:** `lib/arweave/config.ts` (NEW)
+**File:** `lib/arweave/config.ts` (SIMPLIFIED)
 
 ```typescript
 export const ARWEAVE_CONFIG = {
   ENABLED: process.env.ARWEAVE_ENABLED === 'true',
-  USE_TESTNET: process.env.ARWEAVE_USE_TESTNET === 'true',
-  HOST: 'arweave.net',
-  PORT: 443,
-  PROTOCOL: 'https',
   APP_NAME: 'QuillTip',
   APP_VERSION: '1.0',
-};
+} as const;
 ```
 
-#### 1.3 Create Arweave Client
-**File:** `lib/arweave/client.ts` (NEW)
+#### 1.3 Create Arweave Client (Turbo SDK)
+**File:** `lib/arweave/client.ts` (UPDATED)
 
 ```typescript
-import Arweave from 'arweave';
+import { TurboFactory } from "@ardrive/turbo-sdk/node";
 import { ARWEAVE_CONFIG } from './config';
+import type { ArweaveArticleContent, ArweaveUploadResult, ArweaveTransactionStatus } from './types';
 
-export class ArweaveClient {
-  private arweave: Arweave;
+/**
+ * Upload article content to Arweave via Turbo SDK
+ * FREE for files under 100 KiB!
+ */
+export async function uploadArticle(
+  content: ArweaveArticleContent
+): Promise<ArweaveUploadResult> {
+  try {
+    const data = JSON.stringify(content);
+    const dataBuffer = Buffer.from(data);
 
-  constructor() {
-    this.arweave = Arweave.init({
-      host: ARWEAVE_CONFIG.HOST,
-      port: ARWEAVE_CONFIG.PORT,
-      protocol: ARWEAVE_CONFIG.PROTOCOL,
-    });
-  }
-
-  async uploadArticle(content: {
-    title: string;
-    body: any;
-    author: string;
-    timestamp: number;
-  }): Promise<string> {
-    const wallet = JSON.parse(process.env.ARWEAVE_WALLET_KEY!);
-
-    const transaction = await this.arweave.createTransaction({
-      data: JSON.stringify(content),
-    }, wallet);
-
-    transaction.addTag('Content-Type', 'application/json');
-    transaction.addTag('App-Name', ARWEAVE_CONFIG.APP_NAME);
-    transaction.addTag('App-Version', ARWEAVE_CONFIG.APP_VERSION);
-    transaction.addTag('Article-Title', content.title);
-    transaction.addTag('Author', content.author);
-
-    await this.arweave.transactions.sign(transaction, wallet);
-    await this.arweave.transactions.post(transaction);
-
-    return transaction.id; // 43-character TX ID
-  }
-
-  async getArticle(txId: string): Promise<any> {
-    const data = await this.arweave.transactions.getData(txId, {
-      decode: true,
-      string: true
-    });
-    return JSON.parse(data as string);
-  }
-
-  async verifyTransaction(txId: string): Promise<boolean> {
-    try {
-      const status = await this.arweave.transactions.getStatus(txId);
-      return status.status === 200 && status.confirmed !== null;
-    } catch {
-      return false;
+    // Check size - warn if approaching limit
+    const sizeKiB = dataBuffer.length / 1024;
+    if (sizeKiB > 100) {
+      console.warn(`[Arweave] Article size ${sizeKiB.toFixed(1)} KiB exceeds free tier (100 KiB)`);
     }
+
+    // Use unauthenticated Turbo for free uploads under 100 KiB
+    const turbo = TurboFactory.unauthenticated();
+
+    const result = await turbo.uploadSignedDataItem({
+      dataItemStreamFactory: () => dataBuffer,
+      dataItemSizeFactory: () => dataBuffer.length,
+      signal: AbortSignal.timeout(60000), // 60s timeout
+    });
+
+    return {
+      success: true,
+      txId: result.id,
+      url: `https://arweave.net/${result.id}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
   }
 }
 
-export const arweaveClient = new ArweaveClient();
+/**
+ * Get article content from Arweave by transaction ID
+ */
+export async function getArticle(txId: string): Promise<ArweaveArticleContent | null> {
+  try {
+    const response = await fetch(`https://arweave.net/${txId}`);
+    if (!response.ok) return null;
+    return await response.json() as ArweaveArticleContent;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check transaction status (for verification)
+ */
+export async function getTransactionStatus(txId: string): Promise<ArweaveTransactionStatus> {
+  try {
+    const response = await fetch(`https://arweave.net/tx/${txId}/status`);
+    if (!response.ok) {
+      return { confirmed: false, confirmations: 0 };
+    }
+    const status = await response.json();
+    return {
+      confirmed: !!status.block_height,
+      confirmations: status.number_of_confirmations || 0,
+      blockHeight: status.block_height,
+    };
+  } catch {
+    return { confirmed: false, confirmations: 0 };
+  }
+}
 ```
 
 #### 1.4 Create Types
@@ -529,28 +564,27 @@ const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID)
 
 ## Environment Variables
 
-```bash
-# .env.local / .env.example
+Required environment variables (see `.env.example` for template):
 
-# Arweave Permanent Storage
-ARWEAVE_ENABLED=true
-ARWEAVE_USE_TESTNET=true
-ARWEAVE_WALLET_KEY={"kty":"RSA","n":"..."}  # JWK from AR.IO faucet
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ARWEAVE_ENABLED` | Yes | Set to `true` to enable uploads |
+| `ARWEAVE_WALLET_KEY` | No* | JWK wallet key (*only needed for files >100 KiB) |
+| `NEXT_PUBLIC_TIPPING_CONTRACT_ID` | Yes | Unified tipping contract address |
+| `NEXT_PUBLIC_NFT_CONTRACT_ID` | Yes | NFT contract address |
 
-# Stellar Contracts (2 contracts - CONSOLIDATED)
-NEXT_PUBLIC_TIPPING_CONTRACT_ID=<your-tipping-contract-id>  # Handles both article + highlight
-NEXT_PUBLIC_NFT_CONTRACT_ID=<your-nft-contract-id>
-# Note: HIGHLIGHT_CONTRACT_ID removed - unified into TIPPING_CONTRACT_ID
-```
+**Note:** With Turbo SDK, wallet key is NOT required for uploads under 100 KiB (free tier).
 
 ---
 
 ## Pre-requisites
 
-1. **Arweave Wallet:** Get from https://faucet.arweave.net/ (free testnet tokens)
+1. **Turbo SDK:** `npm install @ardrive/turbo-sdk` (FREE uploads under 100 KiB - no wallet needed!)
 2. **Stellar Wallet:** Funded testnet account
 3. **Stellar CLI:** `cargo install --locked stellar-cli`
 4. **Rust toolchain:** `rustup target add wasm32-unknown-unknown wasm32v1-none`
+
+**Note:** Unlike raw Arweave SDK, Turbo SDK does NOT require a funded wallet for small uploads. Articles under 100 KiB upload for FREE.
 
 ---
 
@@ -560,19 +594,29 @@ NEXT_PUBLIC_NFT_CONTRACT_ID=<your-nft-contract-id>
 
 | Component | File | Status |
 |-----------|------|--------|
-| Arweave Config | `lib/arweave/config.ts` | ✅ Complete |
-| Arweave Client | `lib/arweave/client.ts` | ✅ Complete (with `getTransactionStatus()`) |
+| Arweave Config | `lib/arweave/config.ts` | 🔄 Needs update for Turbo SDK |
+| Arweave Client | `lib/arweave/client.ts` | 🔄 Needs update for Turbo SDK |
 | Arweave Types | `lib/arweave/types.ts` | ✅ Complete |
 | Schema Fields | `convex/schema.ts:79-84` | ✅ Complete |
-| Background Upload | `convex/arweave.ts` | ✅ Complete with retry logic |
+| Background Upload | `convex/arweave.ts` | 🔄 Needs minor update |
 | Helper Mutations | `convex/arweaveHelpers.ts` | ✅ Complete |
 | Publish Hook | `convex/articles.ts:337` | ✅ Schedules upload on publish |
-| ArweaveStatus UI | `components/articles/ArweaveStatus.tsx` | ✅ Component exists |
+| ArweaveStatus UI | `components/articles/ArweaveStatus.tsx` | ✅ Integrated in article page |
 | Stellar Config | `lib/stellar/config.ts` | ✅ Consolidated to unified TIPPING_CONTRACT_ID |
 | Stellar Client | `lib/stellar/client.ts` | ✅ Uses unified contract |
 | Tipping Contract | `contracts/tipping/src/lib.rs` | ✅ Has Arweave functions + Pausable |
 | NFT Contract | `contracts/article-nft/src/lib.rs` | ✅ Has arweave_tx_id + Pausable |
-| npm package | `package.json` | ✅ arweave: ^1.15.7 installed |
+| npm package | `package.json` | 🔄 Needs @ardrive/turbo-sdk (replacing arweave) |
+
+### Turbo SDK Migration Status
+
+| Step | Status |
+|------|--------|
+| Install `@ardrive/turbo-sdk` | ⏳ Pending |
+| Update `lib/arweave/client.ts` | ⏳ Pending |
+| Update `lib/arweave/config.ts` | ⏳ Pending |
+| Update `convex/arweave.ts` | ⏳ Pending |
+| Test upload flow | ⏳ Pending |
 
 ### Contracts Deployed on Testnet ✅
 
@@ -712,37 +756,87 @@ export const recordArweaveUpload = internalMutation({
 
 ---
 
-## Environment Variables Configuration
+## Server-Side Wallet Implementation
 
-**Problem:** `.env.local` needs ARWEAVE_ENABLED=true and wallet key.
+### What "Authenticated" Means
 
-**Fix:** Get AR.IO testnet wallet from https://faucet.arweave.net/ and update `.env.local`:
+"Authenticated" does NOT mean each author needs an Arweave account. It means QuillTip uses a server-side signing key to sign data before uploading.
+
+**How it works:**
+1. All data on Arweave must be signed (proves ownership/origin)
+2. Signing requires a wallet/key (JWK)
+3. QuillTip has ONE wallet key that signs all uploads on behalf of authors
+4. Author information is stored in article metadata/tags, not the signature
+
+**Cost:** FREE for articles <100KB (signing only, no payment required)
+
+### Environment Variables
 
 ```bash
-# Arweave Permanent Storage
+# Required
 ARWEAVE_ENABLED=true
-ARWEAVE_USE_TESTNET=true
-ARWEAVE_WALLET_KEY='{"kty":"RSA",...}'  # JWK from AR.IO faucet
+ARWEAVE_WALLET_KEY='{"kty":"RSA","n":"...","e":"...","d":"...","p":"...","q":"...","dp":"...","dq":"...","qi":"..."}'
+```
+
+**Wallet address:** `C8g4MCJbXT65pKLIXHgsxQ2XHK8gcnpdlcDU9iQs9jM`
+
+### Generate New JWK (if needed)
+
+```bash
+node -e "require('arweave').init({}).wallets.generate().then(k=>console.log(JSON.stringify(k)))"
+```
+
+### Code Changes Required
+
+**File:** `lib/arweave/client.ts`
+
+1. Add `parseWalletKey()` function to parse JWK from environment
+2. Modify `uploadArticle()` to accept JWK and use `TurboFactory.authenticated({ signer })`
+
+```typescript
+import { TurboFactory, ArweaveSigner } from "@ardrive/turbo-sdk/node";
+import type { JWKInterface } from "arweave/node/lib/wallet";
+
+export function parseWalletKey(jwkString: string): JWKInterface {
+  const parsed = JSON.parse(jwkString);
+  if (!parsed.kty || parsed.kty !== 'RSA') {
+    throw new Error('Invalid JWK: must be RSA key');
+  }
+  return parsed as JWKInterface;
+}
+
+export async function uploadArticle(
+  content: ArweaveArticleContent,
+  jwk: JWKInterface  // Required - server wallet for signing
+): Promise<ArweaveUploadResult> {
+  const signer = new ArweaveSigner(jwk);
+  const turbo = TurboFactory.authenticated({ signer });
+  // ... rest of upload logic
+}
+```
+
+**File:** `convex/arweave.ts` (no changes needed - already calls correctly)
+
+```typescript
+const { uploadArticle, parseWalletKey } = await import("../lib/arweave/client");
+const result = await uploadArticle(content, parseWalletKey(walletKey));
 ```
 
 ---
 
-## Files to Modify (Final Steps)
+## Files to Modify (Server-Side Wallet)
 
 | File | Change |
 |------|--------|
-| `app/[username]/[slug]/page.tsx` | Import + add ArweaveStatus component in sidebar |
-| `convex/arweave.ts` | Add `verifyArweaveUpload` action |
-| `convex/arweaveHelpers.ts` | Add `updateArweaveStatus` mutation + schedule verification |
-| `.env.local` | Add `ARWEAVE_ENABLED=true`, `ARWEAVE_WALLET_KEY` |
+| `lib/arweave/client.ts` | Add `parseWalletKey()`, use authenticated uploads |
+| `.env.local` | Add `ARWEAVE_WALLET_KEY` with JWK |
 
 ---
 
 ## Testing Checklist
 
-1. Set `ARWEAVE_ENABLED=true` in `.env.local`
-2. Add Arweave wallet key from AR.IO testnet faucet
-3. Publish an article
+1. Ensure `ARWEAVE_ENABLED=true` in environment
+2. Publish an article
 4. Check Convex dashboard for:
    - `arweaveStatus`: "pending" → "uploaded" transition
    - `arweaveTxId` populated
@@ -790,4 +884,4 @@ All gaps have been addressed:
 3. **updateArweaveStatus mutation** in `convex/arweaveHelpers.ts:62-74`
 4. **Verification scheduling** in `convex/arweaveHelpers.ts:38-43`
 
-**Remaining user action:** Configure `.env.local` with Arweave wallet from https://faucet.arweave.net/
+**Remaining user action:** Set `ARWEAVE_ENABLED=true` in environment and complete Turbo SDK migration.

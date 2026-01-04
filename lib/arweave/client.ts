@@ -93,19 +93,42 @@ export async function getArticle(txId: string): Promise<ArweaveArticleContent | 
 
 /**
  * Check transaction status (for verification)
+ * For bundled transactions (Turbo SDK), checks multiple gateways
  */
 export async function getTransactionStatus(txId: string): Promise<ArweaveTransactionStatus> {
   try {
+    // First try main gateway for block confirmation
     const response = await fetch(`https://arweave.net/tx/${txId}/status`);
-    if (!response.ok) {
-      return { confirmed: false, confirmations: 0 };
+    if (response.ok) {
+      const status = await response.json();
+      if (status.block_height) {
+        return {
+          confirmed: true,
+          confirmations: status.number_of_confirmations || 0,
+          blockHeight: status.block_height,
+        };
+      }
     }
-    const status = await response.json();
-    return {
-      confirmed: !!status.block_height,
-      confirmations: status.number_of_confirmations || 0,
-      blockHeight: status.block_height,
-    };
+
+    // For bundled transactions, check if content is accessible via alternative gateways
+    // If accessible, consider it confirmed (data is permanently stored)
+    const gateways = [
+      `https://arweave.developerdao.com/${txId}`,
+      `https://g8way.io/${txId}`,
+    ];
+
+    for (const url of gateways) {
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (res.ok) {
+          return { confirmed: true, confirmations: 1 };
+        }
+      } catch {
+        // Try next gateway
+      }
+    }
+
+    return { confirmed: false, confirmations: 0 };
   } catch {
     return { confirmed: false, confirmations: 0 };
   }

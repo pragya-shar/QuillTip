@@ -41,14 +41,13 @@ export default function LoginForm() {
         password: data.password,
         flow: 'signIn'
       })
-      
+
       // If we reach here, sign-in was successful
-      router.push('/')
-      router.refresh()
+      // Use replace to prevent back button returning to login
+      router.replace('/')
     } catch (error) {
       console.error('Login error:', error)
       setError('Invalid email or password. Please try again.')
-    } finally {
       setIsLoading(false)
     }
   }

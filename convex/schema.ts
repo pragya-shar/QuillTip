@@ -75,7 +75,14 @@ export default defineSchema({
     
     // Computed
     readTime: v.optional(v.number()),
-    
+
+    // Arweave permanent storage
+    arweaveTxId: v.optional(v.string()),
+    arweaveUrl: v.optional(v.string()),
+    arweaveStatus: v.optional(v.string()), // pending|uploaded|verified|failed
+    arweaveTimestamp: v.optional(v.number()),
+    contentVersion: v.optional(v.number()),
+
     // Timestamps
     createdAt: v.number(),
     updatedAt: v.number(),

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { useStellarWallet } from '@/hooks/useStellarWallet'
 import { nftClient } from '@/lib/stellar/nft-client'
-import { STELLAR_CONFIG } from '@/lib/stellar/config'
+import { stellarClient } from '@/lib/stellar/client'
 import { ConvexHttpClient } from 'convex/browser'
 
 interface MintButtonProps {
@@ -50,14 +50,20 @@ export function MintButton({
 
   const mintNFT = useMutation(api.nfts.mintNFT)
   const wallet = useStellarWallet()
+  const [xlmPrice, setXlmPrice] = useState<number | null>(null)
+
+  // Fetch real-time XLM price
+  useEffect(() => {
+    stellarClient.getXLMPrice().then(setXlmPrice)
+  }, [])
 
   const canMint = totalTips >= threshold && isAuthor
   const progress = Math.min(100, (totalTips / threshold) * 100)
 
-  // Convert USD to stroops for contract
-  const tipAmountInStroops = Math.floor(
-    (totalTips / STELLAR_CONFIG.XLM_TO_USD_RATE) * 10_000_000
-  )
+  // Convert USD to stroops for contract (using real-time price)
+  const tipAmountInStroops = xlmPrice
+    ? Math.floor((totalTips / xlmPrice) * 10_000_000)
+    : 0
 
   // Initialize Convex HTTP client for async calls
   const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)

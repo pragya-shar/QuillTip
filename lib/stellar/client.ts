@@ -11,6 +11,45 @@ import type {
   XLMPriceData,
 } from './types'
 
+// Cache for XLM price to avoid excessive API calls
+let xlmPriceCache: { price: number; timestamp: number } | null = null;
+const PRICE_CACHE_TTL = 60 * 1000; // 1 minute cache
+
+/**
+ * Fetch real-time XLM price from CoinGecko API
+ */
+async function fetchXLMPrice(): Promise<number> {
+  // Return cached price if still valid
+  if (xlmPriceCache && Date.now() - xlmPriceCache.timestamp < PRICE_CACHE_TTL) {
+    return xlmPriceCache.price;
+  }
+
+  try {
+    const response = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd',
+      { next: { revalidate: 60 } } // Cache for 60 seconds
+    );
+
+    if (!response.ok) {
+      console.warn('[XLM Price] Failed to fetch, using fallback rate');
+      return STELLAR_CONFIG.XLM_TO_USD_RATE;
+    }
+
+    const data = await response.json();
+    const price = data?.stellar?.usd;
+
+    if (typeof price === 'number' && price > 0) {
+      xlmPriceCache = { price, timestamp: Date.now() };
+      return price;
+    }
+  } catch (error) {
+    console.warn('[XLM Price] API error, using fallback rate:', error);
+  }
+
+  // Fallback to config default
+  return STELLAR_CONFIG.XLM_TO_USD_RATE;
+}
+
 export class StellarClient {
   private server: StellarSdk.Horizon.Server
   private sorobanServer: StellarSdk.rpc.Server
@@ -23,12 +62,10 @@ export class StellarClient {
   }
 
   /**
-   * Convert USD cents to XLM stroops
+   * Convert USD cents to XLM stroops (using real-time price)
    */
   async convertCentsToStroops(cents: number): Promise<number> {
-    // For POC, use fixed rate
-    // In production, fetch from price oracle
-    const xlmPrice = STELLAR_CONFIG.XLM_TO_USD_RATE
+    const xlmPrice = await fetchXLMPrice();
     const usdAmount = cents / 100
     const xlmAmount = usdAmount / xlmPrice
     const stroops = Math.floor(xlmAmount * 10_000_000)
@@ -38,11 +75,19 @@ export class StellarClient {
   }
 
   /**
-   * Convert XLM stroops to USD
+   * Convert XLM stroops to USD (using real-time price)
    */
-  convertStroopsToUSD(stroops: number): number {
+  async convertStroopsToUSD(stroops: number): Promise<number> {
+    const xlmPrice = await fetchXLMPrice();
     const xlmAmount = stroops / 10_000_000
-    return xlmAmount * STELLAR_CONFIG.XLM_TO_USD_RATE
+    return xlmAmount * xlmPrice
+  }
+
+  /**
+   * Get current XLM price in USD
+   */
+  async getXLMPrice(): Promise<number> {
+    return fetchXLMPrice();
   }
 
   /**
@@ -81,7 +126,7 @@ export class StellarClient {
         address: publicKey,
         balance: balanceStroops,
         balanceXLM: balanceStroops / 10_000_000,
-        balanceUSD: this.convertStroopsToUSD(balanceStroops),
+        balanceUSD: await this.convertStroopsToUSD(balanceStroops),
         pendingWithdrawal: false,
       }
     } catch {
@@ -198,7 +243,7 @@ export class StellarClient {
 
   /**
    * Build transaction for highlight tipping
-   * Same pattern as buildTipTransaction but uses HIGHLIGHT_CONTRACT_ID
+   * Uses same TIPPING_CONTRACT_ID (unified contract for article + highlight tipping)
    */
   async buildHighlightTipTransaction(
     tipperPublicKey: string,
@@ -221,8 +266,8 @@ export class StellarClient {
     // Load the tipper's account
     const account = await this.server.loadAccount(tipperPublicKey)
 
-    // Create contract instance for HIGHLIGHT contract
-    const contract = new StellarSdk.Contract(STELLAR_CONFIG.HIGHLIGHT_CONTRACT_ID)
+    // Create contract instance for unified TIPPING contract (handles both article + highlight)
+    const contract = new StellarSdk.Contract(STELLAR_CONFIG.TIPPING_CONTRACT_ID)
 
     // Convert stroops to BigInt for i128 (required by Soroban)
     const stroopsBigInt = BigInt(stroops)
@@ -360,13 +405,12 @@ export class StellarClient {
   }
 
   /**
-   * Get current XLM price (mock for POC)
+   * Get current XLM price with metadata
    */
-  async getXLMPrice(): Promise<XLMPriceData> {
-    // In production, fetch from price oracle
-    // For POC, use fixed rate
+  async getXLMPriceData(): Promise<XLMPriceData> {
+    const price = await fetchXLMPrice();
     return {
-      price: STELLAR_CONFIG.XLM_TO_USD_RATE,
+      price,
       timestamp: new Date(),
     }
   }

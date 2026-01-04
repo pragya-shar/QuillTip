@@ -9,6 +9,8 @@
  */
 
 import type * as articles from "../articles.js";
+import type * as arweave from "../arweave.js";
+import type * as arweaveHelpers from "../arweaveHelpers.js";
 import type * as auth from "../auth.js";
 import type * as highlightTips from "../highlightTips.js";
 import type * as highlights from "../highlights.js";
@@ -32,6 +34,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   articles: typeof articles;
+  arweave: typeof arweave;
+  arweaveHelpers: typeof arweaveHelpers;
   auth: typeof auth;
   highlightTips: typeof highlightTips;
   highlights: typeof highlights;

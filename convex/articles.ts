@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 // List articles with pagination and filters
@@ -328,9 +329,15 @@ export const publishArticle = mutation({
     await ctx.db.patch(args.id, {
       published: true,
       publishedAt: now,
+      arweaveStatus: "pending",
       updatedAt: now,
     });
-    
+
+    // Schedule Arweave upload (runs in background)
+    await ctx.scheduler.runAfter(0, internal.arweave.uploadArticleToArweave, {
+      articleId: args.id,
+    });
+
     // Update user's article count
     const user = await ctx.db.get(userId);
     if (user) {

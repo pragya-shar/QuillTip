@@ -3,12 +3,14 @@
 <div align="center">
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-quilltip.me-blue?style=for-the-badge)](https://quilltip.me)
-[![Stellar Contract](https://img.shields.io/badge/Stellar%20Contract-View%20on%20Explorer-yellow?style=for-the-badge)](https://stellar.expert/explorer/testnet/contract/CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM)
+[![Stellar Contract](https://img.shields.io/badge/Stellar%20Contract-View%20on%20Explorer-yellow?style=for-the-badge)](https://stellar.expert/explorer/testnet/contract/CASU4I45DVK3ZMXA3T34A3XF3BM4NBTFDW3QVCB3XA7PIWJSTN4HCVWG)
+[![Arweave Storage](https://img.shields.io/badge/Arweave-Permanent%20Storage-blue?style=for-the-badge)](https://arweave.net)
 
 </div>
 
-**🔗 Live Application:** [https://quilltip.me](https://quilltip.me)  
-**📜 Tipping Contract:** [`CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM`](https://stellar.expert/explorer/testnet/contract/CBSVFVIDV2U3SSY36TJ3MDGQDSQL3ZVL2TR7GMRBXJ3XZBE24FDHHWAM)
+**🔗 Live Application:** [https://quilltip.me](https://quilltip.me)
+**📜 Tipping Contract:** [`CASU4I45DVK3ZMXA3T34A3XF3BM4NBTFDW3QVCB3XA7PIWJSTN4HCVWG`](https://stellar.expert/explorer/testnet/contract/CASU4I45DVK3ZMXA3T34A3XF3BM4NBTFDW3QVCB3XA7PIWJSTN4HCVWG)
+**🎨 NFT Contract:** [`CAS44OQK7A6W5FDRAH3K3ZN7TTQTJ5ESRVG6MB2HBVFWZ5TVH26UUB4S`](https://stellar.expert/explorer/testnet/contract/CAS44OQK7A6W5FDRAH3K3ZN7TTQTJ5ESRVG6MB2HBVFWZ5TVH26UUB4S)
 
 ## 🎭 Demo Account
 
@@ -25,11 +27,12 @@
 
 ## 🚀 Overview
 
-QuillTip is a decentralized publishing platform where writers can earn money through reader tips. Built with Next.js 15, Convex backend, and Stellar blockchain for payments. QuillTip enables writers to earn direct income from readers while providing an interactive, engaging reading experience.
+QuillTip is a decentralized publishing platform where writers can earn money through reader tips. Built with Next.js 15, Convex backend, Stellar blockchain for payments, and Arweave for permanent content storage. QuillTip enables writers to earn direct income from readers while providing an interactive, engaging reading experience with content that lasts forever.
 
 ## 🎯 Key Features
 
 - **Direct Payments**: Authors receive 97.5% of tips via Stellar
+- **Permanent Storage**: Articles stored forever on Arweave blockchain
 - **Free Access**: No subscription required to read or write
 - **Real-time Features**: Live tips and text highlights
 - **NFT Support**: Articles can be minted as NFTs
@@ -60,9 +63,13 @@ QuillTip is a decentralized publishing platform where writers can earn money thr
 
 - **Stellar Network**: Payment processing
 - **Soroban Smart Contracts**: Rust contracts for:
-  - Tip distribution and fees
-  - NFT minting
+  - Tip distribution and fees (unified tipping contract)
+  - NFT minting with Arweave metadata
   - Peer-to-peer transfers
+- **Arweave Network**: Permanent content storage via Turbo SDK
+  - FREE uploads for articles under 100 KiB
+  - Immutable, censorship-resistant storage
+  - Real transaction IDs for verification
 
 ### Database Schema
 
@@ -327,7 +334,49 @@ Powered by Convex subscriptions:
 - **Threshold Minting**: Requires minimum tip amount
 - **Unique Tokens**: One NFT per article
 - **Transfer Support**: Full ERC-721 compatibility
-- **Metadata Storage**: IPFS integration ready
+- **Arweave Metadata**: Permanent on-chain article reference
+
+## 🗄️ Arweave Integration
+
+QuillTip uses [Arweave](https://arweave.org) via the [Turbo SDK](https://docs.ar.io) for permanent, censorship-resistant content storage.
+
+### How It Works
+
+1. **Publish**: When an article is published, it's automatically queued for Arweave upload
+2. **Upload**: Background job uploads article JSON to Arweave (FREE for <100KB)
+3. **Verify**: Verification job confirms transaction is permanently stored
+4. **Display**: Article page shows "Permanent Storage" status with Arweave link
+
+### What's Stored
+
+```json
+{
+  "title": "Article Title",
+  "body": { /* TipTap JSON content */ },
+  "author": "username",
+  "authorId": "convex_user_id",
+  "timestamp": 1234567890,
+  "version": 1
+}
+```
+
+### View on Blockchain
+
+- **Arweave Gateway**: `https://arweave.net/{txId}`
+- **ViewBlock Explorer**: `https://viewblock.io/arweave/tx/{txId}`
+
+### Article Status Flow
+
+```
+pending → uploaded → verified
+```
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Queued for upload |
+| `uploaded` | Successfully uploaded, awaiting confirmation |
+| `verified` | Permanently confirmed on Arweave |
+| `failed` | Upload failed (will retry)
 
 ## 📈 Performance Optimizations
 

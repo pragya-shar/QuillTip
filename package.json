@@ -17,6 +17,7 @@
     "test:coverage": "vitest run --coverage --coverage.reporter=text"
   },
   "dependencies": {
+    "@ardrive/turbo-sdk": "^1.39.2",
     "@convex-dev/auth": "^0.0.90",
     "@creit.tech/stellar-wallets-kit": "^1.9.5",
     "@hookform/resolvers": "^5.2.2",
@@ -59,6 +60,7 @@
     "@tiptap/starter-kit": "^3.13.0",
     "@vercel/analytics": "^1.6.1",
     "argon2-wasm-edge": "^1.0.23",
+    "arweave": "^1.15.7",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -45,16 +45,12 @@ export default function RegisterForm() {
         username: data.username,
         ...(data.name && { name: data.name })
       })
-      
+
       setSuccess(true)
-      setTimeout(() => {
-        router.push('/')  // Redirect to home page instead of non-existent dashboard
-        router.refresh()  // Refresh to update auth state
-      }, 1000)
-      
+      // Use replace to prevent back button returning to register
+      router.replace('/')
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Registration failed. Please try again.')
-    } finally {
       setIsLoading(false)
     }
   }

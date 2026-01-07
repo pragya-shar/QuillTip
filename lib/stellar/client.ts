@@ -1,4 +1,5 @@
 import * as StellarSdk from '@stellar/stellar-sdk'
+import { createHash } from 'crypto'
 import { STELLAR_CONFIG } from './config'
 // Note: Memos cannot be used with Soroban source account auth
 // (Stellar protocol restriction: "non-source auth Soroban tx uses memo or muxed source account")
@@ -10,6 +11,17 @@ import type {
   TipData,
   XLMPriceData,
 } from './types'
+
+/**
+ * Generate a deterministic short ID from article ID using SHA256
+ * This prevents collisions that could occur with simple truncation
+ */
+function shortArticleId(articleId: string): string {
+  return createHash('sha256')
+    .update(articleId)
+    .digest('hex')
+    .slice(0, 10);
+}
 
 // Cache for XLM price to avoid excessive API calls
 let xlmPriceCache: { price: number; timestamp: number } | null = null;
@@ -222,7 +234,7 @@ export class StellarClient {
         contract.call(
           'tip_article',
           StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }),
-          StellarSdk.nativeToScVal(params.articleId.slice(0, 10), { type: 'symbol' }), // truncated for Symbol limit
+          StellarSdk.nativeToScVal(shortArticleId(params.articleId), { type: 'symbol' }), // hashed for collision resistance
           StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }),
           StellarSdk.nativeToScVal(stroopsBigInt, { type: 'i128' })
         )
@@ -282,7 +294,7 @@ export class StellarClient {
           'tip_highlight_direct',
           StellarSdk.nativeToScVal(tipperPublicKey, { type: 'address' }),
           StellarSdk.nativeToScVal(params.highlightId, { type: 'string' }),
-          StellarSdk.nativeToScVal(params.articleId.slice(0, 10), { type: 'symbol' }), // truncated for Symbol limit
+          StellarSdk.nativeToScVal(shortArticleId(params.articleId), { type: 'symbol' }), // hashed for collision resistance
           StellarSdk.nativeToScVal(params.authorAddress, { type: 'address' }),
           StellarSdk.nativeToScVal(stroopsBigInt, { type: 'i128' })
         )
@@ -368,7 +380,7 @@ export class StellarClient {
         networkPassphrase: this.networkPassphrase,
       })
         .addOperation(
-          contract.call('get_article_tips', StellarSdk.nativeToScVal(articleId.slice(0, 10), { type: 'symbol' }))
+          contract.call('get_article_tips', StellarSdk.nativeToScVal(shortArticleId(articleId), { type: 'symbol' }))
         )
         .setTimeout(30)
         .build()

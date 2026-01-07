@@ -44,7 +44,7 @@ export const recordArweaveUpload = internalMutation({
   },
 });
 
-// Record upload failure
+// Record upload failure with error message
 export const recordArweaveFailure = internalMutation({
   args: {
     articleId: v.id("articles"),
@@ -53,9 +53,24 @@ export const recordArweaveFailure = internalMutation({
   handler: async (ctx, args) => {
     await ctx.db.patch(args.articleId, {
       arweaveStatus: "failed",
+      arweaveErrorMessage: args.error, // Store error for debugging
       updatedAt: Date.now(),
     });
     console.error(`[Arweave] Failed for article ${args.articleId}: ${args.error}`);
+  },
+});
+
+// Update verification attempt count
+export const updateVerifyAttempts = internalMutation({
+  args: {
+    articleId: v.id("articles"),
+    attempts: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.articleId, {
+      arweaveVerifyAttempts: args.attempts,
+      updatedAt: Date.now(),
+    });
   },
 });
 

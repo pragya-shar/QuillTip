@@ -153,17 +153,18 @@ impl TippingContract {
         env.storage()
             .persistent()
             .set(&DataKey::ArticleTips(article_id.clone()), &article_tips);
-        
+
         // Update article total tips (for NFT threshold checking)
+        // TODO: Remove this duplicate update in next contract deployment
         let current_article_total: i128 = env.storage()
             .persistent()
             .get(&DataKey::ArticleTotalTips(article_id.clone()))
             .unwrap_or(0);
-        
+
         env.storage()
             .persistent()
             .set(&DataKey::ArticleTotalTips(article_id.clone()), &(current_article_total + amount));
-        
+
         // Update total volume
         let total_volume: i128 = env.storage()
             .persistent()

@@ -91,6 +91,9 @@ export const uploadArticleToArweave = internalAction({
   },
 });
 
+// Maximum verification attempts (~2 hours with 10-min intervals)
+const MAX_VERIFY_ATTEMPTS = 12;
+
 // Verification action - checks if transaction is confirmed on Arweave
 export const verifyArweaveUpload = internalAction({
   args: { articleId: v.id("articles") },
@@ -109,6 +112,25 @@ export const verifyArweaveUpload = internalAction({
       return;
     }
 
+    // Track attempts to prevent infinite loops
+    const attempts = (data.article.arweaveVerifyAttempts || 0) + 1;
+
+    if (attempts > MAX_VERIFY_ATTEMPTS) {
+      // Max retries exceeded - mark as failed
+      await ctx.runMutation(internal.arweaveHelpers.recordArweaveFailure, {
+        articleId: args.articleId,
+        error: `Verification timed out after ${MAX_VERIFY_ATTEMPTS} attempts (~2 hours)`,
+      });
+      console.error(`[Arweave] Verification timeout for: ${data.article.arweaveTxId}`);
+      return;
+    }
+
+    // Update attempt count
+    await ctx.runMutation(internal.arweaveHelpers.updateVerifyAttempts, {
+      articleId: args.articleId,
+      attempts,
+    });
+
     const { getTransactionStatus } = await import("../lib/arweave/client");
     const status = await getTransactionStatus(data.article.arweaveTxId);
 
@@ -125,7 +147,7 @@ export const verifyArweaveUpload = internalAction({
         internal.arweave.verifyArweaveUpload,
         { articleId: args.articleId }
       );
-      console.log(`[Arweave] Not yet confirmed, scheduled retry for: ${data.article.arweaveTxId}`);
+      console.log(`[Arweave] Attempt ${attempts}/${MAX_VERIFY_ATTEMPTS} - not yet confirmed, scheduled retry for: ${data.article.arweaveTxId}`);
     }
   },
 });

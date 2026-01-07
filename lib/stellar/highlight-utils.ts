@@ -107,23 +107,26 @@ export function getHeatmapColor(amount: number, maxAmount: number): string {
 
   const intensity = Math.min(amount / maxAmount, 1);
 
+  // Helper to clamp RGB values between 0-255
+  const clamp = (value: number) => Math.max(0, Math.min(255, Math.floor(value)));
+
   // Color gradient: Yellow (low) → Orange → Red (high)
   if (intensity < 0.33) {
     // Yellow to light orange
     const r = 255;
-    const g = Math.floor(255 - (intensity * 3 * 100));
+    const g = clamp(255 - (intensity * 3 * 100));
     const b = 150;
     return `rgb(${r}, ${g}, ${b})`;
   } else if (intensity < 0.66) {
     // Orange
     const r = 255;
-    const g = Math.floor(200 - ((intensity - 0.33) * 3 * 100));
+    const g = clamp(200 - ((intensity - 0.33) * 3 * 100));
     const b = 100;
     return `rgb(${r}, ${g}, ${b})`;
   } else {
     // Red
     const r = 255;
-    const g = Math.floor(100 - ((intensity - 0.66) * 3 * 100));
+    const g = clamp(100 - ((intensity - 0.66) * 3 * 100));
     const b = 50;
     return `rgb(${r}, ${g}, ${b})`;
   }

@@ -81,6 +81,8 @@ export default defineSchema({
     arweaveUrl: v.optional(v.string()),
     arweaveStatus: v.optional(v.string()), // pending|uploaded|verified|failed
     arweaveTimestamp: v.optional(v.number()),
+    arweaveVerifyAttempts: v.optional(v.number()), // Track verification retries
+    arweaveErrorMessage: v.optional(v.string()), // Store error details
     contentVersion: v.optional(v.number()),
 
     // Timestamps
@@ -90,6 +92,8 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_author", ["authorId"])
     .index("by_published", ["published"])
+    .index("by_author_published", ["authorId", "published"]) // Composite for author's published articles
+    .index("by_published_date", ["published", "publishedAt"]) // For listing by date
     .searchIndex("search_title", {
       searchField: "title",
       filterFields: ["published", "authorUsername"],
@@ -145,7 +149,8 @@ export default defineSchema({
     .index("by_article", ["articleId"])
     .index("by_user", ["userId"])
     .index("by_article_public", ["articleId", "isPublic"])
-    .index("by_highlight_id", ["highlightId"]),
+    .index("by_highlight_id", ["highlightId"])
+    .index("by_user_public", ["userId", "isPublic"]), // For user's public highlights
 
   // Tips table
   tips: defineTable({
@@ -192,7 +197,8 @@ export default defineSchema({
     .index("by_article", ["articleId"])
     .index("by_tipper", ["tipperId"])
     .index("by_author", ["authorId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_status_created", ["status", "createdAt"]), // For paginated status queries
 
   // Highlight Tips table (NEW - granular tipping)
   highlightTips: defineTable({
@@ -248,7 +254,8 @@ export default defineSchema({
     .index("by_article", ["articleId"])
     .index("by_tipper", ["tipperId"])
     .index("by_author", ["authorId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_status_created", ["status", "createdAt"]), // For paginated status queries
 
   // Author Earnings table
   authorEarnings: defineTable({

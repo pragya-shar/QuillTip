@@ -76,10 +76,16 @@ export const getWaitlist = query({
 });
 
 /**
- * Get waitlist statistics
+ * Get waitlist statistics (requires authentication)
  */
 export const getWaitlistStats = query({
   handler: async (ctx) => {
+    // Require authentication to access waitlist stats
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
     const all = await ctx.db.query("waitlist").collect();
     
     const stats = {

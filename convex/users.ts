@@ -2,6 +2,14 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+/**
+ * Validate Stellar address format
+ * Stellar addresses start with G and are 56 characters (base32)
+ */
+function isValidStellarAddress(address: string): boolean {
+  return /^G[A-Z2-7]{55}$/.test(address);
+}
+
 // Get the current authenticated user
 export const getCurrentUser = query({
   args: {},
@@ -35,6 +43,11 @@ export const updateProfile = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+
+    // Validate Stellar address format if provided
+    if (args.stellarAddress && !isValidStellarAddress(args.stellarAddress)) {
+      throw new Error("Invalid Stellar address format. Address must start with 'G' and be 56 characters.");
+    }
 
     const updates: {
       name?: string;

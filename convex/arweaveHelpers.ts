@@ -2,6 +2,26 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 
+/**
+ * Sanitize error messages to avoid exposing sensitive system details
+ */
+function sanitizeErrorMessage(error: string): string {
+  const sensitivePatterns = [
+    /wallet|key|secret|credential|password|token/i,
+    /internal server|database|connection/i,
+    /ARWEAVE_WALLET_KEY|process\.env/i,
+  ];
+
+  // If error contains sensitive info, return generic message
+  if (sensitivePatterns.some((pattern) => pattern.test(error))) {
+    return "Upload failed. Please try again later.";
+  }
+
+  // Truncate long errors and remove potential stack traces
+  const firstLine = error.split("\n")[0] ?? error;
+  return firstLine.slice(0, 200);
+}
+
 // Get article data for upload (used by arweave action)
 export const getArticleForUpload = internalQuery({
   args: { articleId: v.id("articles") },
@@ -44,18 +64,20 @@ export const recordArweaveUpload = internalMutation({
   },
 });
 
-// Record upload failure with error message
+// Record upload failure with sanitized error message
 export const recordArweaveFailure = internalMutation({
   args: {
     articleId: v.id("articles"),
     error: v.string(),
   },
   handler: async (ctx, args) => {
+    const sanitizedError = sanitizeErrorMessage(args.error);
     await ctx.db.patch(args.articleId, {
       arweaveStatus: "failed",
-      arweaveErrorMessage: args.error, // Store error for debugging
+      arweaveErrorMessage: sanitizedError,
       updatedAt: Date.now(),
     });
+    // Log full error server-side for debugging, but store sanitized version
     console.error(`[Arweave] Failed for article ${args.articleId}: ${args.error}`);
   },
 });

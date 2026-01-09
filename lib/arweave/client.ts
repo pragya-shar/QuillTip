@@ -4,21 +4,35 @@ import type { ArweaveArticleContent, ArweaveUploadResult, ArweaveTransactionStat
 import type { JWKInterface } from "arweave/node/lib/wallet";
 
 /**
- * Parse JWK wallet key from JSON string
+ * Parse and validate JWK wallet key from JSON string
+ * Validates all required RSA JWK fields for security
  */
 export function parseWalletKey(jwkString: string): JWKInterface {
+  let parsed;
   try {
-    const parsed = JSON.parse(jwkString);
-    if (!parsed.kty || parsed.kty !== 'RSA') {
-      throw new Error('Invalid JWK: must be RSA key');
-    }
-    return parsed as JWKInterface;
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new Error('Invalid JWK format: not valid JSON');
-    }
-    throw error;
+    parsed = JSON.parse(jwkString);
+  } catch {
+    throw new Error('Invalid JWK format: not valid JSON');
   }
+
+  // Validate all required RSA JWK fields
+  const requiredFields = ['kty', 'n', 'e', 'd', 'p', 'q', 'dp', 'dq', 'qi'];
+  for (const field of requiredFields) {
+    if (!(field in parsed)) {
+      throw new Error(`Invalid JWK: missing required field '${field}'`);
+    }
+  }
+
+  if (parsed.kty !== 'RSA') {
+    throw new Error('Invalid JWK: must be RSA key');
+  }
+
+  // Validate key size (n should be at least 2048 bits, ~340 base64 chars)
+  if (typeof parsed.n !== 'string' || parsed.n.length < 340) {
+    throw new Error('Invalid JWK: key size too small (minimum 2048 bits)');
+  }
+
+  return parsed as JWKInterface;
 }
 
 /**
@@ -34,11 +48,20 @@ export async function uploadArticle(
     const data = JSON.stringify(content);
     const dataBuffer = Buffer.from(data);
     const sizeBytes = dataBuffer.length;
+    const sizeKiB = sizeBytes / 1024;
+
+    // Enforce hard size limit to prevent excessive costs
+    if (sizeBytes > ARWEAVE_CONFIG.HARD_LIMIT_BYTES) {
+      return {
+        success: false,
+        error: `Article size ${sizeKiB.toFixed(1)} KiB exceeds maximum allowed (${ARWEAVE_CONFIG.HARD_LIMIT_BYTES / 1024} KiB)`,
+      };
+    }
 
     // Warn if approaching or exceeding free tier limit
     if (sizeBytes > ARWEAVE_CONFIG.FREE_TIER_LIMIT_BYTES) {
       console.warn(
-        `[Arweave] Article size ${(sizeBytes / 1024).toFixed(1)} KiB exceeds free tier (100 KiB). ` +
+        `[Arweave] Article size ${sizeKiB.toFixed(1)} KiB exceeds free tier (100 KiB). ` +
         `Upload may require credits.`
       );
     }
@@ -93,39 +116,67 @@ export async function getArticle(txId: string): Promise<ArweaveArticleContent | 
 
 /**
  * Check transaction status (for verification)
- * For bundled transactions (Turbo SDK), checks multiple gateways
+ * For bundled transactions (Turbo SDK), checks multiple gateways in parallel
  */
 export async function getTransactionStatus(txId: string): Promise<ArweaveTransactionStatus> {
+  const timeoutMs = ARWEAVE_CONFIG.GATEWAY_TIMEOUT_MS;
+
   try {
-    // First try main gateway for block confirmation
-    const response = await fetch(`https://arweave.net/tx/${txId}/status`);
-    if (response.ok) {
-      const status = await response.json();
-      if (status.block_height) {
-        return {
-          confirmed: true,
-          confirmations: status.number_of_confirmations || 0,
-          blockHeight: status.block_height,
-        };
+    // First try main gateway for block confirmation with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(`https://arweave.net/tx/${txId}/status`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const status = await response.json();
+        if (status.block_height) {
+          return {
+            confirmed: true,
+            confirmations: status.number_of_confirmations || 0,
+            blockHeight: status.block_height,
+          };
+        }
       }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('[Arweave] Main gateway verification timeout');
+      }
+      // Continue to fallback gateways
     }
 
-    // For bundled transactions, check if content is accessible via alternative gateways
+    // For bundled transactions, check alternative gateways in parallel
     // If accessible, consider it confirmed (data is permanently stored)
     const gateways = [
       `https://arweave.developerdao.com/${txId}`,
       `https://g8way.io/${txId}`,
     ];
 
-    for (const url of gateways) {
+    const gatewayChecks = gateways.map(async (url) => {
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), timeoutMs / 2); // Shorter timeout for fallbacks
       try {
-        const res = await fetch(url, { method: 'HEAD' });
-        if (res.ok) {
-          return { confirmed: true, confirmations: 1 };
-        }
+        const res = await fetch(url, { method: 'HEAD', signal: ctrl.signal });
+        clearTimeout(timeout);
+        return res.ok;
       } catch {
-        // Try next gateway
+        clearTimeout(timeout);
+        return false;
       }
+    });
+
+    const results = await Promise.allSettled(gatewayChecks);
+    const anyConfirmed = results.some(
+      (r) => r.status === 'fulfilled' && r.value === true
+    );
+
+    if (anyConfirmed) {
+      return { confirmed: true, confirmations: 1 };
     }
 
     return { confirmed: false, confirmations: 0 };

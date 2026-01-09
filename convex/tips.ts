@@ -160,8 +160,8 @@ export const sendTip = mutation({
     const author = await ctx.db.get(article.authorId);
     if (!author) throw new Error("Author not found");
     
-    // Validate amount
-    if (args.amountUsd < 0.01 || args.amountUsd > 10000) {
+    // Validate amount (check for NaN, Infinity, and bounds)
+    if (!Number.isFinite(args.amountUsd) || args.amountUsd < 0.01 || args.amountUsd > 10000) {
       throw new Error("Invalid tip amount");
     }
     

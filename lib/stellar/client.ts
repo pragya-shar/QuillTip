@@ -26,9 +26,27 @@ function shortArticleId(articleId: string): string {
 // Cache for XLM price to avoid excessive API calls
 let xlmPriceCache: { price: number; timestamp: number } | null = null;
 const PRICE_CACHE_TTL = 60 * 1000; // 1 minute cache
+const PRICE_FETCH_TIMEOUT = 5000; // 5 second timeout per oracle
+
+// Price oracles with parsers (in priority order)
+const PRICE_ORACLES = [
+  {
+    name: 'CoinGecko',
+    url: 'https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd',
+    parse: (data: Record<string, unknown>) => (data?.stellar as Record<string, number>)?.usd,
+  },
+  {
+    name: 'CoinCap',
+    url: 'https://api.coincap.io/v2/assets/stellar',
+    parse: (data: Record<string, unknown>) => {
+      const priceUsd = (data?.data as Record<string, string>)?.priceUsd;
+      return priceUsd ? parseFloat(priceUsd) : undefined;
+    },
+  },
+];
 
 /**
- * Fetch real-time XLM price from CoinGecko API
+ * Fetch real-time XLM price with fallback oracles
  */
 async function fetchXLMPrice(): Promise<number> {
   // Return cached price if still valid
@@ -36,29 +54,40 @@ async function fetchXLMPrice(): Promise<number> {
     return xlmPriceCache.price;
   }
 
-  try {
-    const response = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd',
-      { next: { revalidate: 60 } } // Cache for 60 seconds
-    );
+  // Try each oracle in order
+  for (const oracle of PRICE_ORACLES) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), PRICE_FETCH_TIMEOUT);
 
-    if (!response.ok) {
-      console.warn('[XLM Price] Failed to fetch, using fallback rate');
-      return STELLAR_CONFIG.XLM_TO_USD_RATE;
+      const response = await fetch(oracle.url, {
+        signal: controller.signal,
+        next: { revalidate: 60 },
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const price = oracle.parse(data);
+
+      if (typeof price === 'number' && price > 0) {
+        xlmPriceCache = { price, timestamp: Date.now() };
+        return price;
+      }
+    } catch (error) {
+      const errorName = error instanceof Error ? error.name : 'Unknown';
+      if (errorName === 'AbortError') {
+        console.warn(`[XLM Price] ${oracle.name} timeout`);
+      } else {
+        console.warn(`[XLM Price] ${oracle.name} error:`, error);
+      }
+      // Continue to next oracle
     }
-
-    const data = await response.json();
-    const price = data?.stellar?.usd;
-
-    if (typeof price === 'number' && price > 0) {
-      xlmPriceCache = { price, timestamp: Date.now() };
-      return price;
-    }
-  } catch (error) {
-    console.warn('[XLM Price] API error, using fallback rate:', error);
   }
 
-  // Fallback to config default
+  // All oracles failed - use config fallback
+  console.warn('[XLM Price] All oracles failed, using fallback rate');
   return STELLAR_CONFIG.XLM_TO_USD_RATE;
 }
 

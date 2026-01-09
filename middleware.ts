@@ -2,19 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
-  // Handle dynamic article routes with proper headers
+  const response = NextResponse.next()
+
+  // Security headers (apply to all routes)
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+
+  // HSTS only in production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  }
+
+  // Handle dynamic article routes with additional headers
   if (pathname.match(/^\/[^\/]+\/[^\/]+$/)) {
-    const response = NextResponse.next()
-    
     // Add headers to improve RSC streaming reliability
     response.headers.set('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
     response.headers.set('X-Accel-Buffering', 'no') // Disable nginx buffering
-    
-    return response
   }
-  
-  return NextResponse.next()
+
+  return response
 }
 
 export const config = {

@@ -1,13 +1,47 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { Menu, X, PenTool } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Menu, X, PenTool, Zap, Highlighter, HelpCircle, FileText, Shield, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LucideIcon } from 'lucide-react';
+
+interface NavDropdownItem {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  href: string;
+}
+
+interface NavDropdown {
+  label: string;
+  items: NavDropdownItem[];
+}
+
+const navDropdowns: NavDropdown[] = [
+  {
+    label: "Product",
+    items: [
+      { icon: PenTool, title: "Write", description: "Rich editor with markdown support", href: "#features" },
+      { icon: Zap, title: "Earn", description: "Get tipped instantly via Stellar", href: "#how-it-works" },
+      { icon: Highlighter, title: "Highlights", description: "Readers tip specific passages", href: "#features" },
+    ]
+  },
+  {
+    label: "Resources",
+    items: [
+      { icon: HelpCircle, title: "FAQ", description: "Answers to common questions", href: "#faq" },
+      { icon: FileText, title: "Documentation", description: "Technical guides", href: "/docs" },
+      { icon: Shield, title: "Security", description: "Blockchain security info", href: "#faq" },
+    ]
+  }
+];
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,12 +51,16 @@ export default function Navigation() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { href: '#features', label: 'Features' },
-    { href: '#how-it-works', label: 'How It Works' },
-    { href: '#faq', label: 'FAQs' },
-    { href: '/login', label: 'Sign In' }
-  ];
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith('#')) {
@@ -67,24 +105,69 @@ export default function Navigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={(e) => handleSmoothScroll(e, link.href)}
-                className="text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors duration-300 relative group"
-              >
-                {link.label}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-neutral-900 transition-all duration-300 group-hover:w-full" />
-              </Link>
+          <div className="hidden md:flex items-center gap-8" ref={navRef}>
+            {navDropdowns.map((dropdown) => (
+              <div key={dropdown.label} className="relative">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === dropdown.label ? null : dropdown.label)}
+                  className="flex items-center gap-1 text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors duration-300"
+                >
+                  {dropdown.label}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      openDropdown === dropdown.label ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {openDropdown === dropdown.label && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-neutral-200/60 overflow-hidden"
+                    >
+                      <div className="p-2">
+                        {dropdown.items.map((item) => (
+                          <Link
+                            key={item.title}
+                            href={item.href}
+                            onClick={(e) => {
+                              handleSmoothScroll(e, item.href);
+                              setOpenDropdown(null);
+                            }}
+                            className="flex items-start gap-3 p-3 rounded-lg hover:bg-neutral-50 transition-colors"
+                          >
+                            <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center shrink-0">
+                              <item.icon className="w-5 h-5 text-neutral-700" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-neutral-900">{item.title}</p>
+                              <p className="text-sm text-neutral-500">{item.description}</p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             ))}
+
+            <Link
+              href="/login"
+              className="text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors duration-300"
+            >
+              Sign In
+            </Link>
 
             <Link
               href="/register"
               className="group inline-flex items-center gap-2 bg-neutral-900 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-neutral-800 hover:shadow-lg transition-all duration-300"
             >
-              Get Started
+              Try on Testnet
               <motion.span
                 className="inline-block"
                 initial={{ x: 0 }}
@@ -120,35 +203,57 @@ export default function Navigation() {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="py-6 space-y-4">
-                {navLinks.map((link, index) => (
+              <div className="py-6 space-y-6">
+                {navDropdowns.map((dropdown, dropdownIndex) => (
                   <motion.div
-                    key={link.href}
+                    key={dropdown.label}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    transition={{ duration: 0.3, delay: dropdownIndex * 0.1 }}
                   >
-                    <Link
-                      href={link.href}
-                      className="block text-neutral-600 hover:text-neutral-900 font-medium transition-colors py-2"
-                      onClick={(e) => handleSmoothScroll(e, link.href)}
-                    >
-                      {link.label}
-                    </Link>
+                    <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">
+                      {dropdown.label}
+                    </p>
+                    <div className="space-y-1">
+                      {dropdown.items.map((item) => (
+                        <Link
+                          key={item.title}
+                          href={item.href}
+                          className="flex items-center gap-3 py-2 text-neutral-600 hover:text-neutral-900 transition-colors"
+                          onClick={(e) => {
+                            handleSmoothScroll(e, item.href);
+                            setIsOpen(false);
+                          }}
+                        >
+                          <div className="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center">
+                            <item.icon className="w-4 h-4 text-neutral-600" />
+                          </div>
+                          <span className="font-medium">{item.title}</span>
+                        </Link>
+                      ))}
+                    </div>
                   </motion.div>
                 ))}
 
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: navLinks.length * 0.1 }}
+                  transition={{ duration: 0.3, delay: navDropdowns.length * 0.1 }}
+                  className="pt-4 space-y-3 border-t border-neutral-200"
                 >
+                  <Link
+                    href="/login"
+                    className="block text-neutral-600 hover:text-neutral-900 font-medium transition-colors py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Sign In
+                  </Link>
                   <Link
                     href="/register"
                     className="block bg-neutral-900 text-white px-6 py-3 rounded-lg hover:bg-neutral-800 transition-colors text-center font-medium"
                     onClick={() => setIsOpen(false)}
                   >
-                    Get Started
+                    Try on Testnet →
                   </Link>
                 </motion.div>
               </div>

@@ -11,6 +11,21 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
+  // Content Security Policy (production only - dev needs full access for HMR/React)
+  if (process.env.NODE_ENV === 'production') {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: *.convex.cloud *.convex.site img.youtube.com images.unsplash.com plus.unsplash.com arweave.net",
+      "connect-src 'self' *.convex.cloud *.convex.site *.stellar.org arweave.net ar-io.dev",
+      "font-src 'self'",
+      "frame-src 'self' www.youtube.com",
+      "frame-ancestors 'none'",
+    ].join('; ')
+    response.headers.set('Content-Security-Policy', csp)
+  }
+
   // HSTS only in production
   if (process.env.NODE_ENV === 'production') {
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')

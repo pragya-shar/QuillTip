@@ -429,6 +429,7 @@ export const checkMintingThreshold = query({
 export const generateNFTMetadata = query({
   args: {
     articleId: v.id("articles"),
+    xlmPrice: v.number(), // Live XLM/USD price from client
   },
   handler: async (ctx, args) => {
     const article = await ctx.db.get(args.articleId);
@@ -442,7 +443,7 @@ export const generateNFTMetadata = query({
       .collect();
 
     const totalTipsUsd = tips.reduce((sum, tip) => sum + tip.amountUsd, 0);
-    const tipAmountInStroops = Math.floor((totalTipsUsd / 0.3831) * 10_000_000); // Convert to stroops
+    const tipAmountInStroops = Math.floor((totalTipsUsd / args.xlmPrice) * 10_000_000); // Convert to stroops using live price
 
     // Generate NFT metadata following OpenSea/standard format
     return {

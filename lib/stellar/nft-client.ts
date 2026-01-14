@@ -279,14 +279,15 @@ export class NFTClient {
       if (StellarSdk.rpc.Api.isSimulationSuccess(result) && result.result?.retval) {
         const owner = StellarSdk.scValToNative(result.result.retval)
 
-        // TODO: Fetch additional NFT details from contract
+        // Return actual data from contract; null for fields contract doesn't expose
+        // Additional contract methods would be needed to populate these fields
         return {
           tokenId,
           owner,
-          minter: owner, // Simplified for now
-          articleId: '', // Would need additional contract call
-          mintedAt: new Date(), // Would need additional contract call
-          tipAmount: 0, // Would need additional contract call
+          minter: null,        // Contract doesn't expose minter info
+          articleId: null,     // Contract doesn't expose article ID
+          mintedAt: null,      // Contract doesn't expose mint timestamp
+          tipAmount: null,     // Contract doesn't expose tip amount
         }
       }
 

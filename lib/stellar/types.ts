@@ -73,12 +73,12 @@ export interface MintNFTParams {
 }
 
 export interface NFTOwnership {
-  tokenId: number;          // Contract token ID
-  owner: string;           // Current owner address
-  minter: string;          // Original minter address
-  articleId: string;       // Article ID
-  mintedAt: Date;          // When it was minted
-  tipAmount: number;       // Tips at mint time in stroops
+  tokenId: number;              // Contract token ID
+  owner: string;                // Current owner address
+  minter: string | null;        // Original minter (null if contract doesn't expose)
+  articleId: string | null;     // Article ID (null if contract doesn't expose)
+  mintedAt: Date | null;        // When it was minted (null if contract doesn't expose)
+  tipAmount: number | null;     // Tips at mint time in stroops (null if contract doesn't expose)
 }
 
 export interface NFTTransactionResult {

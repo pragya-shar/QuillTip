@@ -93,6 +93,7 @@ export function MintButton({
       setMintingStep('wallet')
       const metadata = await convex.query(api.nfts.generateNFTMetadata, {
         articleId: articleId as Id<'articles'>,
+        xlmPrice: xlmPrice!, // Pass live price for accurate conversion
       })
 
       if (!metadata) {

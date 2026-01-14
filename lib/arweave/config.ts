@@ -1,3 +1,15 @@
+// Validate Arweave environment at module load
+function validateArweaveEnv() {
+  const enabled = process.env.ARWEAVE_ENABLED
+
+  // Warn if ARWEAVE_ENABLED is not explicitly set
+  if (typeof window !== 'undefined' && enabled === undefined) {
+    console.warn('[Arweave Config] ARWEAVE_ENABLED is not set. Arweave features are disabled by default.')
+  }
+}
+
+validateArweaveEnv()
+
 export const ARWEAVE_CONFIG = {
   ENABLED: process.env.ARWEAVE_ENABLED === 'true',
   APP_NAME: 'QuillTip',

@@ -25,7 +25,9 @@ export interface RenderedHighlight {
 export class HighlightRenderer {
   private container: HTMLElement
   private highlights: Map<Id<'highlights'>, RenderedHighlight> = new Map()
+  private storedSegments: HighlightSegment[] = [] // Store segments for reapply
   private observer: MutationObserver | null = null
+  private isReapplying: boolean = false // Prevent recursive reapply
   
   constructor(container: HTMLElement) {
     this.container = container
@@ -52,9 +54,12 @@ export class HighlightRenderer {
    * Apply highlights to the content
    */
   public applyHighlights(segments: HighlightSegment[]) {
+    // Store segments for potential reapply after DOM changes
+    this.storedSegments = segments
+
     // Clear existing highlights
     this.clearHighlights()
-    
+
     // Sort segments by start offset to handle overlaps
     const sortedSegments = [...segments].sort((a, b) => a.startOffset - b.startOffset)
     
@@ -277,10 +282,28 @@ export class HighlightRenderer {
    * Reapply highlights after content change
    */
   private reapplyHighlights() {
-    // Clear and reapply
-    this.clearHighlights()
-    // Note: You'll need to store and pass the original segments
-    // This is a simplified version
+    // Prevent recursive reapply (since applyHighlights modifies DOM)
+    if (this.isReapplying || this.storedSegments.length === 0) {
+      return
+    }
+
+    this.isReapplying = true
+    try {
+      // Clear existing highlights
+      this.clearHighlights()
+
+      // Sort and reapply stored segments
+      const sortedSegments = [...this.storedSegments].sort(
+        (a, b) => a.startOffset - b.startOffset
+      )
+      const highlightGroups = this.groupOverlappingHighlights(sortedSegments)
+
+      highlightGroups.forEach(group => {
+        this.renderHighlightGroup(group)
+      })
+    } finally {
+      this.isReapplying = false
+    }
   }
   
   /**

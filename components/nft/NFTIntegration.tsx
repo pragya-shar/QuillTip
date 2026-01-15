@@ -53,9 +53,8 @@ export function NFTIntegration({
     // Convex will automatically refresh the query data
   }
 
-  const handleTransferComplete = (newOwner: string) => {
+  const handleTransferComplete = (_newOwner: string) => {
     // Convex will automatically refresh the query data with updated owner
-    console.log('NFT transferred to:', newOwner)
   }
 
   const isAuthor = currentUserId === authorId

@@ -50,8 +50,16 @@ export function HighlightNotes({
       {highlightsWithNotes.map((highlight) => (
         <div
           key={highlight._id}
+          role="button"
+          tabIndex={0}
           className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
           onClick={() => onNoteClick?.(highlight)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onNoteClick?.(highlight)
+            }
+          }}
         >
           {/* Note header */}
           <div className="flex items-start justify-between mb-2">

@@ -3,6 +3,29 @@ import { query, mutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
+// Validation helper for article input
+function validateArticleInput(args: { title: string; excerpt?: string; tags?: string[] }) {
+  if (!args.title || args.title.trim().length === 0) {
+    throw new Error('Title is required')
+  }
+  if (args.title.length > 200) {
+    throw new Error('Title must be 200 characters or less')
+  }
+  if (args.excerpt && args.excerpt.length > 500) {
+    throw new Error('Excerpt must be 500 characters or less')
+  }
+  if (args.tags) {
+    if (args.tags.length > 10) {
+      throw new Error('Maximum 10 tags allowed')
+    }
+    for (const tag of args.tags) {
+      if (tag.length > 50) {
+        throw new Error('Each tag must be 50 characters or less')
+      }
+    }
+  }
+}
+
 // List articles with pagination and filters
 export const listArticles = query({
   args: {
@@ -203,10 +226,13 @@ export const createArticle = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
+    // Validate input
+    validateArticleInput(args);
+
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
-    
+
     // Generate slug from title
     const slug = args.title
       .toLowerCase()
@@ -440,7 +466,10 @@ export const saveDraft = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
+    // Validate input
+    validateArticleInput(args);
+
     if (args.id) {
       // Update existing draft
       const article = await ctx.db.get(args.id);

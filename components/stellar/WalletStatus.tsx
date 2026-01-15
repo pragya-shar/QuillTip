@@ -143,7 +143,7 @@ export function WalletStatus({ className }: WalletStatusProps) {
       <CardContent className="space-y-4">
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium text-muted-foreground">Address</label>
+            <span className="text-sm font-medium text-muted-foreground">Address</span>
             <div className="flex items-center gap-2 mt-1">
               <code className="flex-1 text-sm bg-muted px-2 py-1 rounded truncate">
                 {publicKey}
@@ -167,7 +167,7 @@ export function WalletStatus({ className }: WalletStatusProps) {
 
           {network && (
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Network</label>
+              <span className="text-sm font-medium text-muted-foreground">Network</span>
               <div className="mt-1">
                 <Badge
                   variant={network === 'TESTNET' ? 'secondary' : 'default'}
@@ -181,7 +181,7 @@ export function WalletStatus({ className }: WalletStatusProps) {
 
           {networkPassphrase && (
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Network Passphrase</label>
+              <span className="text-sm font-medium text-muted-foreground">Network Passphrase</span>
               <div className="flex items-center gap-2 mt-1">
                 <code className="flex-1 text-xs bg-muted px-2 py-1 rounded truncate">
                   {networkPassphrase}

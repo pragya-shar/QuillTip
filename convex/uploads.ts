@@ -74,7 +74,7 @@ export const getUserUploads = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
     
-    let uploadsQuery = ctx.db
+    const uploadsQuery = ctx.db
       .query("fileUploads")
       .withIndex("by_user", (q) => q.eq("uploadedBy", userId));
     

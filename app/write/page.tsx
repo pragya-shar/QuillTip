@@ -240,9 +240,7 @@ export default function WritePage() {
           published: true, // Publishing immediately
         })
       }
-      
-      console.log('Article published:', resultId)
-      
+
       // If it was a new article, update the articleId
       if (!articleId) {
         setArticleId(resultId)
@@ -272,9 +270,8 @@ export default function WritePage() {
 
     setIsUnpublishing(true)
     try {
-      const resultId = await unpublishArticleMutation({ id: articleId as Id<"articles"> })
-      console.log('Article unpublished:', resultId)
-      
+      await unpublishArticleMutation({ id: articleId as Id<"articles"> })
+
       // Update publish status
       setPublishStatus({
         published: false,
@@ -498,10 +495,11 @@ export default function WritePage() {
 
         {/* Excerpt */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="article-excerpt" className="block text-sm font-medium text-gray-700 mb-2">
             Article Excerpt
           </label>
           <textarea
+            id="article-excerpt"
             placeholder="Brief description of your article (optional)"
             value={excerpt}
             onChange={(e) => {
@@ -515,10 +513,11 @@ export default function WritePage() {
 
         {/* Tags */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="article-tags" className="block text-sm font-medium text-gray-700 mb-2">
             Tags
           </label>
           <input
+            id="article-tags"
             type="text"
             placeholder="Add tags separated by commas (e.g., technology, programming, web)"
             value={tags}

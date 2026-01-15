@@ -227,7 +227,7 @@ export const confirmTip = mutation({
     }
     
     // Update author earnings
-    let earnings = await ctx.db
+    const earnings = await ctx.db
       .query("authorEarnings")
       .withIndex("by_user", (q) => q.eq("userId", tip.authorId))
       .first();

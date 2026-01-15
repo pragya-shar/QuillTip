@@ -264,7 +264,7 @@ export function HighlightTipButton({
 
             {/* Custom Amount */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="highlight-tip-custom-amount" className="block text-sm font-medium text-gray-700 mb-2">
                 Or enter custom amount
               </label>
               <div className="relative">
@@ -272,6 +272,7 @@ export function HighlightTipButton({
                   $
                 </span>
                 <input
+                  id="highlight-tip-custom-amount"
                   type="number"
                   min="0.01"
                   max="100"

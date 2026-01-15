@@ -1,5 +1,3 @@
-import { TextSelection } from './types';
-
 /**
  * Utility functions for handling text selections and browser compatibility
  */

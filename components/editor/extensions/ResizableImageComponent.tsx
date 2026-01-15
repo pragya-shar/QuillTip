@@ -127,7 +127,8 @@ export default function ResizableImageComponent({
         
         {selected && (
           <>
-            {/* Resize Handle */}
+            {/* Resize Handle - mouse-only interaction for drag resizing */}
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
               className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 border-2 border-white rounded cursor-nw-resize opacity-0 group-hover:opacity-100 transition-opacity"
               onMouseDown={handleMouseDown}

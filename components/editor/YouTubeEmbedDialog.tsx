@@ -108,12 +108,13 @@ export function YouTubeEmbedDialog({ onVideoEmbed, onClose, isOpen }: YouTubeEmb
         <div className="p-4 space-y-4">
           {/* URL Input */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label htmlFor="youtube-url" className="block text-sm font-medium text-gray-700">
               YouTube URL
             </label>
             <div className="relative">
               <Link2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
+                id="youtube-url"
                 type="url"
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={videoUrl}
@@ -124,6 +125,7 @@ export function YouTubeEmbedDialog({ onVideoEmbed, onClose, isOpen }: YouTubeEmb
                   }
                 }}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
             </div>
@@ -135,9 +137,9 @@ export function YouTubeEmbedDialog({ onVideoEmbed, onClose, isOpen }: YouTubeEmb
           {/* Preview */}
           {previewUrl && !imageError && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <span className="block text-sm font-medium text-gray-700">
                 Preview
-              </label>
+              </span>
               <div className="relative bg-gray-100 rounded-lg overflow-hidden">
                 <Image
                   src={previewUrl}
@@ -160,9 +162,9 @@ export function YouTubeEmbedDialog({ onVideoEmbed, onClose, isOpen }: YouTubeEmb
           {/* Fallback preview for when image fails to load */}
           {previewUrl && imageError && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <span className="block text-sm font-medium text-gray-700">
                 Preview
-              </label>
+              </span>
               <div className="relative bg-gray-100 rounded-lg overflow-hidden h-32 flex items-center justify-center">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -192,10 +194,11 @@ export function YouTubeEmbedDialog({ onVideoEmbed, onClose, isOpen }: YouTubeEmb
             {customDimensions && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="youtube-width" className="block text-sm font-medium text-gray-700 mb-1">
                     Width (px)
                   </label>
                   <input
+                    id="youtube-width"
                     type="number"
                     value={width}
                     onChange={(e) => setWidth(Number(e.target.value))}
@@ -205,10 +208,11 @@ export function YouTubeEmbedDialog({ onVideoEmbed, onClose, isOpen }: YouTubeEmb
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="youtube-height" className="block text-sm font-medium text-gray-700 mb-1">
                     Height (px)
                   </label>
                   <input
+                    id="youtube-height"
                     type="number"
                     value={height}
                     onChange={(e) => setHeight(Number(e.target.value))}

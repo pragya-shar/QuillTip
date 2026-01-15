@@ -11,7 +11,7 @@ export const getArticleHighlights = query({
   },
   handler: async (ctx, args) => {
     // Use by_article index to get all highlights, then filter by isPublic if specified
-    let highlightsQuery = ctx.db
+    const highlightsQuery = ctx.db
       .query("highlights")
       .withIndex("by_article", (q) => q.eq("articleId", args.articleId));
 

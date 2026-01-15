@@ -156,6 +156,7 @@ export function useHighlights({
     } finally {
       setIsCreating(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection, isCreating, articleId, createHighlight, onHighlightCreated])
   
   // Update highlight

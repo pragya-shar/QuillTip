@@ -265,6 +265,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 }
               }}
               className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             <button
@@ -282,7 +283,6 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         onClick={() => setShowImageDialog(true)}
         title="Add Image"
       >
-        {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <Image className="w-4 h-4" />
       </ToolbarButton>
 

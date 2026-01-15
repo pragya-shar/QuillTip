@@ -290,12 +290,13 @@ export function EarningsDashboard() {
             
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="withdraw-amount" className="block text-sm font-medium text-gray-700 mb-2">
                   Amount (USD)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
                   <input
+                    id="withdraw-amount"
                     type="number"
                     min="10"
                     max={earnings.availableBalanceUsd}
@@ -312,10 +313,11 @@ export function EarningsDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="stellar-address" className="block text-sm font-medium text-gray-700 mb-2">
                   Stellar Address
                 </label>
                 <input
+                  id="stellar-address"
                   type="text"
                   value={stellarAddress || userProfile?.stellarAddress || ''}
                   onChange={(e) => setStellarAddress(e.target.value)}

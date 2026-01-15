@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: *.convex.cloud *.convex.site img.youtube.com images.unsplash.com plus.unsplash.com arweave.net",
-      "connect-src 'self' *.convex.cloud *.convex.site *.stellar.org arweave.net ar-io.dev",
+      "connect-src 'self' *.convex.cloud wss://*.convex.cloud *.convex.site wss://*.convex.site *.stellar.org arweave.net ar-io.dev",
       "font-src 'self'",
       "frame-src 'self' www.youtube.com",
       "frame-ancestors 'none'",

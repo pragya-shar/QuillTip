@@ -24,6 +24,7 @@ import {
   HANA_ID,
   HOTWALLET_ID,
 } from '@creit.tech/stellar-wallets-kit';
+import { safeGetItem, safeSetItem, safeRemoveItem } from '@/lib/storage/safeStorage';
 
 // Wallet type definitions
 export type WalletType = 'freighter' | 'xbull' | 'albedo' | 'rabet' | 'hana' | 'hot';
@@ -153,16 +154,14 @@ class StellarWalletAdapter {
    * Get stored wallet ID from localStorage
    */
   private getStoredWalletId(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('selectedWalletId');
+    return safeGetItem('selectedWalletId');
   }
 
   /**
    * Store wallet ID to localStorage
    */
   private storeWalletId(walletId: string): void {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('selectedWalletId', walletId);
+    safeSetItem('selectedWalletId', walletId);
     this.selectedWalletId = walletId;
   }
 
@@ -170,8 +169,7 @@ class StellarWalletAdapter {
    * Clear stored wallet ID
    */
   private clearStoredWalletId(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('selectedWalletId');
+    safeRemoveItem('selectedWalletId');
     this.selectedWalletId = null;
   }
 

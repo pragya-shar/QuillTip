@@ -1,5 +1,4 @@
 import { TextSelection, SerializedHighlight } from './types';
-import { safeGetItem, safeSetItem } from '@/lib/storage/safeStorage';
 
 /**
  * HighlightSerializer class for converting text selections to persistent format
@@ -129,28 +128,28 @@ export class HighlightSerializer {
   static async saveHighlight(highlight: SerializedHighlight): Promise<void> {
     try {
       // Get existing highlights from localStorage
-      const stored = safeGetItem('quilltip_highlights');
+      const stored = localStorage.getItem('quilltip_highlights');
       const highlights: SerializedHighlight[] = stored ? JSON.parse(stored) : [];
-
+      
       // Add new highlight with a timestamp
       const highlightWithMeta = {
         ...highlight,
         id: `highlight_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         createdAt: new Date().toISOString()
       };
-
+      
       highlights.push(highlightWithMeta);
-
+      
       // Save back to localStorage
-      safeSetItem('quilltip_highlights', JSON.stringify(highlights));
-
+      localStorage.setItem('quilltip_highlights', JSON.stringify(highlights));
+      
       // TODO: In future, also save to API endpoint
       // await fetch('/api/highlights', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(highlight)
       // });
-
+      
     } catch (error) {
       console.error('Failed to save highlight:', error);
       throw error;
@@ -165,17 +164,17 @@ export class HighlightSerializer {
   static async loadHighlights(articleId: string): Promise<SerializedHighlight[]> {
     try {
       // Load from localStorage
-      const stored = safeGetItem('quilltip_highlights');
+      const stored = localStorage.getItem('quilltip_highlights');
       const allHighlights: SerializedHighlight[] = stored ? JSON.parse(stored) : [];
-
+      
       // Filter highlights for this article
       const articleHighlights = allHighlights.filter(h => h.articleId === articleId);
-
+      
       // TODO: In future, also load from API
       // const response = await fetch(`/api/highlights/article/${articleId}`);
       // const serverHighlights = await response.json();
       // return this.mergeHighlights(articleHighlights, serverHighlights);
-
+      
       return articleHighlights;
     } catch (error) {
       console.error('Failed to load highlights:', error);
@@ -190,17 +189,17 @@ export class HighlightSerializer {
   static async deleteHighlight(highlightId: string): Promise<void> {
     try {
       // Remove from localStorage
-      const stored = safeGetItem('quilltip_highlights');
+      const stored = localStorage.getItem('quilltip_highlights');
       const highlights: SerializedHighlight[] = stored ? JSON.parse(stored) : [];
-
+      
       const filtered = highlights.filter(h => h.id !== highlightId);
-      safeSetItem('quilltip_highlights', JSON.stringify(filtered));
-
+      localStorage.setItem('quilltip_highlights', JSON.stringify(filtered));
+      
       // TODO: In future, also delete from API
       // await fetch(`/api/highlights/${highlightId}`, {
       //   method: 'DELETE'
       // });
-
+      
     } catch (error) {
       console.error('Failed to delete highlight:', error);
       throw error;

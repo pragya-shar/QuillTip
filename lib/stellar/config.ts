@@ -71,8 +71,8 @@ export const STELLAR_CONFIG = {
   NFT_ROYALTY_BPS: 500, // 5% royalty in basis points
 
   // Fallback conversion rate (used only when all price oracles fail)
-  // Updated: Jan 2025 - should be periodically reviewed
-  XLM_TO_USD_RATE: 0.24,
+  // Updated: Jan 2026 - Conservative rate based on recent market (~$0.21-0.24)
+  XLM_TO_USD_RATE: 0.22,
 } as const;
 
 export const TIP_AMOUNTS = [

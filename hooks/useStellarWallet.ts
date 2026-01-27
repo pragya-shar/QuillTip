@@ -152,13 +152,15 @@ export function useStellarWallet(): StellarWalletState & StellarWalletActions {
 
   // Sign transaction
   const signTransactionXDR = useCallback(async (xdr: string): Promise<string> => {
-    if (!state.isConnected || !state.networkPassphrase) {
+    // Get fresh connection status from adapter, not potentially stale React state
+    const connection = walletAdapter.getCachedConnection();
+    if (!connection) {
       throw new Error('Wallet not connected');
     }
 
-    const signedXdr = await walletAdapter.signTransaction(xdr, state.networkPassphrase);
+    const signedXdr = await walletAdapter.signTransaction(xdr, connection.networkPassphrase);
     return signedXdr;
-  }, [state.isConnected, state.networkPassphrase]);
+  }, []);
 
   // Refresh connection status
   const refreshConnection = useCallback(async () => {

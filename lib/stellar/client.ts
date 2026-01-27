@@ -24,9 +24,10 @@ function shortArticleId(articleId: string): string {
 }
 
 // Cache for XLM price to avoid excessive API calls
-let xlmPriceCache: { price: number; timestamp: number } | null = null;
+let xlmPriceCache: { price: number; timestamp: number; source: string } | null = null;
 const PRICE_CACHE_TTL = 60 * 1000; // 1 minute cache
 const PRICE_FETCH_TIMEOUT = 5000; // 5 second timeout per oracle
+const MAX_REASONABLE_XLM_PRICE = 100; // Sanity check upper bound
 
 // Price oracles with parsers (in priority order)
 const PRICE_ORACLES = [
@@ -41,6 +42,25 @@ const PRICE_ORACLES = [
     parse: (data: Record<string, unknown>) => {
       const priceUsd = (data?.data as Record<string, string>)?.priceUsd;
       return priceUsd ? parseFloat(priceUsd) : undefined;
+    },
+  },
+  // Binance - very reliable exchange API
+  {
+    name: 'Binance',
+    url: 'https://api.binance.com/api/v3/ticker/price?symbol=XLMUSDT',
+    parse: (data: Record<string, unknown>) => {
+      const price = (data as { price?: string })?.price;
+      return price ? parseFloat(price) : undefined;
+    },
+  },
+  // Kraken - reliable exchange API
+  {
+    name: 'Kraken',
+    url: 'https://api.kraken.com/0/public/Ticker?pair=XLMUSD',
+    parse: (data: Record<string, unknown>) => {
+      const result = (data as { result?: Record<string, { c?: string[] }> })?.result;
+      const ticker = result?.XXLMZUSD || result?.XLMUSD;
+      return ticker?.c?.[0] ? parseFloat(ticker.c[0]) : undefined;
     },
   },
 ];
@@ -71,8 +91,10 @@ async function fetchXLMPrice(): Promise<number> {
       const data = await response.json();
       const price = oracle.parse(data);
 
-      if (typeof price === 'number' && price > 0) {
-        xlmPriceCache = { price, timestamp: Date.now() };
+      // Validate price is reasonable (between 0 and $100 per XLM)
+      if (typeof price === 'number' && price > 0 && price < MAX_REASONABLE_XLM_PRICE) {
+        xlmPriceCache = { price, timestamp: Date.now(), source: oracle.name };
+        console.debug(`[XLM Price] $${price.toFixed(4)} from ${oracle.name}`);
         return price;
       }
     } catch (error) {
@@ -87,7 +109,8 @@ async function fetchXLMPrice(): Promise<number> {
   }
 
   // All oracles failed - use config fallback
-  console.warn('[XLM Price] All oracles failed, using fallback rate');
+  console.error('[XLM Price] ALL ORACLES FAILED - using fallback rate $' + STELLAR_CONFIG.XLM_TO_USD_RATE);
+  xlmPriceCache = { price: STELLAR_CONFIG.XLM_TO_USD_RATE, timestamp: Date.now(), source: 'Fallback' };
   return STELLAR_CONFIG.XLM_TO_USD_RATE;
 }
 
@@ -450,9 +473,12 @@ export class StellarClient {
    */
   async getXLMPriceData(): Promise<XLMPriceData> {
     const price = await fetchXLMPrice();
+    // After fetchXLMPrice(), cache is guaranteed to be set
     return {
       price,
       timestamp: new Date(),
+      source: xlmPriceCache!.source,
+      isFallback: xlmPriceCache!.source === 'Fallback',
     }
   }
 

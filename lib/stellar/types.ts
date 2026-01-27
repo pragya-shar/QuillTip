@@ -49,6 +49,8 @@ export interface TransactionResult {
 export interface XLMPriceData {
   price: number; // USD per XLM
   timestamp: Date;
+  source: string; // Which oracle provided this price (e.g., 'CoinGecko', 'Binance', 'Fallback')
+  isFallback: boolean; // Whether hardcoded fallback was used
 }
 
 // NFT-related types

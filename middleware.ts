@@ -22,13 +22,15 @@ export function middleware(request: NextRequest) {
       "font-src 'self'",
       "frame-src 'self' www.youtube.com",
       "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'self'",
     ].join('; ')
     response.headers.set('Content-Security-Policy', csp)
   }
 
   // HSTS only in production
   if (process.env.NODE_ENV === 'production') {
-    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
   }
 
   // Handle dynamic article routes with additional headers

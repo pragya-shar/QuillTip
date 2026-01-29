@@ -382,7 +382,7 @@ export default defineSchema({
     fileSize: v.number(),
     
     // Upload context
-    uploadType: v.string(), // "avatar", "article_image", "cover_image"
+    uploadType: v.union(v.literal("avatar"), v.literal("article_image"), v.literal("cover_image"), v.literal("article_cover")),
     uploadedBy: v.id("users"),
     articleId: v.optional(v.id("articles")),
     

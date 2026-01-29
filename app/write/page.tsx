@@ -183,7 +183,7 @@ export default function WritePage() {
       const result = await uploadFile(
         compressedFile, 
         convex,
-        'article_cover',
+        'cover_image',
         undefined, // no specific article yet
       )
       

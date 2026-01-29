@@ -24,7 +24,7 @@ interface UploadProgress {
 export async function uploadFile(
   file: File,
   convexClient: ConvexReactClient,
-  uploadType: string = 'article_image',
+  uploadType: "avatar" | "article_image" | "cover_image" | "article_cover" = 'article_image',
   articleId?: Id<"articles">,
   onProgress?: (progress: UploadProgress) => void
 ): Promise<UploadResult> {
@@ -139,6 +139,9 @@ export function compressImage(file: File, maxWidth: number = 1200, quality: numb
     const img = new Image()
 
     img.onload = () => {
+      // Revoke object URL to prevent memory leak
+      URL.revokeObjectURL(img.src)
+
       // Calculate new dimensions
       let { width, height } = img
       if (width > maxWidth) {
@@ -151,7 +154,7 @@ export function compressImage(file: File, maxWidth: number = 1200, quality: numb
 
       // Draw and compress
       ctx.drawImage(img, 0, 0, width, height)
-      
+
       canvas.toBlob(
         (blob) => {
           if (blob) {

@@ -2,6 +2,27 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { enrichWithUser } from "./lib/enrich";
+
+// Helper to generate a unique slug for an article
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function generateArticleSlug(title: string, authorId: string, ctx: any) {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 100);
+
+  const existingSlug = await ctx.db
+    .query("articles")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex("by_slug", (q: any) => q.eq("slug", slug))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((q: any) => q.eq(q.field("authorId"), authorId))
+    .first();
+
+  return existingSlug ? `${slug}-${Date.now()}` : slug;
+}
 
 // Validation helper for article input
 function validateArticleInput(args: { title: string; excerpt?: string; tags?: string[] }) {
@@ -36,8 +57,8 @@ export const listArticles = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const page = args.page || 1;
-    const limit = args.limit || 10;
+    const page = Math.max(args.page || 1, 1);
+    const limit = Math.min(Math.max(args.limit || 10, 1), 50);
     const offset = (page - 1) * limit;
     
     let articlesQuery = ctx.db
@@ -64,25 +85,33 @@ export const listArticles = query({
     // Search filtering will be done post-query
     // since Convex doesn't support contains on non-indexed fields
     
-    // Get all articles and apply filters
-    let allArticles = await articlesQuery.collect();
-    
+    // When no tag/search filter is active, use .take() to avoid loading the entire table
+    const hasPostFilters = !!(args.tag || args.search);
+    let allArticles;
+    if (hasPostFilters) {
+      // Filters require in-memory processing; cap at 1000 for safety
+      allArticles = await articlesQuery.take(1000);
+    } else {
+      // No post-filters: only take what's needed for this page
+      allArticles = await articlesQuery.take(offset + limit + 1);
+    }
+
     // Apply tag filter if specified
     if (args.tag) {
-      allArticles = allArticles.filter(article => 
+      allArticles = allArticles.filter(article =>
         article.tags && article.tags.includes(args.tag!)
       );
     }
-    
+
     // Apply search filter if specified
     if (args.search) {
-      const searchLower = args.search.toLowerCase();
-      allArticles = allArticles.filter(article => 
+      const searchLower = args.search.slice(0, 200).toLowerCase();
+      allArticles = allArticles.filter(article =>
         article.title.toLowerCase().includes(searchLower) ||
         (article.excerpt && article.excerpt.toLowerCase().includes(searchLower))
       );
     }
-    
+
     const total = allArticles.length;
     
     // Apply pagination
@@ -92,18 +121,10 @@ export const listArticles = query({
     
     // Enrich with author data
     const enrichedArticles = await Promise.all(
-      articles.map(async (article) => {
-        const author = await ctx.db.get(article.authorId);
-        return {
-          ...article,
-          author: author ? {
-            id: author._id,
-            name: author.name,
-            username: author.username,
-            avatar: author.avatar,
-          } : null,
-        };
-      })
+      articles.map(async (article) => ({
+        ...article,
+        author: await enrichWithUser(ctx, article.authorId),
+      }))
     );
     
     return {
@@ -181,6 +202,12 @@ export const getArticleById = query({
     const article = await ctx.db.get(args.id);
     if (!article) return null;
 
+    // If unpublished, only the author can view it
+    if (!article.published) {
+      const userId = await getAuthUserId(ctx);
+      if (userId !== article.authorId) return null;
+    }
+
     const author = await ctx.db.get(article.authorId);
     return {
       ...article,
@@ -234,22 +261,7 @@ export const createArticle = mutation({
     if (!user) throw new Error("User not found");
 
     // Generate slug from title
-    const slug = args.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .substring(0, 100);
-    
-    // Check if slug exists for this user
-    const existingSlug = await ctx.db
-      .query("articles")
-      .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .filter((q) => q.eq(q.field("authorId"), userId))
-      .first();
-    
-    const finalSlug = existingSlug 
-      ? `${slug}-${Date.now()}`
-      : slug;
+    const finalSlug = await generateArticleSlug(args.title, userId, ctx);
     
     const now = Date.now();
     
@@ -274,14 +286,6 @@ export const createArticle = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    
-    // Update user's article count if published
-    if (args.published) {
-      await ctx.db.patch(userId, {
-        articleCount: (user.articleCount || 0) + 1,
-        updatedAt: now,
-      });
-    }
     
     return articleId;
   },
@@ -349,9 +353,17 @@ export const publishArticle = mutation({
     if (!article) throw new Error("Article not found");
     if (article.authorId !== userId) throw new Error("Not authorized");
     if (article.published) throw new Error("Already published");
-    
+
+    // Validate article has required content before publishing
+    if (!article.title || article.title.trim().length === 0) {
+      throw new Error("Cannot publish: title is required");
+    }
+    if (!article.content) {
+      throw new Error("Cannot publish: content is required");
+    }
+
     const now = Date.now();
-    
+
     await ctx.db.patch(args.id, {
       published: true,
       publishedAt: now,
@@ -492,21 +504,7 @@ export const saveDraft = mutation({
       const user = await ctx.db.get(userId);
       if (!user) throw new Error("User not found");
       
-      const slug = args.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .substring(0, 100);
-      
-      const existingSlug = await ctx.db
-        .query("articles")
-        .withIndex("by_slug", (q) => q.eq("slug", slug))
-        .filter((q) => q.eq(q.field("authorId"), userId))
-        .first();
-      
-      const finalSlug = existingSlug 
-        ? `${slug}-${Date.now()}`
-        : slug;
+      const finalSlug = await generateArticleSlug(args.title, userId, ctx);
       
       const now = Date.now();
       
@@ -534,10 +532,21 @@ export const saveDraft = mutation({
   },
 });
 
+// Helper function to extract text from TipTap JSON content
+function extractTextFromContent(node: unknown): string {
+  if (!node || typeof node !== "object") return "";
+  const n = node as Record<string, unknown>;
+  if (n.type === "text" && typeof n.text === "string") return n.text;
+  if (Array.isArray(n.content)) {
+    return n.content.map(extractTextFromContent).join(" ");
+  }
+  return "";
+}
+
 // Helper function to calculate read time
 function calculateReadTime(content: unknown): number {
   // Simple estimation: 200 words per minute
-  const text = JSON.stringify(content);
-  const wordCount = text.split(/\s+/).length;
-  return Math.ceil(wordCount / 200);
+  const text = extractTextFromContent(content);
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.ceil(wordCount / 200));
 }

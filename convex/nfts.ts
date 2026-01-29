@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { enrichWithUser } from "./lib/enrich";
 
 // Get NFTs by owner
 export const getNFTsByOwner = query({
@@ -19,9 +20,11 @@ export const getNFTsByOwner = query({
     // Enrich with article data
     const enrichedNfts = await Promise.all(
       nfts.map(async (nft) => {
-        const article = await ctx.db.get(nft.articleId);
-        const minter = await ctx.db.get(nft.mintedBy);
-        
+        const [article, minter] = await Promise.all([
+          ctx.db.get(nft.articleId),
+          enrichWithUser(ctx, nft.mintedBy),
+        ]);
+
         return {
           ...nft,
           article: article ? {
@@ -32,16 +35,11 @@ export const getNFTsByOwner = query({
             coverImage: article.coverImage,
             authorUsername: article.authorUsername,
           } : null,
-          minter: minter ? {
-            id: minter._id,
-            name: minter.name,
-            username: minter.username,
-            avatar: minter.avatar,
-          } : null,
+          minter,
         };
       })
     );
-    
+
     return enrichedNfts;
   },
 });
@@ -160,24 +158,14 @@ export const getNFTDetails = query({
     const enrichedTransfers = await Promise.all(
       transfers.map(async (transfer) => {
         const [from, to] = await Promise.all([
-          ctx.db.get(transfer.fromUserId),
-          ctx.db.get(transfer.toUserId),
+          enrichWithUser(ctx, transfer.fromUserId),
+          enrichWithUser(ctx, transfer.toUserId),
         ]);
-        
+
         return {
           ...transfer,
-          from: from ? {
-            id: from._id,
-            name: from.name,
-            username: from.username,
-            avatar: from.avatar,
-          } : null,
-          to: to ? {
-            id: to._id,
-            name: to.name,
-            username: to.username,
-            avatar: to.avatar,
-          } : null,
+          from,
+          to,
         };
       })
     );
@@ -240,7 +228,7 @@ export const mintNFT = mutation({
     const now = Date.now();
     
     // Generate NFT data
-    const tokenId = `QUILL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const tokenId = `QUILL-${crypto.randomUUID()}`;
     const metadataUrl = `https://quilltip.com/api/nft/${tokenId}`;
     
     // Get total tips for the article
@@ -360,11 +348,11 @@ export const getUserMintedNFTs = query({
     // Enrich with article and current owner data
     const enrichedNfts = await Promise.all(
       nfts.map(async (nft) => {
-        const [article, owner] = await Promise.all([
+        const [article, currentOwnerInfo] = await Promise.all([
           ctx.db.get(nft.articleId),
-          ctx.db.get(nft.currentOwner),
+          enrichWithUser(ctx, nft.currentOwner),
         ]);
-        
+
         return {
           ...nft,
           article: article ? {
@@ -373,16 +361,11 @@ export const getUserMintedNFTs = query({
             slug: article.slug,
             authorUsername: article.authorUsername,
           } : null,
-          currentOwnerInfo: owner ? {
-            id: owner._id,
-            name: owner.name,
-            username: owner.username,
-            avatar: owner.avatar,
-          } : null,
+          currentOwnerInfo,
         };
       })
     );
-    
+
     return enrichedNfts;
   },
 });

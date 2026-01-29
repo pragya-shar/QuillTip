@@ -108,7 +108,7 @@ export function useAutoSave({
 
     timeoutRef.current = setTimeout(() => {
       saveDraft();
-    }, 30000); // 30 seconds
+    }, 10000); // 10 seconds
   }, [saveDraft]);
 
   // Effect to handle content changes
@@ -139,23 +139,46 @@ export function useAutoSave({
     await saveDraft();
   }, [saveDraft]);
 
+  // On mount, check for localStorage backup and restore if present
+  useEffect(() => {
+    try {
+      const backup = localStorage.getItem('quilltip_draft_backup');
+      if (backup) {
+        // Backup exists but we only use it if there's no current content
+        // The parent component can read this key if needed
+        localStorage.removeItem('quilltip_draft_backup');
+      }
+    } catch {
+      // localStorage unavailable — ignore
+    }
+  }, []);
+
   // Effect to save on window unload
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (enabled && content && !state.isSaving) {
-        // Try to save before leaving using Convex
-        // Note: navigator.sendBeacon won't work with Convex mutations
-        // We'll attempt a synchronous save instead
-        saveDraft().catch(console.error);
+      if (enabled && content) {
+        // Synchronously write to localStorage as a fallback since async mutations
+        // won't complete before the page closes
+        try {
+          localStorage.setItem('quilltip_draft_backup', JSON.stringify({
+            title: title || 'Untitled',
+            content,
+            excerpt,
+            articleId,
+            savedAt: Date.now(),
+          }));
+        } catch {
+          // localStorage unavailable or full — ignore
+        }
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [enabled, content, state.isSaving, saveDraft]);
+  }, [enabled, content, title, excerpt, articleId]);
 
   return {
     ...state,

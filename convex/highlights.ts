@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { generateHighlightIdServer } from "./lib/highlightHash";
+import { enrichWithUser } from "./lib/enrich";
 
 // Get highlights for an article
 export const getArticleHighlights = query({
@@ -24,20 +25,12 @@ export const getArticleHighlights = query({
     
     // Enrich with user data
     const enrichedHighlights = await Promise.all(
-      highlights.map(async (highlight) => {
-        const user = await ctx.db.get(highlight.userId);
-        return {
-          ...highlight,
-          user: user ? {
-            id: user._id,
-            name: user.name,
-            username: user.username,
-            avatar: user.avatar,
-          } : null,
-        };
-      })
+      highlights.map(async (highlight) => ({
+        ...highlight,
+        user: await enrichWithUser(ctx, highlight.userId),
+      }))
     );
-    
+
     return enrichedHighlights;
   },
 });

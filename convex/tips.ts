@@ -1,7 +1,8 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
+import { enrichWithUser } from "./lib/enrich";
 
 // Get tips for an article
 export const getArticleTips = query({
@@ -18,20 +19,12 @@ export const getArticleTips = query({
     
     // Enrich with tipper data
     const enrichedTips = await Promise.all(
-      tips.map(async (tip) => {
-        const tipper = await ctx.db.get(tip.tipperId);
-        return {
-          ...tip,
-          tipper: tipper ? {
-            id: tipper._id,
-            name: tipper.name,
-            username: tipper.username,
-            avatar: tipper.avatar,
-          } : null,
-        };
-      })
+      tips.map(async (tip) => ({
+        ...tip,
+        tipper: await enrichWithUser(ctx, tip.tipperId),
+      }))
     );
-    
+
     return enrichedTips;
   },
 });
@@ -115,18 +108,13 @@ export const getUserReceivedTips = query({
     const enrichedTips = await Promise.all(
       tips.map(async (tip) => {
         const [tipper, article] = await Promise.all([
-          ctx.db.get(tip.tipperId),
+          enrichWithUser(ctx, tip.tipperId),
           ctx.db.get(tip.articleId),
         ]);
-        
+
         return {
           ...tip,
-          tipper: tipper ? {
-            id: tipper._id,
-            name: tipper.name,
-            username: tipper.username,
-            avatar: tipper.avatar,
-          } : null,
+          tipper,
           article: article ? {
             id: article._id,
             title: article.title,
@@ -135,7 +123,7 @@ export const getUserReceivedTips = query({
         };
       })
     );
-    
+
     return enrichedTips;
   },
 });
@@ -153,20 +141,25 @@ export const sendTip = mutation({
     
     const user = await ctx.db.get(userId);
     if (!user) throw new Error("User not found");
-    
+
     const article = await ctx.db.get(args.articleId);
     if (!article) throw new Error("Article not found");
-    
+
     const author = await ctx.db.get(article.authorId);
     if (!author) throw new Error("Author not found");
-    
+
+    // Validate message length
+    if (args.message && args.message.length > 500) {
+      throw new Error("Message must be 500 characters or less");
+    }
+
     // Validate amount (check for NaN, Infinity, and bounds)
     if (!Number.isFinite(args.amountUsd) || args.amountUsd < 0.01 || args.amountUsd > 10000) {
       throw new Error("Invalid tip amount");
     }
     
-    // Convert USD to cents for storage
-    const amountCents = Math.round(args.amountUsd * 100);
+    // Convert USD to cents for storage (use EPSILON to avoid floating-point precision loss)
+    const amountCents = Math.round(args.amountUsd * 100 + Number.EPSILON);
     
     const now = Date.now();
     
@@ -191,14 +184,14 @@ export const sendTip = mutation({
     
     // In a real implementation, this would trigger a Stellar transaction
     // For now, we'll simulate success after a short delay
-    await ctx.scheduler.runAfter(1000, api.tips.confirmTip, { tipId });
+    await ctx.scheduler.runAfter(1000, internal.tips.confirmTip, { tipId });
     
     return tipId;
   },
 });
 
 // Internal mutation to confirm tip
-export const confirmTip = mutation({
+export const confirmTip = internalMutation({
   args: {
     tipId: v.id("tips"),
     stellarTxId: v.optional(v.string()),
@@ -288,11 +281,13 @@ export const confirmTip = mutation({
       topArticles.sort((a, b) => b.earnings - a.earnings);
       topArticles.splice(10);
       
+      const newTotalCents = earnings.totalEarnedCents + tip.amountCents;
+      const newAvailableCents = earnings.availableBalanceCents + tip.amountCents;
       await ctx.db.patch(earnings._id, {
-        totalEarnedUsd: earnings.totalEarnedUsd + tip.amountUsd,
-        totalEarnedCents: earnings.totalEarnedCents + tip.amountCents,
-        availableBalanceUsd: earnings.availableBalanceUsd + tip.amountUsd,
-        availableBalanceCents: earnings.availableBalanceCents + tip.amountCents,
+        totalEarnedCents: newTotalCents,
+        totalEarnedUsd: newTotalCents / 100,
+        availableBalanceCents: newAvailableCents,
+        availableBalanceUsd: newAvailableCents / 100,
         tipCount: earnings.tipCount + 1,
         lastTipAt: now,
         monthlyEarnings,
@@ -379,9 +374,9 @@ export const withdrawEarnings = mutation({
       throw new Error(`Minimum withdrawal amount is $${MIN_WITHDRAWAL_USD}`);
     }
     
-    const amountCents = Math.round(args.amountUsd * 100);
+    const amountCents = Math.round(args.amountUsd * 100 + Number.EPSILON);
     const now = Date.now();
-    
+
     // Create withdrawal record
     const withdrawalId = await ctx.db.insert("withdrawals", {
       userId,
@@ -392,21 +387,23 @@ export const withdrawEarnings = mutation({
       createdAt: now,
       updatedAt: now,
     });
-    
-    // Update earnings - move from available to pending
+
+    // Update earnings - move from available to pending (compute from cents)
+    const newAvailableCents = earnings.availableBalanceCents - amountCents;
+    const newPendingCents = earnings.pendingBalanceCents + amountCents;
     await ctx.db.patch(earnings._id, {
-      availableBalanceUsd: earnings.availableBalanceUsd - args.amountUsd,
-      availableBalanceCents: earnings.availableBalanceCents - amountCents,
-      pendingBalanceUsd: earnings.pendingBalanceUsd + args.amountUsd,
-      pendingBalanceCents: earnings.pendingBalanceCents + amountCents,
+      availableBalanceCents: newAvailableCents,
+      availableBalanceUsd: newAvailableCents / 100,
+      pendingBalanceCents: newPendingCents,
+      pendingBalanceUsd: newPendingCents / 100,
       updatedAt: now,
     });
     
     // In production, this would trigger a Stellar transaction
     // For now, simulate success after delay
-    await ctx.scheduler.runAfter(2000, api.tips.confirmWithdrawal, { 
+    await ctx.scheduler.runAfter(2000, internal.tips.confirmWithdrawal, {
       withdrawalId,
-      earningsId: earnings._id 
+      earningsId: earnings._id
     });
     
     return withdrawalId;
@@ -414,7 +411,7 @@ export const withdrawEarnings = mutation({
 });
 
 // Internal mutation to confirm withdrawal
-export const confirmWithdrawal = mutation({
+export const confirmWithdrawal = internalMutation({
   args: {
     withdrawalId: v.id("withdrawals"),
     earningsId: v.id("authorEarnings"),
@@ -438,12 +435,14 @@ export const confirmWithdrawal = mutation({
       updatedAt: now,
     });
     
-    // Update earnings - move from pending to withdrawn
+    // Update earnings - move from pending to withdrawn (compute from cents)
+    const newPendingCents = earnings.pendingBalanceCents - withdrawal.amountCents;
+    const newWithdrawnCents = earnings.withdrawnCents + withdrawal.amountCents;
     await ctx.db.patch(args.earningsId, {
-      pendingBalanceUsd: earnings.pendingBalanceUsd - withdrawal.amountUsd,
-      pendingBalanceCents: earnings.pendingBalanceCents - withdrawal.amountCents,
-      withdrawnUsd: earnings.withdrawnUsd + withdrawal.amountUsd,
-      withdrawnCents: earnings.withdrawnCents + withdrawal.amountCents,
+      pendingBalanceCents: newPendingCents,
+      pendingBalanceUsd: newPendingCents / 100,
+      withdrawnCents: newWithdrawnCents,
+      withdrawnUsd: newWithdrawnCents / 100,
       lastWithdrawalAt: now,
       updatedAt: now,
     });

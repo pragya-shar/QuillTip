@@ -25,10 +25,26 @@ export const getCurrentUser = query({
 export const getUserByUsername = query({
   args: { username: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await ctx.db
       .query("users")
       .withIndex("by_username", (q) => q.eq("username", args.username))
       .first();
+    if (!user) return null;
+    // Return only public fields
+    return {
+      _id: user._id,
+      _creationTime: user._creationTime,
+      name: user.name,
+      username: user.username,
+      bio: user.bio,
+      avatar: user.avatar,
+      stellarAddress: user.stellarAddress,
+      articleCount: user.articleCount,
+      highlightCount: user.highlightCount,
+      nftsCreated: user.nftsCreated,
+      nftsOwned: user.nftsOwned,
+      createdAt: user.createdAt,
+    };
   },
 });
 

@@ -16,6 +16,10 @@ export const generateUploadUrl = mutation({
   },
 });
 
+// Allowed file types and max size
+const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const MAX_FILE_SIZE = 10485760; // 10MB
+
 // Store file metadata after upload
 export const storeFileMetadata = mutation({
   args: {
@@ -23,13 +27,21 @@ export const storeFileMetadata = mutation({
     fileName: v.string(),
     fileType: v.string(),
     fileSize: v.number(),
-    uploadType: v.string(), // "avatar", "article_image", "cover_image"
+    uploadType: v.union(v.literal("avatar"), v.literal("article_image"), v.literal("cover_image"), v.literal("article_cover")),
     articleId: v.optional(v.id("articles")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    
+
+    // Server-side validation
+    if (!ALLOWED_FILE_TYPES.includes(args.fileType)) {
+      throw new Error(`Invalid file type: ${args.fileType}. Allowed types: ${ALLOWED_FILE_TYPES.join(", ")}`);
+    }
+    if (args.fileSize > MAX_FILE_SIZE) {
+      throw new Error(`File size exceeds maximum of 10MB`);
+    }
+
     const now = Date.now();
     
     // Store file metadata

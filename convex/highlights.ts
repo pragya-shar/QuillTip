@@ -143,6 +143,11 @@ export const createHighlight = mutation({
     const article = await ctx.db.get(args.articleId);
     if (!article) throw new Error("Article not found");
 
+    // Validate text length to prevent abuse
+    if (args.text.length > 5000) {
+      throw new Error("Highlight text too long (max 5000 characters)");
+    }
+
     // Generate deterministic highlight ID (same algorithm as tips)
     const highlightId = await generateHighlightIdServer(
       article.slug,

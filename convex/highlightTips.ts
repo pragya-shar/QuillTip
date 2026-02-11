@@ -43,6 +43,11 @@ export const create = mutation({
     const author = await ctx.db.get(article.authorId);
     if (!author) throw new Error('Author not found');
 
+    // Validate highlight text length
+    if (args.highlightText.length > 5000) {
+      throw new Error('Highlight text too long (max 5000 characters)');
+    }
+
     const amountUsd = args.amountCents / 100;
 
     // Insert highlight tip

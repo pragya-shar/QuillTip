@@ -8,20 +8,20 @@
  *
  * Uses Web Crypto API (browser-compatible) instead of Node.js crypto
  *
- * @param articleId - Article identifier
+ * @param articleSlug - Article slug (unique identifier for the article)
  * @param text - Selected text (truncated to first 50 chars for consistency)
  * @param startOffset - Start position in article
  * @param endOffset - End position in article
  * @returns SHA256 hash (first 28 chars for Stellar memo compatibility)
  */
 export async function generateHighlightId(
-  articleId: string,
+  articleSlug: string,
   text: string,
   startOffset: number,
   endOffset: number
 ): Promise<string> {
   // Create deterministic data string
-  const data = `${articleId}:${startOffset}:${endOffset}:${text.slice(0, 50)}`;
+  const data = `${articleSlug}:${startOffset}:${endOffset}:${text.slice(0, 50)}`;
 
   // Convert string to Uint8Array
   const encoder = new TextEncoder();

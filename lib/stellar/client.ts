@@ -501,6 +501,107 @@ export class StellarClient {
       return false
     }
   }
+
+  /**
+   * Extend the TTL (time-to-live) of a Soroban contract to prevent expiration.
+   * When contract data expires, users have to pay expensive restoration fees.
+   * Run this periodically (e.g., weekly on testnet) to keep fees low.
+   *
+   * @param adminPublicKey - Public key of the account paying for the extension
+   * @param contractId - Contract address to extend (defaults to TIPPING_CONTRACT_ID)
+   * @param ledgersToExtend - Number of ledgers to extend (default ~30 days)
+   * @returns XDR of unsigned transaction to sign with wallet
+   */
+  async buildExtendContractTTLTransaction(
+    adminPublicKey: string,
+    contractId: string = STELLAR_CONFIG.TIPPING_CONTRACT_ID,
+    ledgersToExtend: number = 535680 // ~31 days (1 ledger ≈ 5 seconds)
+  ): Promise<{ xdr: string; contractId: string }> {
+    if (!contractId) {
+      throw new Error('Contract ID is required')
+    }
+
+    // Load the admin account
+    const account = await this.server.loadAccount(adminPublicKey)
+
+    // Create contract instance to get the contract's ledger keys
+    const contract = new StellarSdk.Contract(contractId)
+    const contractAddress = contract.address()
+
+    // Build transaction with extendFootprintTtl operation
+    // This extends both the contract code and instance data
+    const transaction = new StellarSdk.TransactionBuilder(account, {
+      fee: StellarSdk.BASE_FEE,
+      networkPassphrase: this.networkPassphrase,
+    })
+      .addOperation(
+        StellarSdk.Operation.extendFootprintTtl({
+          extendTo: ledgersToExtend,
+        })
+      )
+      .setTimeout(180)
+      .setSorobanData(
+        new StellarSdk.SorobanDataBuilder()
+          .setReadOnly([
+            // Contract instance
+            StellarSdk.xdr.LedgerKey.contractData(
+              new StellarSdk.xdr.LedgerKeyContractData({
+                contract: contractAddress.toScAddress(),
+                key: StellarSdk.xdr.ScVal.scvLedgerKeyContractInstance(),
+                durability: StellarSdk.xdr.ContractDataDurability.persistent(),
+              })
+            ),
+          ])
+          .build()
+      )
+      .build()
+
+    // Prepare transaction (simulates to get correct fees and resources)
+    const preparedTransaction = await this.sorobanServer.prepareTransaction(transaction)
+
+    const fee = Number(preparedTransaction.fee)
+    console.log(`[Stellar] Extend TTL - Fee: ${fee} stroops (${(fee / 10_000_000).toFixed(7)} XLM)`)
+
+    return {
+      xdr: preparedTransaction.toXDR(),
+      contractId,
+    }
+  }
+
+  /**
+   * Submit a signed extend TTL transaction
+   */
+  async submitExtendTTLTransaction(signedXDR: string): Promise<{ success: boolean; hash?: string; error?: string }> {
+    try {
+      const transaction = StellarSdk.TransactionBuilder.fromXDR(signedXDR, this.networkPassphrase)
+      const result = await this.sorobanServer.sendTransaction(transaction)
+
+      if (result.status === 'PENDING') {
+        // Wait for confirmation
+        let txResult = await this.sorobanServer.getTransaction(result.hash)
+        let retries = 0
+
+        while (txResult.status === 'NOT_FOUND' && retries < 30) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          txResult = await this.sorobanServer.getTransaction(result.hash)
+          retries++
+        }
+
+        if (txResult.status === 'SUCCESS') {
+          console.log(`[Stellar] Contract TTL extended successfully: ${result.hash}`)
+          return { success: true, hash: result.hash }
+        } else {
+          return { success: false, error: `Transaction failed: ${txResult.status}` }
+        }
+      }
+
+      return { success: false, error: `Unexpected status: ${result.status}` }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      console.error('[Stellar] Extend TTL failed:', message)
+      return { success: false, error: message }
+    }
+  }
 }
 
 // Export singleton instance

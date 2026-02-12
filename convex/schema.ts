@@ -84,6 +84,7 @@ export default defineSchema({
     arweaveVerifyAttempts: v.optional(v.number()), // Track verification retries
     arweaveErrorMessage: v.optional(v.string()), // Store error details
     contentVersion: v.optional(v.number()),
+    contentHash: v.optional(v.string()), // SHA-256 hash of Arweave content
 
     // Timestamps
     createdAt: v.number(),

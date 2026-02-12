@@ -68,6 +68,7 @@ export function HighlightableArticle({
     position: { top: number; left: number }
   } | null>(null)
   const editorRef = useRef<HTMLDivElement>(null)
+  const isApplyingHighlightsRef = useRef(false)
 
   // Get current user for ownership checks
   const { user } = useAuth()
@@ -136,7 +137,7 @@ export function HighlightableArticle({
               setHighlightTooltip({
                 highlight: fullHighlight,
                 position: {
-                  top: rect.top + window.scrollY - 60,
+                  top: rect.top - 10,
                   left: rect.left + rect.width / 2
                 }
               })
@@ -154,7 +155,7 @@ export function HighlightableArticle({
       },
     },
     onSelectionUpdate: ({ editor }) => {
-      if (editable) return
+      if (editable || isApplyingHighlightsRef.current) return
       
       const { selection } = editor.state
       const { from, to } = selection
@@ -184,8 +185,13 @@ export function HighlightableArticle({
   useEffect(() => {
     if (!editor || !highlights || !showHighlights) return
     
-    // Apply highlights to the editor
+    // Flag to suppress popover during programmatic highlight application
+    isApplyingHighlightsRef.current = true
     HighlightConverter.applyHighlightsToEditor(editor, highlights)
+    // Use requestAnimationFrame to clear flag after all selection events have fired
+    requestAnimationFrame(() => {
+      isApplyingHighlightsRef.current = false
+    })
   }, [editor, highlights, showHighlights])
   
   // Handle highlight creation

@@ -2,12 +2,13 @@
 
 import { Id } from '@/convex/_generated/dataModel'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageSquare, User } from 'lucide-react'
+import { MessageSquare, User, Coins } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 
 interface HighlightData {
   _id: Id<'highlights'>
+  highlightId?: string
   text: string
   color?: string
   note?: string
@@ -23,13 +24,15 @@ interface HighlightNotesProps {
   currentUserId?: Id<'users'>
   onNoteClick?: (highlight: HighlightData) => void
   className?: string
+  tipsByHighlight?: Record<string, { count: number; totalUsd: number }>
 }
 
 export function HighlightNotes({
   highlights,
   currentUserId,
   onNoteClick,
-  className
+  className,
+  tipsByHighlight
 }: HighlightNotesProps) {
   // Filter only highlights with notes
   const highlightsWithNotes = highlights.filter(h => h.note && h.note.trim().length > 0)
@@ -90,7 +93,7 @@ export function HighlightNotes({
           </div>
           
           {/* Highlighted text snippet */}
-          <div 
+          <div
             className="mb-2 px-2 py-1 rounded text-sm text-gray-700 line-clamp-2"
             style={{
               backgroundColor: `${highlight.color || '#FFEB3B'}40`,
@@ -99,7 +102,23 @@ export function HighlightNotes({
           >
             &ldquo;{highlight.text}&rdquo;
           </div>
-          
+
+          {/* Tip badge */}
+          {(() => {
+            const tipData = highlight.highlightId ? tipsByHighlight?.[highlight.highlightId] : undefined
+            if (!tipData?.count) return null
+            return (
+              <div className="mb-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                  <Coins className="w-3 h-3" />
+                  {tipData.count} tip{tipData.count > 1 ? 's' : ''}
+                  {' · '}
+                  ${tipData.totalUsd.toFixed(2)}
+                </span>
+              </div>
+            )
+          })()}
+
           {/* Note content */}
           <div className="text-sm text-gray-600 italic">
             {highlight.note}

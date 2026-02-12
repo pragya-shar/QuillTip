@@ -239,7 +239,17 @@ export const deleteHighlight = mutation({
     const highlight = await ctx.db.get(args.id);
     if (!highlight) throw new Error("Highlight not found");
     if (highlight.userId !== userId) throw new Error("Not authorized");
-    
+
+    // Check if highlight has been tipped - tipped highlights cannot be deleted
+    const associatedTip = await ctx.db
+      .query("highlightTips")
+      .withIndex("by_highlight", (q) => q.eq("highlightId", highlight.highlightId))
+      .first();
+
+    if (associatedTip) {
+      throw new Error("Cannot delete a highlight that has been tipped. Tips are permanent financial records.");
+    }
+
     // Update article highlight count
     const article = await ctx.db.get(highlight.articleId);
     if (article) {

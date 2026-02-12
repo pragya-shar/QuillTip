@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation } from 'convex/react'
 import { useAuth } from '@/components/providers/AuthContext'
 import { useWallet } from '@/components/providers/WalletProvider'
@@ -54,6 +54,20 @@ export function HighlightTipButton({
   const [isLoading, setIsLoading] = useState(false)
 
   const createHighlightTip = useMutation(api.highlightTips.create)
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, isLoading])
 
   const handleTip = async () => {
     // Check authentication
@@ -208,10 +222,18 @@ export function HighlightTipButton({
 
       {/* Tip Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="highlight-tip-dialog-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isLoading) setIsOpen(false)
+          }}
+        >
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold">Tip Highlight</h3>
+              <h3 id="highlight-tip-dialog-title" className="text-xl font-bold">Tip Highlight</h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-gray-400 hover:text-gray-600 text-2xl leading-none"

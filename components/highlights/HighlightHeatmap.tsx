@@ -159,7 +159,7 @@ export function HighlightHeatmap({
           <span className="text-xs text-gray-500">Low</span>
           <div className="flex-1 h-3 rounded-full"
             style={{
-              background: 'linear-gradient(to right, rgb(255, 255, 150), rgb(255, 150, 100), rgb(255, 50, 50))'
+              background: `linear-gradient(to right, ${getHeatmapColor(0, 100)}, ${getHeatmapColor(33, 100)}, ${getHeatmapColor(66, 100)}, ${getHeatmapColor(100, 100)})`
             }}
           />
           <span className="text-xs text-gray-500">High</span>

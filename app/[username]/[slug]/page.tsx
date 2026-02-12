@@ -3,7 +3,7 @@
 import { notFound } from 'next/navigation'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import ArticleDisplay from '@/components/articles/ArticleDisplay'
 import AppNavigation from '@/components/layout/AppNavigation'
 import { TipStats } from '@/components/tipping/TipStats'
@@ -53,7 +53,24 @@ export default function ArticlePage({ params }: ArticlePageProps) {
     api.highlights.getArticleHighlights,
     article ? { articleId: article._id as Id<'articles'> } : 'skip'
   )
-  
+
+  // Fetch highlight tip stats for tip badges in notes sidebar
+  const highlightTipStats = useQuery(
+    api.highlightTips.getArticleStats,
+    article ? { articleId: article._id as Id<'articles'> } : 'skip'
+  )
+
+  // Build lookup map for tip badges
+  const tipsByHighlight = useMemo(() => {
+    if (!highlightTipStats?.topHighlights) return {}
+    return Object.fromEntries(
+      highlightTipStats.topHighlights.map(h => [
+        h.highlightId,
+        { count: h.tipCount, totalUsd: h.totalAmountCents / 100 }
+      ])
+    )
+  }, [highlightTipStats])
+
   // Loading state
   if (routeParams.username === null || routeParams.slug === null) {
     return (
@@ -202,6 +219,7 @@ export default function ArticlePage({ params }: ArticlePageProps) {
                       <HighlightNotes
                         highlights={highlights || []}
                         currentUserId={user?._id as Id<'users'> | undefined}
+                        tipsByHighlight={tipsByHighlight}
                         onNoteClick={(highlight) => {
                           // Scroll to highlight in article
                           const element = document.querySelector(`[data-highlight-id="${highlight._id}"]`)

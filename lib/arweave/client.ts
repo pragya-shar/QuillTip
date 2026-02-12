@@ -1,4 +1,5 @@
 import { TurboFactory, ArweaveSigner } from "@ardrive/turbo-sdk/node";
+import { createHash } from 'crypto';
 import { ARWEAVE_CONFIG } from './config';
 import type { ArweaveArticleContent, ArweaveUploadResult, ArweaveTransactionStatus } from './types';
 import type { JWKInterface } from "arweave/node/lib/wallet";
@@ -47,6 +48,7 @@ export async function uploadArticle(
   try {
     const data = JSON.stringify(content);
     const dataBuffer = Buffer.from(data);
+    const contentHash = createHash('sha256').update(dataBuffer).digest('hex');
     const sizeBytes = dataBuffer.length;
     const sizeKiB = sizeBytes / 1024;
 
@@ -83,6 +85,7 @@ export async function uploadArticle(
           { name: 'Author-Id', value: content.authorId },
           { name: 'Timestamp', value: content.timestamp.toString() },
           { name: 'Version', value: content.version.toString() },
+          { name: 'Content-Hash', value: contentHash },
         ],
       },
     });
@@ -91,6 +94,7 @@ export async function uploadArticle(
       success: true,
       txId: result.id,
       url: `https://arweave.net/${result.id}`,
+      contentHash,
     };
   } catch (error) {
     console.error('[Arweave] Upload error:', error);

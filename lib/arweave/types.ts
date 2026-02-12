@@ -13,6 +13,7 @@ export interface ArweaveUploadResult {
   success: boolean;
   txId?: string;
   url?: string;
+  contentHash?: string;
   error?: string;
 }
 

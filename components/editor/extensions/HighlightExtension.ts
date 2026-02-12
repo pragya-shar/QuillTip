@@ -223,9 +223,17 @@ const HighlightExtension = Mark.create<HighlightOptions>({
             const range = doc.resolve(pos)
             const marks = range.marks()
 
-            const highlightMark = marks.find(
+            let highlightMark = marks.find(
               (mark) => mark.type === schema.marks.highlight
             )
+
+            // Fallback: check adjacent position for boundary clicks
+            if (!highlightMark && pos > 0) {
+              const prevMarks = doc.resolve(pos - 1).marks()
+              highlightMark = prevMarks.find(
+                (mark) => mark.type === schema.marks.highlight
+              )
+            }
 
             if (highlightMark && highlightMark.attrs.id) {
               event.preventDefault()
@@ -255,9 +263,17 @@ const HighlightExtension = Mark.create<HighlightOptions>({
               const range = doc.resolve(pos.pos)
               const marks = range.marks()
 
-              const highlightMark = marks.find(
+              let highlightMark = marks.find(
                 (mark) => mark.type === schema.marks.highlight
               )
+
+              // Fallback: check adjacent position for boundary touches
+              if (!highlightMark && pos.pos > 0) {
+                const prevMarks = doc.resolve(pos.pos - 1).marks()
+                highlightMark = prevMarks.find(
+                  (mark) => mark.type === schema.marks.highlight
+                )
+              }
 
               if (highlightMark && highlightMark.attrs.id) {
                 event.preventDefault()

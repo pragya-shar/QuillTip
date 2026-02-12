@@ -48,6 +48,11 @@ export const create = mutation({
       throw new Error('Highlight text too long (max 5000 characters)');
     }
 
+    // Validate tip amount (must be between $0.01 and $100)
+    if (!Number.isFinite(args.amountCents) || args.amountCents < 1 || args.amountCents > 10000) {
+      throw new Error('Tip amount must be between $0.01 and $100');
+    }
+
     const amountUsd = args.amountCents / 100;
 
     // Insert highlight tip
@@ -99,9 +104,10 @@ export const create = mutation({
       updatedAt: Date.now(),
     });
 
-    // Update article highlight count
+    // Update article tip stats (tipCount and totalTipsUsd, not highlightCount)
     await ctx.db.patch(args.articleId, {
-      highlightCount: (article.highlightCount || 0) + 1,
+      tipCount: (article.tipCount || 0) + 1,
+      totalTipsUsd: (article.totalTipsUsd || 0) + amountUsd,
       updatedAt: Date.now(),
     });
 
@@ -205,7 +211,6 @@ export const getArticleStats = query({
       text: string;
       startOffset: number;
       endOffset: number;
-      totalTips: number;
       totalAmountCents: number;
       tipCount: number;
     };
@@ -217,13 +222,11 @@ export const getArticleStats = query({
           text: tip.highlightText,
           startOffset: tip.startOffset,
           endOffset: tip.endOffset,
-          totalTips: 0,
           totalAmountCents: 0,
           tipCount: 0,
         };
       }
       const group = acc[tip.highlightId]!;
-      group.totalTips += tip.amountCents;
       group.totalAmountCents += tip.amountCents;
       group.tipCount += 1;
       return acc;

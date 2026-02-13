@@ -1,13 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   UserPlus,
   Edit3,
   Globe,
   Coins,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  BookOpen,
+  Highlighter,
+  Wallet,
+  Heart,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
@@ -16,8 +21,9 @@ import { useRef } from 'react';
 export default function HowItWorksSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const [activeTab, setActiveTab] = useState<'writers' | 'readers'>('writers');
 
-  const steps = [
+  const writerSteps = [
     {
       number: "01",
       icon: UserPlus,
@@ -47,6 +53,39 @@ export default function HowItWorksSection() {
       color: "from-neutral-900 to-black"
     }
   ];
+
+  const readerSteps = [
+    {
+      number: "01",
+      icon: BookOpen,
+      title: "Browse",
+      description: "Discover articles from writers across the platform — reading is always free",
+      color: "from-neutral-700 to-neutral-800"
+    },
+    {
+      number: "02",
+      icon: Highlighter,
+      title: "Highlight",
+      description: "Select your favorite passages and save them with colors and notes",
+      color: "from-neutral-800 to-neutral-900"
+    },
+    {
+      number: "03",
+      icon: Wallet,
+      title: "Connect",
+      description: "Set up a Stellar wallet in 2 minutes to unlock tipping",
+      color: "from-neutral-600 to-neutral-700"
+    },
+    {
+      number: "04",
+      icon: Heart,
+      title: "Tip",
+      description: "Send micro-tips starting at $0.01 — 97.5% goes directly to the author",
+      color: "from-neutral-900 to-black"
+    }
+  ];
+
+  const steps = activeTab === 'writers' ? writerSteps : readerSteps;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -106,9 +145,33 @@ export default function HowItWorksSection() {
               Four Simple Steps
             </span>
           </h2>
-          <p className="text-base text-neutral-700 max-w-2xl mx-auto leading-relaxed">
-            Join thousands of writers monetizing their content with QuillTip
+          <p className="text-base text-neutral-700 max-w-2xl mx-auto leading-relaxed mb-8">
+            Whether you write or read, QuillTip makes it simple
           </p>
+
+          {/* Writer / Reader Toggle */}
+          <div className="inline-flex items-center bg-neutral-100 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('writers')}
+              className={`px-5 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'writers'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              For Writers
+            </button>
+            <button
+              onClick={() => setActiveTab('readers')}
+              className={`px-5 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'readers'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              For Readers
+            </button>
+          </div>
         </motion.div>
 
         {/* Steps */}

@@ -7,6 +7,8 @@ import { useWallet } from '@/components/providers/WalletProvider'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Coins, Heart, Loader2, Wallet } from 'lucide-react'
+import { WalletTooltip } from '@/components/guide/WalletTooltip'
+import Link from 'next/link'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { stellarClient } from '@/lib/stellar/client'
@@ -179,6 +181,12 @@ export function TipButton({
             {!isConnected && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
                 <p>Connect your Stellar wallet to send tips to {authorName}.</p>
+                <p className="mt-1">
+                  New to crypto?{' '}
+                  <Link href="/guide" className="text-amber-700 underline font-medium hover:text-amber-900">
+                    Follow our setup guide
+                  </Link>
+                </p>
               </div>
             )}
 
@@ -294,8 +302,8 @@ export function TipButton({
             )}
 
             {/* Info */}
-            <p className="text-xs text-gray-500 text-center mt-2">
-              Powered by Stellar • Instant settlement • Low fees
+            <p className="text-xs text-gray-500 text-center mt-2 flex items-center justify-center gap-1">
+              Powered by Stellar <WalletTooltip concept="stellar" /> • Instant settlement • Low fees
             </p>
           </div>
         </div>

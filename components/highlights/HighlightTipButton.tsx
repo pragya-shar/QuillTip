@@ -223,15 +223,19 @@ export function HighlightTipButton({
       {/* Tip Modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="highlight-tip-dialog-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget && !isLoading) setIsOpen(false)
-          }}
         >
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+          {/* Backdrop — interactive button so a11y rules are satisfied */}
+          <button
+            className="absolute inset-0 bg-black/50"
+            onClick={() => { if (!isLoading) setIsOpen(false) }}
+            aria-label="Close dialog"
+            tabIndex={-1}
+          />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 id="highlight-tip-dialog-title" className="text-xl font-bold">Tip Highlight</h3>
               <button

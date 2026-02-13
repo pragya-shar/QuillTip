@@ -26,6 +26,7 @@ export interface User {
   avatar?: string
   nftsCreated?: number
   nftsOwned?: number
+  onboardingCompleted?: boolean
 }
 
 interface AuthContextType {

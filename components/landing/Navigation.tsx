@@ -31,7 +31,7 @@ const navDropdowns: NavDropdown[] = [
     label: "Resources",
     items: [
       { icon: HelpCircle, title: "FAQ", description: "Answers to common questions", href: "#faq" },
-      { icon: FileText, title: "Documentation", description: "Technical guides", href: "/docs" },
+      { icon: FileText, title: "Getting Started", description: "Wallet setup & tipping guide", href: "/guide" },
       { icon: Shield, title: "Security", description: "Blockchain security info", href: "#faq" },
     ]
   }
@@ -106,6 +106,12 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8" ref={navRef}>
+            <Link
+              href="/articles"
+              className="text-sm font-semibold text-neutral-700 hover:text-neutral-900 transition-colors duration-300"
+            >
+              Articles
+            </Link>
             {navDropdowns.map((dropdown) => (
               <div key={dropdown.label} className="relative">
                 <button
@@ -204,6 +210,13 @@ export default function Navigation() {
               transition={{ duration: 0.3 }}
             >
               <div className="py-6 space-y-6">
+                <Link
+                  href="/articles"
+                  className="flex items-center gap-3 py-2 text-neutral-600 hover:text-neutral-900 font-medium transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Articles
+                </Link>
                 {navDropdowns.map((dropdown, dropdownIndex) => (
                   <motion.div
                     key={dropdown.label}

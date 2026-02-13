@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,8 +18,9 @@ import {
   ArrowUpRight,
   Loader2,
   PlugZap,
-  Power
+  Power,
 } from 'lucide-react'
+import { WalletTooltip } from '@/components/guide/WalletTooltip'
 import { toast } from 'sonner'
 import { useWallet } from '@/components/providers/WalletProvider'
 
@@ -140,6 +142,7 @@ export function WalletSettings({
         <CardTitle className="flex items-center gap-2">
           <Wallet className="h-5 w-5" />
           Stellar Wallet
+          <WalletTooltip concept="stellar" />
         </CardTitle>
         <CardDescription>
           {isOwnProfile
@@ -191,14 +194,12 @@ export function WalletSettings({
 
                 <div className="text-center text-sm text-muted-foreground">
                   Need a wallet?{' '}
-                  <a
-                    href="https://stellar.org/ecosystem/wallets"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href="/guide"
                     className="text-blue-600 hover:underline"
                   >
-                    View supported wallets
-                  </a>
+                    Follow our setup guide
+                  </Link>
                 </div>
               </div>
             ) : (

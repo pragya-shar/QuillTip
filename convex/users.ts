@@ -86,6 +86,20 @@ export const updateProfile = mutation({
   },
 });
 
+// Complete onboarding
+export const completeOnboarding = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    await ctx.db.patch(userId, {
+      onboardingCompleted: true,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 // Check if username is available
 export const isUsernameAvailable = query({
   args: { username: v.string() },

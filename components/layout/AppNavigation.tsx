@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/components/providers/AuthContext'
-import { PenSquare, Home, User, LogOut, FileText, BookOpen } from 'lucide-react'
+import { PenSquare, Home, User, LogOut, FileText, BookOpen, HelpCircle } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export default function AppNavigation() {
@@ -30,8 +30,8 @@ export default function AppNavigation() {
               <Home className="w-4 h-4" />
               <span>Home</span>
             </Link>
-            <Link 
-              href="/articles" 
+            <Link
+              href="/articles"
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
                 isActive('/articles') ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
               }`}
@@ -39,7 +39,16 @@ export default function AppNavigation() {
               <BookOpen className="w-4 h-4" />
               <span>Articles</span>
             </Link>
-            
+            <Link
+              href="/guide"
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition ${
+                isActive('/guide') ? 'bg-gray-100 text-brand-blue' : 'text-gray-600 hover:text-brand-blue'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Guide</span>
+            </Link>
+
             {isAuthenticated ? (
               <>
                 <Link 

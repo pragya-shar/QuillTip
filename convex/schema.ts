@@ -22,6 +22,9 @@ export default defineSchema({
     // Stellar integration (optional, can be null to explicitly clear)
     stellarAddress: v.optional(v.union(v.string(), v.null())),
     
+    // Onboarding
+    onboardingCompleted: v.optional(v.boolean()),
+
     // Stats (denormalized for performance)
     articleCount: v.optional(v.number()),
     highlightCount: v.optional(v.number()),

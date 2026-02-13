@@ -125,6 +125,14 @@ export default function HeroSection() {
                 <span className="font-bold text-neutral-900"> micro-tips</span> and
                 <span className="font-bold text-neutral-900"> highlights</span>.
               </motion.p>
+              <motion.p
+                className="text-base text-neutral-600 leading-relaxed max-w-2xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 1.0 }}
+              >
+                Discover great writing and reward the words that move you.
+              </motion.p>
             </motion.div>
 
             {/* Enhanced CTA with Multiple Options */}
@@ -138,11 +146,11 @@ export default function HeroSection() {
               </Link>
 
               <Link
-                href="#demo"
+                href="/guide"
                 className="group inline-flex items-center justify-center gap-3 bg-white/80 backdrop-blur-sm text-neutral-900 px-8 py-4 rounded-xl text-base font-medium tracking-wide border border-neutral-200 hover:bg-white hover:shadow-lg transition-all duration-500"
               >
-                Watch Demo
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                How It Works
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Link>
             </motion.div>
 
